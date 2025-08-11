@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>register--login</title>
+    <link rel="stylesheet" href="../css/signup.css">
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+</head>
+<div id="vanta-bg"></div>
+
+<body>
+
+
+    <div class="register_bacground">
+
+        <div class="register_container">
+            <div class="login_title">
+                <span>فرم ثبت نام</span>
+            </div>
+            <div class="signup_form">
+                <form action="otp.html" method="get">
+                    <input type="text" name="username" id="username" placeholder=" نام کاربری">
+                    <input type="number" name="phone-number" id="phone-number" placeholder=" شماره تلفن">
+                    <input type="email" name="email" id="email" placeholder=" ایمیل">
+                    <input type="password" name="password" id="password" placeholder="رمز عبور">
+                    <input type="submit" value="ثبت نام">
+                </form>
+            </div>
+            <div class="login_bottom_links">
+                <a href="forget-password.html">رمز عبوری خود را فراموش کرده اید؟ <div class="blue">بازیابی رمز عبور</div> </a>
+                <a href="login.html">گر حساب کاربری موجود دارید <div class="blue">ورود کنید</div> </a>
+            </div>
+        </div>
+
+    </div>
+
+    
+</body>
+
+
+
+
+<!-- اسکریپت‌های مورد نیاز -->
+<script src="../js/register-bg.js"></script>
+<script src="../js/register-bg2.js"></script>
+<script>
+  VANTA.NET({
+    el: "#vanta-bg",
+    mouseControls: true,
+    touchControls: true,
+    gyroControls: false,
+    minHeight: 200.00,
+    minWidth: 200.00,
+    scale: 1.00,
+    scaleMobile: 1.00,
+    color: 0x00F5FF,    // رنگ خطوط (آبی روشن)
+    backgroundColor: 0x0F172A, // رنگ پس‌زمینه (آبی تیره)
+    points: 15.00,
+    maxDistance: 22.00,
+    spacing: 15.00,
+    showDots: true
+  });
+</script>
+</html>

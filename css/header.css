@@ -1,0 +1,520 @@
+
+
+header{
+    direction: rtl;
+}
+a{
+    text-decoration: none;
+}
+li{
+    list-style: none;
+}
+
+.header_container{
+    display: grid;
+    grid-template-columns: 185px 600px;
+    justify-content: space-between;
+    max-width: 1400px;
+    height: 80px;
+    margin: 0 auto;
+    align-items: center;
+    padding: 0px 25px;
+}
+
+.right_section{
+    display: grid;
+    grid-template-columns: 185px 380px;
+}
+.logo{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.nav{
+    display: grid;
+    align-items: center;
+    justify-self: flex-end;
+}
+.nav ul{
+    display: flex;
+    gap: 30px;
+    align-items: center;
+    justify-self: center;
+
+}
+.nav ul li a{
+    color: var(--white-color);
+    font-size: 16px;
+    font-weight: normal;
+    padding-bottom: 5px;
+    position: relative;
+}
+
+
+.nav ul li a::after {
+    content: ''; /* این خط برای نمایش ::after الزامی است */
+    position: absolute;
+    width: 100%;
+    height: 2px;
+    background-color: var(--color-primary);
+    bottom: 0;
+    right: 0;
+    transform: scaleX(0);
+    transform-origin: right;
+    transition: transform 0.2s ease-in-out;
+}
+.nav ul li a:hover{
+    color: var(--color-primary);
+}
+
+.nav ul li a:hover::after {
+    transform: scaleX(1);
+}
+.register{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 25px;
+}
+.login a{
+    color: var(--white-color);
+    font-size: 16px;
+    font-weight: normal;
+
+}
+.signin{
+    width: 100px;
+    height: 32px;
+    background-color: var(--white-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+}
+.signin a{
+    color: var(--dark-color);
+    font-size: 16px;
+    font-weight: normal;
+}
+
+.hidden_mobile_section{
+    display: none;
+}
+.mobile_sidbar{
+    display: none;
+}
+.monile_overlay{
+    display: none;
+}
+
+
+
+.user_islogin_to_register{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    justify-self: end;
+    width: 240px;
+}
+
+.wallet_info{
+    min-width: 140px;
+    height: 32px;
+    background-color: var(--card-color);
+    color: var(--white-color);
+    font-size: 12px;
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    cursor:pointer;
+    gap: 10px;
+
+}
+
+.open_user_links{
+    width: 32px;
+    height: 32px;
+    background-color: var(--card-color);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor:pointer;
+    
+}
+
+
+.user-menu-wrapper:hover .user_info_links {
+    display: block;
+}
+/* * ۱. والد (Wrapper) */ 
+.user-menu-wrapper {
+    position: relative; /* ایجاد نقطه مرجع برای منوی شناور */
+    display: inline-block; /* باعث می‌شود والد فقط به اندازه دکمه فضا اشغال کند */
+
+}
+
+.user_info_links {
+    display: none;
+    position: absolute;   /* این خط اضافه شده است */
+    top: 100%; /* مقدار 120% به 100% تغییر کرد تا منو به والد بچسبد */
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 1000;         /* این خط اضافه شده است - تضمین می‌کند که منو روی عناصر دیگر قرار بگیرد */
+    gap: 20px;
+    width: 165px;
+    height: auto; /* ارتفاع را auto بگذارید تا محتوا آن را تعیین کند */
+    background-color: var(--card-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding-top: 15px; /* این خط یک فاصله 15 پیکسلی در بالای لینک‌های منو ایجاد می‌کند */
+    margin-top: 10px;
+
+}
+
+
+.link_item{
+    padding: 10px;
+}
+.link_item a{
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 10px;
+}
+
+.link_item a{
+    color: var(--white-color);
+    font-size: 14px;
+    font-weight: s;
+}
+.notification_bar {
+    position: relative;
+    display: inline-block; /* برای اینکه عرض عنصر به اندازه محتوایش باشد */
+}
+
+.notification{
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--card-color);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    cursor:pointer;
+}
+
+
+.notification_hover{
+    visibility: hidden; /* مخفی از دید و غیرقابل کلیک */
+    opacity: 0; /* کاملا شفاف */
+    position: absolute;
+    transform: translateX(85%);
+    top: 150%;
+    width: 220px;
+    height: 140px;
+    background-color: var(--card-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    padding: 14px;
+    gap: 8px;
+}
+/* نمایش کادر اعلان‌ها زمانی که ماوس روی نگهدارنده اصلی قرار می‌گیرد */
+.notification_bar:hover .notification_hover {
+    visibility: visible; /* قابل مشاهده */
+    opacity: 1; /* کاملا نمایان */
+    top: 100%; /* موقعیت نهایی برای نمایش */
+}
+
+.notification_hover hr{
+    border: 0.5px solid var(--border-color);
+}
+.notification_title{
+    text-align: center;
+    color:var(--white-color) ;
+    font-size: 14px;
+    font-weight: 300;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.message_notification{
+    width: 206px;
+    height: 53px;
+    background-color: var(--background-color);
+    border-radius: 10px;
+    display: grid;
+    align-items: center;
+    justify-content: start;
+    padding-right: 15px;
+}
+.notification_username{
+    font-size: 10px;
+    color: var(--white-color);
+}
+.user_message{
+    font-size: 12px;
+    color: var(--white-color);
+}
+
+.sea_all_notifacation{
+    font-size: 12px;
+    text-align: center;
+}
+.sea_all_notifacation a{
+    color: var(--white-color);
+    font-weight: 300;
+}
+
+
+
+/* از این بخش به پایین کد های ریسپانسیو هست */
+
+@media (max-width:900px) {
+
+/* نمایش ندادن هدر مخصوص دسکتاپ */
+.header_container{
+    display: none;
+}
+.header_hover_section{
+    display: none;
+}
+
+
+
+.hidden_mobile_section{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0px 30px;
+    height: 90px;
+}
+.menu_and_register{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 22px;
+}
+.hidden_mobile_section button{
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    
+}
+.hidden_mobile_section button img{  
+    width: 24px;
+    height: 24px;
+    
+}
+.mobile_overlay{
+    display: none;
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    right: 0;
+    background-color: var(--overlay-color);
+}
+
+/* کد صحیح و اصلاح شده */
+
+.mobile_sidbar {
+    display: grid;
+    padding: 30px;
+    width: 310px;
+    height: 100vh;
+    background-color: var(--background-color);
+    align-items: center;
+    position: fixed; 
+    top: 0;
+    gap: 20px;
+    right: -310px;
+    visibility: hidden; 
+    transition: right 0.4s ease-in-out, visibility 0.4s;
+}
+
+.mobile_sidbar.active {
+    right: 0px;
+    visibility: visible; 
+}
+
+
+
+.close{
+    display: flex;
+    justify-content: start;
+    align-items: center;
+    width: 100%;
+}
+.close_btn{
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+
+.user_info_islogin{
+    display: grid;
+    grid-template-columns: repeat(3 , auto);
+    align-items: start;
+    justify-content: space-between;
+    width: 250px;
+
+}
+.edit{
+    justify-self: start;
+    cursor: pointer;
+}
+.user_name_phone{
+    display: grid;
+    align-items: center;
+    gap: 5px;
+    text-align: left;
+    color: var(--white-color);
+    font-weight: 500;
+}
+.user_info_name{
+    font-size: 18px;
+}
+.user_info_phone{
+    direction: ltr;
+    font-size: 16px;
+
+}
+.user_profile{
+    width: 50px;
+    height: 50px;
+    background-color: var(--white-color);border-radius: 999px;
+}
+ hr {
+    width: 250px;
+    border: 0.5px solid var(--border-color);
+}
+
+
+
+/* کد های مربوط به زمانی که کاربر وارد نشده */
+
+.user_info_isnontlogin{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--card-color);
+    height: 80px;
+    width: 250px;
+    padding: 7px 0px;
+    gap: 12px;
+    border-radius: 10px;
+}
+.please_login_title{
+    color: var(--white-color);
+    font-size: 12px;
+    font-weight: normal;
+}
+
+.login_signin_links{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    column-gap: 10px;
+
+}
+
+
+.login2_btn{
+    width: 100px;
+    height: 27px;
+    font-size: 12px;
+    border-radius: 5px;
+    border: none;
+    background-color: var(--color-primary);
+    color: var(--dark-color);
+    cursor: pointer;
+}
+.signin_btn{
+    width: 100px;
+    height: 27px;
+    font-size: 12px;
+    border-radius: 5px;
+    border: 1px solid var(--white-color);
+    cursor: pointer;
+    background-color: transparent;
+    color: var(--white-color);
+
+}
+
+
+.sidebar_links{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between;
+    height: 510px;
+}
+.sidebar_links_top{
+    display: flex;
+    align-items: center;
+    justify-content: start;
+}
+.sidebar_links_top ul{
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+    justify-content: start;
+}
+
+.sidebar_links_top ul li a{
+    font-size: 18px;
+    font-weight: normal;
+    color: var(--white-color);
+}
+.sidebar_links_bottom{
+
+}
+.exit_account{
+    width: 250px;
+    height: 50px;
+    background-color: var(--logout-color);
+    color: var(--white-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+
+}
+
+.exit_account a{
+    color: var(--white-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 10px 80px;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+}

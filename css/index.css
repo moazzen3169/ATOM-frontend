@@ -1,0 +1,226 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: peyda;
+
+}
+
+body{
+    background-color: var(--background-color);
+}
+
+.container{
+    max-width: 1400px;
+    margin: 50px auto;
+    padding:  0px 25px;
+    overflow:hidden ;
+}
+
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill , minmax(406px , 406px));
+    gap: 58px;
+    align-items: center;
+    margin: 50px auto;
+    justify-content: center;
+  }
+  
+
+
+/* بخش مربوط به لیدر بورد 3نفر برتر  */
+
+
+
+
+
+.home_leaderboard{
+
+    max-width: 1400px;
+    display: grid;
+    margin: 50px auto;
+    padding: 0px 25px;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    align-items: center;
+    justify-content: space-between;
+    gap: 58px;
+
+
+}
+.leaderboard_item{
+    height: 280px;
+    border: 0.5px solid var(--primary-border);
+    border-radius: 10px;
+    background: linear-gradient(135deg, rgba(0, 245, 255, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
+    padding: 30px;
+
+}
+.leaeder_profile{
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+}
+.profile_img{
+    min-width: 80px;
+    min-height: 80px;
+    max-width: 80px;
+    max-height: 80px;
+}
+.profile_img img{
+    width: 100%;
+    height: 100%;
+    border-radius: 100px;
+    border: 0.5px solid var(--primary-border);
+
+}
+.user_name{
+    font-size: 25px;
+    font-weight: bold;
+    color: var(--white-color);
+}
+.user_rank{
+    min-width: 30px;
+    min-height: 30px;
+    max-width: 30px;
+    max-height: 30px;
+    border: 1px solid var(--primary-border);
+    border-radius: 100px;
+    background-color: var(--background-color);
+    color: var(--white-color);
+    font-size: 20px;
+    font-weight: bold;
+    text-align: center;
+    padding-top: 2px;
+}
+.leader_info{
+    direction: rtl;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 15px;
+    color: var(--white-color);
+    font-weight: normal;
+    font-size: 20px;
+}
+
+
+
+
+
+
+
+
+
+
+/* کد های مربوط به اطلاعات کلی سایت برای کاربران در قسمت بالاتر از فوتر */
+
+.web_info{
+    max-width: 1400px;
+    display: grid;
+    margin: 50px auto;
+    padding: 0px 25px;
+    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+    align-items: center;
+    justify-content: space-between;
+    gap: 58px;
+
+
+
+}
+.web_info_item{
+    background: linear-gradient(135deg, rgba(0, 245, 255, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 172px;
+    border: 0.5px solid var(--primary-border) ;
+    border-radius: 10px;
+    color: var(--white-color);
+    display: grid;
+    align-items: center;
+    text-align: center;
+    padding: 40px ;
+
+}
+.web_info_item_data{
+    font-size: 30px;
+    font-weight: bold;
+}
+.web_info_item_titr{
+    font-size: 30px;
+    font-weight: 300;
+}
+
+/* آخر این قسمت */
+
+
+
+
+
+
+
+
+.section_title{
+    text-align: center;
+    font-size: 30px;
+    font-weight: 300;
+    color: var(--white-color);
+}
+.section_showALL{
+    width: 250px;
+    height: 50px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    background-color: var(--card-color);
+    text-align: center;
+    margin: 10px auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+}
+
+.section_showALL a{
+    text-decoration: none;
+    color: var(--white-color);
+    font-size: 16px;
+    font-weight: normal;
+    padding: 20px 80px;
+}
+
+
+
+
+/* .section_showALL:hover{
+    border: 1px solid var(--primary-border);
+    transition: 0.5s ease-in ;
+
+}
+
+.section_showALL:hover , .section_showALL a:hover{
+    color: var(--color-primary);
+    transition: 0.5s ease-in ;
+
+
+} */
+
+
+section{
+margin-top: 100px;
+
+
+}
+
+
+
+
+/*  کد های مربوط به اسکرول بار */
+
+
+  * {
+    scrollbar-width: auto; /* یا 'auto' یا 'none' */
+    scrollbar-color: var(--primary-border) var(--background-color); /* thumb و track */
+  }
+

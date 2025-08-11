@@ -1,0 +1,162 @@
+
+body{
+    background-color: var(--background-color);
+}
+
+.all_games_bgimg {
+    position: relative; /* اضافه کن */
+    overflow: hidden;
+
+  }
+  
+  .all_games_bgimg img {
+    width: 100%;
+    height: 100vh;
+    opacity: 0.5; /* به جای 50% از 0.5 استفاده کن */
+    object-fit: cover;
+    display: block; /* بهتره برای حذف فاصله زیر تصویر */
+    position: relative;
+    z-index: 1; /* پایین تر */
+  }
+  
+  .all_games_bgimg::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100vh;
+    background: linear-gradient(
+      to top,
+      rgba(15, 23, 42, 1) 0%,
+      rgba(15, 23, 42, 0) 100%
+    );
+    z-index: 2; /* بالاتر از عکس */
+    pointer-events: none; /* کلیک روی گرادیانت مشکلی ایجاد نکند */
+  }
+  
+
+#header{
+    position: absolute;
+    top: 0;
+    width: 100%;
+    z-index: 300; /* بالاتر از عکس */
+
+}
+
+
+.section_title{
+    font-size: 20px;
+    font-weight: normal;
+    text-align: center;
+    color: var(--white-color);
+    margin: 50px 30px;
+}
+
+.all_games_content{
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;
+    max-width: 900px;
+    width: 100%;
+    direction: rtl;
+    z-index: 4; /* بالاتر از عکس */
+    gap: 12px;
+    padding: 10px;
+
+    
+
+}
+.all_games_title{
+    color: var(--white-color);
+    font-weight: bold;
+    font-size: 50px;
+    text-align: center;
+}
+.all_games_description{
+    font-size: 20px;
+    font-weight: normal;
+    color: var(--white-color);
+}
+.all_games_buttons{
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 20px;
+    margin-top: 10px;
+
+}
+.all_games_scroll{
+    width: 250px;
+    height: 50px;
+    border-radius: 10px;
+    background-color: var(--color-primary);
+    border: none;
+    color: var(--background-color);
+    font-weight: normal;    
+    font-size: 18px;
+    animation: light 2s infinite ease-in-out;
+    cursor: pointer;
+
+}
+@keyframes light {
+    0%{
+    box-shadow: 0px 0px  0px var(--primary-color-shadow);
+    }
+
+    50%{
+    box-shadow: 0px 0px  20px var(--primary-color-shadow);
+    }
+    100%{
+    box-shadow: 0px 0px  0px var(--primary-color-shadow);
+    }
+
+
+
+
+
+}
+
+
+.see_all_tournaments{
+    width: 250px;
+    height: 50px;
+    border-radius: 10px;
+    border: 1px solid var(--white-color);
+    background-color: transparent;
+    color: var(--white-color);
+    font-weight: normal;    
+    font-size: 18px;
+    cursor: pointer;
+
+}
+
+
+
+.all_games_container{
+    max-width: 1400px;
+    padding: 0px 25px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 50px;
+    align-items: center;
+    justify-content: center;
+    margin: 0px auto;
+    direction: rtl;
+}
+.all_game_item{
+    object-fit: cover;
+    justify-self: center;
+
+}
+.all_game_item img{
+    width: 100%;
+    height: 100%;
+}
+
+
+

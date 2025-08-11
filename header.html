@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- پالت رنگی و فونت ها -->
+
+     <link rel="stylesheet" href="css/colors.css">
+     <link rel="stylesheet" href="fonts/fonts.css">
+
+    <!-- استایل هدر -->
+
+    <link rel="stylesheet" href="css/header.css">
+
+</head>
+
+<header>
+    <div class="header_container">
+        <div class="right_section">
+            <div class="logo">
+                <a href="index.html">
+                    <img src="img/logo.png" alt="logo">
+                </a>
+            </div>
+            <div class="nav">
+                <ul>
+                    <li><a href="#">تورنمنت‌ها</a></li>
+                    <li><a href="#">لیست برندگان</a></li>
+                    <li><a href="#">بازی ها</a></li>
+                    <li><a href="#">درباره ما</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- style="display: none;" -->
+        <div class="register"  style="display: none;" >
+            <div class="login">
+                <a href="#">ورود</a>
+            </div>
+            <div class="signin">
+                <a href="#">ثبنام</a>
+            </div>
+
+        </div>
+
+        <!-- بخش پایین زمانی نمایش داده میشود که کاربر وارد حساب کاربری خود شده باشه -->
+        <div class="user_islogin_to_register" style="display: none;">
+
+            <div class="wallet_info">
+                <span>12,000,000 تومان</span>
+                <img src="img/icons/wallet.svg" alt="wallet">
+            </div>  
+
+            
+            <div class="user-menu-wrapper">
+                <button class="open_user_links">
+                    <img src="img/icons/user-icon.svg" alt="user-icon" width="20px">
+                </button>
+                                <!-- این بخش بعد از هاور روی دکمه  کاربر نمایش داده مشود -->
+
+                <div class="user_info_links" >
+                    <div class="link_item">
+                        <a href="#">
+                            <img src="img/icons/user-icon.svg" alt="user-icon" width="14px">
+                            <span>پروفایل</span>
+                        </a>
+                    </div>
+                    <div class="link_item">
+                        <a href="#">
+                            <img src="img/icons/wallet.svg" alt="user-icon" width="14px">
+                            <span>کیف پول من</span>
+                        </a>
+                    </div>
+                    <div class="link_item">
+                        <a href="#">
+                            <img src="img/icons/check.svg" alt="user-icon" width="14px">
+                            <span>تیکت</span>
+                        </a>
+                    </div>
+                    <div class="link_item">
+                        <a href="#">
+                            <img src="img/icons/chat.svg" alt="user-icon" width="14px">
+                            <span>گفتگو با دوستان</span>
+                        </a>
+                    </div>
+                    <div class="link_item exit_item">
+                        <a href="#">
+                            <img src="img/icons/exit.svg" alt="user-icon" width="14px">
+                            <span>خروج</span>
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="notification_bar">
+                <button class="notification">
+                    <img src="img/icons/notification.svg" alt="notification">
+                </button>
+                <div class="notification_hover">
+                    <div class="notification_title">
+                        <img src="img/icons/edit.svg" alt="notification">
+                        <span>اعلان ها</span>
+                    </div>
+                    <div class="message_notification">
+                        <div class="notification_username">
+                            <span> علیزاده</span>
+                        </div>
+                        <div class="user_message">
+                            <span>حساب کاربری شما با موفقیت ...</span>
+                        </div>
+                    </div>
+                    <hr>
+                    <div class="sea_all_notifacation">
+                            <a href="#">مشاهده همه اعلان ها</a>
+                    </div>
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+
+    </div>
+
+    <div class="hidden_mobile_section">
+
+        <div class="menu_and_register">
+            <button class="hidden_menu_btn">
+                <img src="img/icons/menu.svg" alt="menu" width="24px" >
+            </button>
+        </div>
+
+       <div class="logo">
+            <img src="img/logo.png" alt="logo" height="40px">
+       </div>
+
+    </div>
+    <!-- بخش  سایدبار و overlay -->
+     
+    <div class="mobile_overlay"></div>
+    <div class="mobile_sidbar">
+
+        <div class="close">
+            <button class="close_btn">
+                <img src="img/icons/close.svg" alt="close" width="18px">
+            </button>
+        </div>
+
+        <!-- این درحالتی است که کاربر وارد حساب کاربری شده باشد -->
+
+        <div class="user_info_islogin" style="display: none;">
+            <div class="edit">
+                <a href="#"><img src="img/icons/edit.svg" alt="edit"></a>
+            </div>
+            <div class="user_name_phone">
+                <div class="user_info_name">User name</div>
+                <div class="user_info_phone">+98 6543216542</div>
+            </div>
+            <div class="user_profile"></div>
+        </div>
+
+
+        <hr>
+
+
+        <!-- این در حالتی است که کابر وارد حساب کاربری نشده باشد -->
+
+        <div class="user_info_isnontlogin" style="display: none;">
+            <div class="please_login_title">
+                <span>خوش آمدیداز این بخش وارد حساب خود بشوید</span>
+            </div>
+            <div class="login_signin_links">
+                <button class="login2_btn">ورود</button>
+                <button class="signin_btn">ثبت نام</button>
+            </div>
+        </div>
+
+
+        <div class="sidebar_links">
+            <div class="sidebar_links_top">
+                <ul>
+                    <li><a href="#">صفحه اصلی</a></li>
+                    <li><a href="#">تورنومنت ها</a></li>
+                    <li><a href="#">بازی ها</a></li>
+                    <li><a href="#">رتبه بندی بازی کن ها</a></li>
+                    <li><a href="#">کیف پول من</a></li>
+                    <li><a href="#">گفتگو</a></li>
+                </ul>    
+            </div>
+
+            <div class="sidebar_links_bottom">
+                <div class="exit_account" style="display: none;">
+                    <a href="#">
+                        <img src="img/icons/exit.svg" alt="exit" width="24px">
+                        <span>خروج</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="sidebar_logo"></div>
+
+    </div>
+</header>
+
+<script src="js/header.js"></script>
+</html>

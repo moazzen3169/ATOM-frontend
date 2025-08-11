@@ -1,0 +1,244 @@
+body{
+    background-color: var(--background-color);
+    margin: 100px auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+
+
+.live_tournament_cart{
+    width: 1350px;
+    height: 220px;
+    background: linear-gradient( to left, var(--background-color) 0%, var(--card-color) 100% );
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 14px 20px 14px 20px;
+    display: grid;
+    grid-template-columns: repeat(2 , 1fr);
+    direction: rtl;
+    margin: 0px 50px;
+
+}
+.live_right{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    gap: 10px;
+}
+.live_game_name{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 30px;
+    gap:20px ;
+    color: var(--color-primary);
+    
+
+}
+.live_game_name :first-child{
+    margin-top: 5px;
+    font-size: 25px;
+    font-weight: bold;
+    
+}
+.live{
+    width: 62px;
+    height: 30px;
+    background-color: transparent;
+    border: 1px solid var(--primary-border);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--color-primary);
+    font-size: 14px;
+    font-weight: bold;
+}
+.live_title{
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--white-color);
+}
+.live_info{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 300;
+    gap: 20px;
+    color: var(--white-color);
+    
+}
+.live_info_date{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+.info_sign_price{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+}
+.live_left{
+    display: flex;
+    flex-direction: column;
+    width: 150px;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 10px;
+    justify-self: self-end;
+}
+.live_award{
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    width: 100%;
+    height: 70px;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--background-color);
+    border-radius: 10px;
+    padding: 5px;
+    color: var(--white-color);
+}
+.award_money{
+    color: var(--yellow-color);
+    font-weight: bold;
+
+}
+.live_join_link{
+    width: 100%;
+    height:45px ;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    background-color: var(--color-primary);
+    cursor: pointer;
+}
+.bottom{
+    grid-column: 1 / 3;
+    display: grid;
+    grid-template-columns:  2fr 1fr 4fr;
+    align-items: center;
+    justify-content: end;
+    direction: rtl;
+
+}
+
+hr{
+    border: 1px solid var(--border-color);
+    width: 100%;
+    height: 1px;
+}
+
+
+
+
+
+
+
+
+
+
+.live-game-mode{
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    color: var(--white-color);
+    gap: 10px;
+}
+
+
+.line-bar-container {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+    direction: ltr;
+  }
+  .progress-line {
+    flex: 1;
+    height: 3px;
+    background-color: var(--background-color); /* خاکستری تیره */
+    border-radius: 2px;
+    position: relative;
+  }
+  .progress-line > .progress-fill {
+    height: 100%;
+    background: var(--color-primary); /* آبی روشن */
+    border-radius: 2px;
+    width: 0;
+    transition: width 0.5s ease;
+  }
+  .team-text {
+    font-size: 16px;
+    color: var(--white-color);
+    white-space: nowrap;
+  } 
+
+
+  @media (max-width:765px) {
+
+    .live_tournament_cart{
+        height: auto;
+        display: grid;
+        gap: 20px;
+        grid-template-columns:  1fr;
+        margin: 10px;
+
+    
+    }
+    .live_right{
+        grid-column: 1 / 3;
+
+    }
+
+    .live_left{
+        grid-column: 1 / 3;
+        width: 100%;
+
+    }
+
+    .bottom{
+        grid-column: 1 / 3;
+        width: 100%;
+        display: grid;
+        grid-template-columns: 1fr 2fr ;
+        row-gap: 10px;
+        align-items: center;
+        justify-content: center;
+
+    }
+
+
+    .line-bar-container{
+        grid-column: 1 / 3;
+
+    }
+
+    .team-text{
+        text-align: end;
+    }
+
+    .live_award{
+        align-items: center;
+
+    }
+    .live_left{
+        display: flex;
+        align-items: center;
+    }
+     
+
+
+  }

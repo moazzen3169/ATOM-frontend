@@ -1,0 +1,88 @@
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/live-tournament.css">
+    <link rel="stylesheet" href="css/colors.css">
+    <link rel="stylesheet" href="fonts/fonts.css">
+</head>
+
+
+<body>
+    
+
+    <div class="live_tournament_cart">
+        <div class="live_right">
+            <div class="live_game_name">
+                <h3>FORTNITE</h3>
+                <div class="live">
+                    <span></span>
+                    <span>زنده</span>
+                </div>
+            </div>
+            <div class="live_title">
+                <span>در این قسمت تیتر تورنومنت قرار میگیرد</span>
+            </div>
+            <div class="live_info">
+                <div class="live_info_date">
+                    <img src="img/icons/tagvim.svg" alt="tagvim">
+                    <span>15 شهریور 1404</span>
+                </div>
+                <div class="info_sign_price">
+                    <img src="img/icons/money.svg" alt="money">
+                    <span>هزینه ورود : </span><span>100تومن</span>
+                </div>
+            </div>
+        </div>
+        <div class="live_left">
+            <div class="live_award">
+                <span>مجموع جوایز</span>
+                <h3 class="award_money">5,000,000 تومان</h3>
+            </div>
+            <button class="live_join_link">
+                <img src="img/icons/plus.svg" alt="+">
+                اضافه شو!
+            </button>
+            
+        </div>
+
+        <div class="bottom">
+        
+
+            <div class="live-game-mode">
+                <img src="img/icons/users.svg" alt="users">
+                <span>بازی تیمی</span>
+            </div>
+            <div class="team-text" id="teamText">تیم 42 / 100</div>
+            <div class="line-bar-container">
+                <div class="progress-line">
+                  <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</body>
+
+
+
+<script>
+    const totalUsers = 100;
+    const registeredUsers = 42;
+  
+    const percent = (registeredUsers / totalUsers) * 100;
+  
+    const progressFill = document.getElementById('progressFill');
+    progressFill.style.width = percent + '%';
+  
+    const teamText = document.getElementById('teamText');
+    teamText.textContent = `تیم ${registeredUsers} / ${totalUsers}`;
+  </script>
+
+
+</html>

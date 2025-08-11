@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>register--login</title>
+    <link rel="stylesheet" href="../css/otp.css">
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+</head>
+
+<div id="vanta-bg"></div>
+
+<body>
+
+
+    <div class="register_bacground">
+
+        <div class="otp_container">
+            <div class="otp_title">
+                <span>کد ارسال شده به شماره 98***656  را وارد کنید</span>
+            </div>
+            <div class="otp_form">
+                <form id="otpForm" action="" method="post"> 
+                    <input type="text" name="otp1" maxlength="1" inputmode="numeric">
+                    <input type="text" name="otp2" maxlength="1" inputmode="numeric">
+                    <input type="text" name="otp3" maxlength="1" inputmode="numeric">
+                    <input type="text" name="otp4" maxlength="1" inputmode="numeric">
+                    <input type="text" name="otp5" maxlength="1" inputmode="numeric">
+                    <input type="submit" value="ورود">
+                </form>
+            </div>
+            <div class="change_number">
+                <a href="#"><div class="blue">ویرایش شماره </div></a>
+            </div>
+        </div>
+
+    </div>
+
+    
+</body>
+
+
+
+
+<!-- اسکریپت‌های مورد نیاز -->
+<script src="../js/register-bg.js"></script>
+<script src="../js/register-bg2.js"></script>
+<script>
+  VANTA.NET({
+    el: "#vanta-bg",
+    mouseControls: true,
+    touchControls: true,
+    gyroControls: false,
+    minHeight: 200.00,
+    minWidth: 200.00,
+    scale: 1.00,
+    scaleMobile: 1.00,
+    color: 0x00F5FF,    // رنگ خطوط (آبی روشن)
+    backgroundColor: 0x0F172A, // رنگ پس‌زمینه (آبی تیره)
+    points: 15.00,
+    maxDistance: 22.00,
+    spacing: 15.00,
+    showDots: true
+  });
+</script>
+
+
+<script>
+    const inputs = document.querySelectorAll('#otpForm input[type="text"]');
+
+    inputs.forEach((input, index) => {
+        input.addEventListener('input', () => {
+            // فقط اعداد رو قبول کنه
+            input.value = input.value.replace(/[^0-9]/g, '');
+
+            // وقتی یک عدد وارد شد بره به فیلد بعدی
+            if (input.value.length === 1 && index < inputs.length - 1) {
+                inputs[index + 1].focus();
+            }
+        });
+
+        // با بک‌اسپیس برگرده به فیلد قبلی
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Backspace' && !input.value && index > 0) {
+                inputs[index - 1].focus();
+            }
+        });
+    });
+
+    // قبل از ارسال فرم، همه رو یکی کن
+    document.getElementById('otpForm').addEventListener('submit', (e) => {
+        e.preventDefault();
+        let otpCode = '';
+        inputs.forEach(input => otpCode += input.value);
+        
+        // ارسال به API
+        console.log("OTP Code:", otpCode); 
+        // fetch('/api/verify', { method: 'POST', body: JSON.stringify({ otp: otpCode }) })
+    });
+</script>
+</html>
