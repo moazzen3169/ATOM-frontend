@@ -9,7 +9,10 @@
     <link rel="stylesheet" href="fonts/fonts.css">
     <link rel="stylesheet" href="css/header.css">
     <link rel="stylesheet" href="css/tournametn-cart.css">
+    <link rel="stylesheet" href="css/game-slider.css">
 
+    <!-- کتابخانه برای اسکرول -->
+    <script src="js/libraries/scrol.js"></script>
     <title> ATOM HOME PAGE</title>
 </head>
 
@@ -19,6 +22,40 @@
 
 
 <body>
+
+    <div class="scroll-container">
+
+
+
+
+        
+<!-- از این قسمت به پایین کد های موبوط به اسلایدر برای اندازه دسکاپ و تبلت رو داریم -->
+
+<div class="game_slider_container">
+    <div class="game_banner">
+        <div class="game_bg"><img src="" alt="banner"></div>
+        <div class="game_banner_content">
+            <div class="game_banner_title"><span></span></div>
+            <div class="game_banner_description"><span></span></div>
+            <div class="game_banner_date_usercount">
+                <span></span>
+                <img src="img/icons/clock.svg" alt="clock">
+                <span>تعداد شرکت کنندگان :</span><span></span>
+                <img src="img/icons/users.svg" alt="users">
+            </div>
+            <div class="game_banner_links">
+                <button class="watch_tourament">مشاهده تورنومنت</button>
+                <a class="all_tournaments_link" href="#"><span>همه تورنومنت ها</span></a>
+            </div>
+        </div>
+    </div>
+    <div class="game_list"></div>
+</div>
+
+<script src="js/slider-items.js"></script>
+
+
+
 
 
     <div class="container">
@@ -334,42 +371,10 @@
 
 
     </div>
-
-
-
-<!-- قسمت نمایش 3 بازیکن برتر  دز صفحه اصلی-->
-
-<!-- <div class="home_leaderboard">
-
-
-</div> -->
-
-    
-<!-- قسمت نمایش 3کارت تورنومنت های پییشرو -->
-
-<!-- 
-<div class="container">
-
-
 </div>
- -->
 
 
-
-
-
-
-
-<!-- اطلاعات کلی سایت -->
-
-
-<!-- <div class="web_info">
-
-</div> -->
-
-
-<!-- این بخش اینجا به پایان میرسد -->
-
+    <script src="js/index.js"></script>
 
 
     
@@ -379,23 +384,4 @@
 <script src="js/footer.js"></script>
 
 
-<script>
-    document.querySelectorAll('.cart_container').forEach(container => {
-      const img = container.querySelector('.cart_image img');
-      if (!img) return; // اگه عکسی نبود رد شو
-    
-      img.addEventListener('load', () => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = img.naturalWidth;
-        canvas.height = img.naturalHeight;
-        ctx.drawImage(img, 0, 0);
-    
-        const pixel = ctx.getImageData(0, 0, 1, 1).data;
-        const topColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
-        container.style.setProperty('--top-color', topColor);
-      });
-    });
-    
-    </script>
 </html>

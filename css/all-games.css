@@ -39,7 +39,7 @@ body{
     position: absolute;
     top: 0;
     width: 100%;
-    z-index: 300; /* بالاتر از عکس */
+    z-index: 60; /* بالاتر از عکس */
 
 }
 
@@ -99,27 +99,42 @@ body{
     color: var(--background-color);
     font-weight: normal;    
     font-size: 18px;
-    animation: light 2s infinite ease-in-out;
     cursor: pointer;
+    animation: light 2s infinite ease-in-out;
+
 
 }
+
 @keyframes light {
-    0%{
-    box-shadow: 0px 0px  0px var(--primary-color-shadow);
+    0% {
+        transform: scale(1);
+    }
+
+    25%{
+        transform: scale(0.9);
+        border-radius: 50px;
     }
 
     50%{
-    box-shadow: 0px 0px  20px var(--primary-color-shadow);
+        transform: scale(1);
+        border-radius: 50px 0px 50px 0px;
+
+    }
+
+    75%{
+        transform: scale(0.9);
+        border-radius:  0px 50px 0px 50px;
+        
+
     }
     100%{
-    box-shadow: 0px 0px  0px var(--primary-color-shadow);
+        transform: scale(1);
+
+
     }
 
-
-
-
-
 }
+
 
 
 .see_all_tournaments{
@@ -157,6 +172,143 @@ body{
     width: 100%;
     height: 100%;
 }
+
+
+.search_bar_coontainer{
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    max-width: 1400px;
+    margin: 0px auto;
+    padding: 0px 25px;
+    direction: rtl;
+    column-gap: 15px;
+
+    
+    
+}
+
+.filters_link{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    column-gap: 15px;
+}
+
+.filters_link a{ 
+    color: var(--white-color);
+    font-size: 14px;
+    font-weight: 300;
+
+}
+
+.search_bar{
+    background-color: var(--border-color);
+    border-radius: 100px;
+    border: none;
+    width: 210px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    direction: ltr;
+    justify-content: center;
+    padding: 2px 10px ;
+
+}
+
+/* استایل کانتینر اصلی جستجو */
+.search-container {
+    display: flex;
+    align-items: center; /* تراز عمودی آیکون و اینپوت در وسط */
+    justify-content: center;
+    
+
+  }
+  
+  /* استایل آیکون ذره‌بین */
+  .search-icon {
+    color: var(--white-color);
+    width: 20px;
+    height: 20px;
+  }
+  
+  /* استایل فیلد ورودی متن */
+  .search-input {
+    flex-grow: 1; 
+    background: transparent; 
+    border: none; 
+    outline: none; 
+    color: var(--white-color);
+    font-size: 16px;
+    text-align: right; 
+    margin-right: 10px; 
+    direction: rtl;
+    font-size: 12px;
+
+
+  }
+  
+  /* استایل متن نمونه (Placeholder) */
+  .search-input::placeholder {
+    color: var(--white-color);
+    opacity: 0.8; 
+    font-weight: 300;
+    font-size: 12px;
+  }
+
+  a{
+    text-decoration: none;
+  }
+
+
+
+
+@media (max-width:930px) {
+
+
+    .all_games_content{
+        max-width: 400px;
+    }
+    
+.all_games_title{
+    font-size: 29px;
+}
+
+.all_games_description {
+    font-size: 16px;
+
+}
+
+}
+
+
+@media (max-width:590px) {
+
+
+    .all_games_content{
+        max-width: 350px;
+    }
+
+
+    .all_games_buttons {
+        display: grid;
+        gap: 20px;
+        grid-template-columns: 1fr;
+    }
+
+    .all_games_scroll {
+        width: auto;
+    }
+
+
+    .see_all_tournaments{
+        width: auto;
+    }
+
+
+    }
+
+
 
 
 
