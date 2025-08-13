@@ -6,6 +6,8 @@
 
 }
 
+
+
 body{
     background-color: var(--background-color);
 }
@@ -26,6 +28,95 @@ body{
     justify-content: center;
   }
   
+
+  /* اینجا مربوط به بار جستجو و فیلتر لینک هستش */
+
+  
+.search_bar_coontainer{
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    max-width: 1400px;
+    margin: 30px auto;
+    padding: 0px 25px;
+    direction: rtl;
+    column-gap: 15px;
+
+    
+    
+}
+
+.filters_link{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    column-gap: 15px;
+}
+
+.filters_link a{ 
+    color: var(--white-color);
+    font-size: 14px;
+    font-weight: 300;
+
+}
+
+.search_bar{
+    background-color: var(--border-color);
+    border-radius: 100px;
+    border: none;
+    width: 210px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    direction: ltr;
+    justify-content: center;
+    padding: 2px 10px ;
+
+}
+
+/* استایل کانتینر اصلی جستجو */
+.search-container {
+    display: flex;
+    align-items: center; /* تراز عمودی آیکون و اینپوت در وسط */
+    justify-content: center;
+    
+
+  }
+  
+  /* استایل آیکون ذره‌بین */
+  .search-icon {
+    color: var(--white-color);
+    width: 20px;
+    height: 20px;
+  }
+  
+  /* استایل فیلد ورودی متن */
+  .search-input {
+    flex-grow: 1; 
+    background: transparent; 
+    border: none; 
+    outline: none; 
+    color: var(--white-color);
+    font-size: 16px;
+    text-align: right; 
+    margin-right: 10px; 
+    direction: rtl;
+    font-size: 12px;
+
+
+  }
+  
+  /* استایل متن نمونه (Placeholder) */
+  .search-input::placeholder {
+    color: var(--white-color);
+    opacity: 0.8; 
+    font-weight: 300;
+    font-size: 12px;
+  }
+
+  a{
+    text-decoration: none;
+  }
 
 
 /* بخش مربوط به لیدر بورد 3نفر برتر  */
@@ -182,6 +273,14 @@ body{
 
 }
 
+.section_showALL{
+    text-decoration: none;
+    color: var(--white-color);
+    font-size: 16px;
+    font-weight: normal;
+    padding: 20px 80px;
+    cursor: pointer;
+}
 .section_showALL a{
     text-decoration: none;
     color: var(--white-color);
@@ -189,6 +288,7 @@ body{
     font-weight: normal;
     padding: 20px 80px;
 }
+
 
 
 

@@ -16,6 +16,11 @@
     <title> ATOM HOME PAGE</title>
 </head>
 
+    <!-- بخش لودیینگ -->
+    <div id="preloader">
+         <div class="loader"></div>
+    </div>
+
 
 <div id="header"></div>
 <script src="js/header.js"></script>
@@ -25,7 +30,22 @@
 
     <div class="scroll-container">
 
+    <!-- قسمت فیلترلینک ها و جستحو -->
 
+    <div class="search_bar_coontainer">
+        <div class="search_bar">
+            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              
+              <input type="search" class="search-input" placeholder="جستجو..">
+        </div>
+        <div class="filters_link">
+            <a href="all-games.html/new">جدید ترین ها</a>
+            <a href="all-games.html/top">برگزیده ها</a>
+        </div>
+    </div>
 
 
         
@@ -51,6 +71,30 @@
     </div>
     <div class="game_list"></div>
 </div>
+
+<!-- این بخش مربوط به ریسپانسیو اسلایدر هستش در حالت موبایل -->
+
+
+<div class="mobile_slider_container">
+    <div class="mobile_slide">
+        <div class="mobile_game_banner"><img src="" alt="mobile banner"></div>
+        <div class="mobile_banner_content">
+            <div class="m_content_top">
+                <div class="mobile_join_link"><button><img src="img/icons/plus.svg" alt="join"></button></div>
+            </div>
+            <div class="m_content_bottom">
+                <div class="mobilr_content_title"> <span></span> </div>
+                <div class="mobile_content_description"> <span></span> </div>
+                <div class="mobile_content_user_count"> <span></span> </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+
 
 <script src="js/slider-items.js"></script>
 
@@ -363,9 +407,7 @@
 
             </div>
 
-                        <div class="section_showALL">
-                <a href="#">مشاهده  همه</a>
-            </div>
+            <div class="section_showALL go-top"> برو بالا</div>
         </section>
 
 

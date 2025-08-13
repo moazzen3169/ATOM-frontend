@@ -13,7 +13,7 @@ var t,e;t=this,e=function(){function t(t,e,i){return Math.max(t,Math.min(e,i))}c
 // بخش کنترل نرمی و سرعت اسکرول صفحه
 
 const lenis = new Lenis({
-    lerp: 0.05, // 🔁 میزان نرمی حرکت: مقدار کمتر = حرکت نرم‌تر (مشابه speed در کد شما)
+    lerp: 0.1, // 🔁 میزان نرمی حرکت: مقدار کمتر = حرکت نرم‌تر (مشابه speed در کد شما)
     smoothWheel: true,      
   });
   

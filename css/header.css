@@ -323,13 +323,12 @@ li{
     width: 100%;
     height: 100%;
     position: absolute;
-    z-index: 500;
+    z-index: 499;
     top: 0;
     right: 0;
     background-color: var(--overlay-color);
 }
 
-/* کد صحیح و اصلاح شده */
 
 .mobile_sidbar {
     display: grid;
@@ -344,11 +343,14 @@ li{
     right: -310px;
     visibility: hidden; 
     transition: right 0.4s ease-in-out, visibility 0.4s;
+    z-index: 500;
 }
 
 .mobile_sidbar.active {
     right: 0px;
     visibility: visible; 
+    overflow: hidden;
+
 }
 
 

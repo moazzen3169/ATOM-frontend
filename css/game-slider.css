@@ -1,5 +1,35 @@
 
 
+/* لودیینگ تمام‌صفحه */
+#preloader {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+  }
+  
+  /* انیمیشن ساده لودینگ */
+  .loader {
+    border: 8px solid #f3f3f3;
+    border-top: 8px solid #3498db;
+    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    animation: spin 1s linear infinite;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+
 
 body{
     padding: 0;
@@ -61,7 +91,10 @@ body{
     z-index: 2;
     pointer-events: none;
     border-radius: 10px; /* اگر می‌خواهید گرادیانت هم گردی داشته باشد */
+    
 }
+
+
 
 .game_banner_content{
     position: absolute;
@@ -148,13 +181,22 @@ body{
     border: none;
     border-radius: 10px;
     column-gap: 20px;
+    transition: 0.1s ease-in-out;
+    cursor: pointer;
 }
+
+.game_list_item:hover{
+    background-color: var(--card-color);
+        
+}
+
 .game_list_img{
     width: 42.36px;
     height: 63.54px;
     object-fit: cover;
 
 }
+
 
 .game_list_img img{
     width: 100%;
@@ -168,12 +210,12 @@ body{
     font-weight: normal;
 }
 
- .active{
+ .list_item_active{
     background-color: var(--card-color);
     position: relative;
 }
 
-.active::after{
+.list_item_active::after{
     content:"";
     width: 100%;
     height: 100%;
@@ -195,3 +237,148 @@ body{
         width: 100%;
     }
 }
+
+.mobile_slider_container{
+    display: none;   
+}
+/* بخش مربوط به ریسپانسیو به حالت موبایل */
+
+
+    @media (max-width:1000px) {
+
+    .game_slider_container{
+        display: none;
+    }   
+    .mobile_slider_container {
+        display: flex;
+        align-items: center;
+        gap: 20px; /* فاصله بین کارت‌ها */
+        overflow-x: auto;
+        overflow-y: hidden;
+        scroll-behavior: smooth;
+        -webkit-overflow-scrolling: touch;
+        padding: 0 10px; /* فاصله از دو طرف */
+        scroll-snap-type: x mandatory; /* اسنپ کردن افقی */
+    }
+    
+    .mobile_slide {
+        flex: 0 0 290px; /* عرض ثابت کارت */
+        height: 377px;
+        scroll-snap-align: center; /* کارت وسط صفحه بیفته */
+        position: relative;
+    }
+
+
+
+    .mobile_slider_container {
+        /* بقیه استایل‌ها مثل قبل */
+        scrollbar-width: none; /* برای فایرفاکس */
+        -ms-overflow-style: none; /* برای IE و Edge قدیمی */
+    }
+    
+    .mobile_slider_container::-webkit-scrollbar {
+        display: none; /* برای کروم، سافاری و بقیه مرورگرهای WebKit */
+    }
+
+
+
+.mobile_game_banner{
+    position: relative;
+    width: 290px;
+    height: 377px;
+}
+
+.mobile_game_banner img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 10px;
+}
+
+.mobile_game_banner::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%; /* تغییر از 100vh به 100% */
+    background: linear-gradient(
+        to top,
+        rgba(15, 23, 42, 0.937) 0%,
+        rgba(15, 23, 42, 0) 120%
+    );
+    z-index: 2;
+    pointer-events: none;
+    border-radius: 10px; /* اگر می‌خواهید گرادیانت هم گردی داشته باشد */
+    
+}
+
+
+.mobile_banner_content{
+    position: absolute;
+    z-index: 2;
+    top: 0%;
+    max-width: 290px;
+    width: 100%;
+    height: 377px;
+    display: grid;
+    direction: rtl;
+    align-items: end;
+}
+
+
+
+.m_content_top{
+    display: flex;
+    align-items: start;
+    justify-content: start;
+    /* height: 70px; */
+    position: absolute;
+    top: 20px;
+    right: 20px;
+
+}
+.m_content_bottom{
+    display: grid;
+    align-items: center;
+    justify-content: end;
+    max-width: 230px;
+    color: var(--white-color);
+    position: absolute;
+    right: 20px;
+    bottom: 10px;
+}
+
+
+.mobile_join_link button {
+    background-color: transparent;
+    border: none;
+    cursor: pointer;
+}
+.mobilr_content_title{
+    font-size: 30px;
+    font-weight: bold;
+}
+.mobile_content_description{
+    font-size: 11px;
+    font-weight: 300;
+}
+.mobile_content_user_count{
+    font-size: 11px;
+    font-weight: 300;
+    margin-top: 10px;
+}
+
+
+
+
+
+
+
+
+
+}
+
+
+
+
