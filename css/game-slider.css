@@ -44,13 +44,13 @@ body{
     max-width: 1400px;
     width: 100%;
     padding: 0px 25px;
-    margin: 50px auto;
+    margin: 10px auto;
     direction: rtl;
 }
 .game_banner{
     max-width: 1053.47px;
     width: 100%;
-    height: 613.14px;
+    height: 580.14px;
     justify-content: start;
     position: relative;
 
@@ -59,7 +59,7 @@ body{
 .game_bg {
     max-width: 1053.47px;
     width: 100%;
-    height: 613.13px;
+    height: 580.13px;
     position: relative; /* اضافه شد */
     border-radius: 10px; /* اگر می‌خواهید کل div گردی داشته باشد */
     overflow: hidden; /* مطمئن شوید گرادیانت از div خارج نشود */
@@ -69,7 +69,7 @@ body{
 .game_bg img {
     max-width: 1053.47px;
     width: 100%;
-    height: 613.13px;
+    height: 580.13px;
     object-fit: cover;
     border: none;
     border-radius: 10px;
@@ -163,7 +163,7 @@ body{
 .game_list{
     max-width: 296.85px;
     width: 100%;
-    height: 620px;
+    height: 580px;
     display: flex;
     flex-direction: column;
     align-items: center;

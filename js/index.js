@@ -61,3 +61,26 @@ document.querySelectorAll('.cart_container').forEach(container => {
     });
   });
   
+
+
+  // بخش مربوط به اسلایدر بازی ها
+document.addEventListener("DOMContentLoaded", function () {
+    const gameSection = document.querySelector(".game_section");
+    const card = document.querySelector(".game_item"); // یک کارت نمونه
+    card.style.width="240";
+    const cardWidth = card.offsetWidth + parseInt(getComputedStyle(card).marginRight); // عرض کارت + فاصله
+
+    document.querySelector(".game_arrowkey.right").addEventListener("click", function () {
+        gameSection.scrollBy({
+            left: cardWidth, // به سمت راست
+            behavior: "smooth"
+        });
+    });
+
+    document.querySelector(".game_arrowkey.left").addEventListener("click", function () {
+        gameSection.scrollBy({
+            left: -cardWidth, // به سمت چپ
+            behavior: "smooth"
+        });
+    });
+});

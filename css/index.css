@@ -37,7 +37,7 @@ body{
     align-items: center;
     justify-content: start;
     max-width: 1400px;
-    margin: 30px auto;
+    margin: 10px auto;
     padding: 0px 25px;
     direction: rtl;
     column-gap: 15px;
@@ -57,6 +57,13 @@ body{
     color: var(--white-color);
     font-size: 14px;
     font-weight: 300;
+    opacity: 50%;
+    transition: 0.2s ease;
+
+}
+
+.filters_link a:hover{
+    opacity: 1;
 
 }
 
@@ -71,6 +78,7 @@ body{
     direction: ltr;
     justify-content: center;
     padding: 2px 10px ;
+    opacity: 50%;
 
 }
 
@@ -286,14 +294,10 @@ body{
     color: var(--white-color);
     font-size: 16px;
     font-weight: normal;
-    padding: 20px 80px;
 }
 
 
-
-
-
-/* .section_showALL:hover{
+.section_showALL:hover{
     border: 1px solid var(--primary-border);
     transition: 0.5s ease-in ;
 
@@ -304,9 +308,7 @@ body{
     transition: 0.5s ease-in ;
 
 
-} */
-
-
+}
 section{
 margin-top: 100px;
 
@@ -315,17 +317,110 @@ margin-top: 100px;
 
 
 
+/* برای قسمت بازی ها */
+
+.game_container{
+    direction: rtl;
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    max-width: 1450px;
+    width: 100%;
+    margin: 50px auto;
+}
+.game_top_section{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    
+
+}
+.game_top_section_title a{
+    font-size: 20px;
+    font-weight: normal;
+    color: var(--white-color);
+
+}
+.game_top_section_arrowkey{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+.game_arrowkey {
+    background-color: transparent;
+    border: none;
+    width: 35px;
+    height: 35px;
+    cursor: pointer;
+}
+
+.game_arrowkey img {
+    width: 100%;
+    height: 100%;
+}
+.right img{
+    transform: rotate(180deg);
+}
+
+.game_section{
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 52px;
+    padding: 0px 20px;
+    height: 390px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 10px; /* فاصله از دو طرف */
+    scroll-snap-type: x mandatory; /* اسنپ کردن افقی */
+
+}
+
+
+.game_section {
+    scrollbar-width: none; 
+    -ms-overflow-style: none; 
+
+}
+.game_section::-webkit-scrollbar {
+    display: none; /* برای کروم، سافاری و بقیه مرورگرهای WebKit */
+}
+
+.game_item{
+    display: grid;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+    height: 281.55px;
+    flex: 0  190px; /* عرض ثابت کارت */
+    height: 377px;
+    scroll-snap-align: center; /* کارت وسط صفحه بیفته */
+    position: relative;
+}
+.game_cover img{
+    border: none;
+    border-radius: 10px;
+    object-fit: cover;
+}
+.game_title{
+    font-size: 20px;
+    font-weight: normal;
+    color: var(--white-color);
+    text-align: center;
+}
+
+
+
+
 
 /*  کد های مربوط به اسکرول بار */
 
-
-  * {
+* {
     scrollbar-width: auto; /* یا 'auto' یا 'none' */
     scrollbar-color: var(--primary-border) var(--background-color); /* thumb و track */
   }
-
-
-
-
-  /*  برا ی قسمت اسکرول نرم تر */
 
