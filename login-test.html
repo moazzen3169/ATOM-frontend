@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8">
+  <title>لیست بازی‌ها</title>
+</head>
+<body>
+
+  <script>
+async function login(username, password) {
+  const response = await fetch("https://atom-game.ir/api/users/auth/admin-login/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username, password }),
+  });
+
+  const tokens = await response.json();
+  localStorage.setItem("access", tokens.access);
+  if (tokens.refresh) {
+    localStorage.setItem("refresh", tokens.refresh);
+  }
+  return tokens;
+}
+  </script>
+</body>
+</html>
