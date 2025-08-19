@@ -32,7 +32,6 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 95%;
     height: 70px;
     border-bottom: 1px solid var(--border-color);
 }
@@ -66,8 +65,7 @@
     height: 24px;
 }
 .contact_list{
-
-    width: 95%;
+    width: 100%;
     gap: 0px;
 
 }
@@ -75,7 +73,6 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    width: 95%;
     height: 70px;
     border-bottom: 1px solid var(--border-color);
     cursor: pointer;
