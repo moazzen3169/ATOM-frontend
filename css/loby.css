@@ -1,0 +1,225 @@
+
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+
+body {
+    background-color: var(--background-color);
+}
+
+
+
+
+
+.loby_container{
+    width: 1400px;
+    padding: 0 25px;
+    display: flex;
+    align-items: start;
+    justify-content: center;
+    gap: 30px;
+    margin: 20px auto;
+    direction: rtl;
+}
+.loby_right{
+    display: flex;
+    flex-direction: column;
+    width: 320px;
+    color: var(--white-color);
+    row-gap: 30px;
+
+    
+}
+.Summary_of_information{
+    width: 100%;
+    background-color: var(--card-color);
+    border: none;
+    border-radius: 10px;
+    padding: 20px;
+    gap: 20px;
+    display: grid;
+}
+.info_title{
+    font-size: 20px;
+    font-weight: normal;
+    
+}
+.start_time{
+    opacity: 80%;
+    font-size: 14px;
+    font-weight: 300;
+}
+.end_time{
+    opacity: 80%;
+    font-size: 14px;
+    font-weight: 300;
+}
+.tournament_mode{
+    opacity: 80%;
+    font-size: 14px;
+    font-weight: 300;
+}
+.admin_info{
+    width: 100%;
+    background-color: var(--card-color);
+    border: none;
+    border-radius: 10px;
+    padding: 20px;
+    gap: 20px;
+    display: grid;
+}
+.admin_info_title{
+    font-size: 20px;
+    font-weight: normal;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 10px;
+}
+.admin_info_title img{
+    width: 22px;
+    height: 22px;
+}
+
+.admin_content_section{
+    display: flex;
+    align-items: center;
+    justify-content: end;
+}
+.admin_content{
+    text-align: start;
+    margin-left: 20px;
+    direction: ltr;
+
+}
+
+.admin_profile{
+    width: 70px;
+    height: 70px;
+    border: none;
+}
+
+.admin_profile img{
+    width: 100%;
+    height: 100%;
+    border-radius: 100px;
+
+}
+
+.admin_name{
+    font-size: 14px;
+    opacity: 80%;
+}
+.admin_nnumber{
+    font-size: 14px;
+    opacity: 80%;
+}
+.admin_icons{
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: start;
+    gap: 20px;
+}
+.info_description{
+    font-size: 12px;
+}
+.support{
+    width: 100%;
+}
+.support_btn{
+    width: 100%;
+    height: 56px;
+    border: none;
+    border-radius: 10px;
+    background-color: var(--yellow-color);
+    font-size: 16px;
+    font-weight: normal;
+    cursor: pointer;
+}
+.laeder_board{
+
+}
+.loby_left{
+    width: 1020px;
+    
+}
+.loby_banner{
+    width: 1020px;
+
+}
+
+.loby_banner img{
+    width: 1020px;
+    border-radius: 10px;
+
+}
+.loby_banner {
+    position: relative;
+    width: 100%;
+    height: auto;
+    overflow: hidden;
+  }
+  
+  .loby_banner .banner img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+  
+  .loby_banner::after {
+    content: "";
+    position: absolute;
+    inset: 0; /* top:0; left:0; right:0; bottom:0; */
+    background: linear-gradient(
+      to top,
+      rgba(15, 23, 42, 0.9),  /* پایین تیره */
+      rgba(15, 23, 42, 0)     /* بالا شفاف */
+    );
+    z-index: 1; /* گرادینت بالای عکس */
+  }
+  
+  .loby_banner .contant {
+    position: absolute;
+    bottom: 20px; /* جای دلخواه */
+    left: 50%;
+    transform: translateX(-50%);
+    color: white;
+    z-index: 2; /* محتوای بالای گرادینت */
+    text-align: center;
+  }
+  
+
+.banner{
+
+}
+.contant{
+    width: 100%;
+    margin: 20px 60px;
+    font-size: 25px;
+    font-weight: normal;
+    display: grid;
+    align-items: start;
+    gap:15px ;
+}
+.countdown{
+    text-align: end;
+
+}
+.award{
+    text-align: end;
+
+}
+.routnament_title{
+    text-align: end;
+
+}
+
+
+
+
+
+
+

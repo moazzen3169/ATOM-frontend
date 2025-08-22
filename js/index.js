@@ -28,26 +28,6 @@ window.onload = function() {
 
 
 
-// برای تایین رنگ سایه آیتم ها
-
-document.querySelectorAll('.cart_container').forEach(container => {
-    const img = container.querySelector('.cart_image img');
-    if (!img) return; // اگه عکسی نبود رد شو
-  
-    img.addEventListener('load', () => {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      canvas.width = img.naturalWidth;
-      canvas.height = img.naturalHeight;
-      ctx.drawImage(img, 0, 0);
-  
-      const pixel = ctx.getImageData(0, 0, 1, 1).data;
-      const topColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
-      container.style.setProperty('--top-color', topColor);
-    });
-  });
-  
-
 
 
 
@@ -84,3 +64,179 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     });
 });
+
+
+
+
+
+// برای نمایش اطالعات 3کاربر برتر سایت
+
+
+
+
+
+async function loadLeaderboard() {
+  const container = document.getElementById('grid-container'); // تغییر اینجا
+  container.innerHTML = ''; // پاک‌سازی قبلی
+
+  try {
+    const response = await fetch('https://atom-game.ir/api/users/top-players-by-rank/');
+    if (!response.ok) throw new Error('خطا در دریافت داده از API');
+
+    const players = await response.json();
+    players.forEach((player, index) => {
+      const div = document.createElement('div');
+      div.className = 'leaderboard_item';
+      div.innerHTML = `
+        <div class="leaeder_profile">
+          <div class="profile_img">
+            <img src="img/profile.jpg" alt="profile">
+          </div>
+          <div class="user_name"><span>${player.username}</span></div>
+          <div class="user_rank"><span>${index + 1}</span></div>
+        </div>
+        <div class="leader_info1 leader_info">
+          <span>تعداد برد :</span> <span>${player.wins}</span>
+        </div>
+        <div class="leader_info2 leader_info">
+          <span>امتیاز :</span> <span>${player.score}</span>
+        </div>
+        <div class="leader_info3 leader_info">
+          <span>مجموع جوایز :</span> <span>${player.total_winnings} تومان</span>
+        </div>
+      `;
+      container.appendChild(div);
+    });
+  } catch (err) {
+    container.innerHTML = `<p>خطا: ${err.message}</p>`;
+  }
+}
+
+loadLeaderboard();
+
+
+
+
+
+
+
+
+// کد  های درخواست برای نمایش تورنومنت ها در صفحه اصلی
+
+
+
+
+
+
+async function loadTournaments() {
+  const container = document.getElementById("grid-container-tournaments");
+  container.innerHTML = "";
+
+  try {
+    const response = await fetch("https://atom-game.ir/api/tournaments/tournaments/");
+    if (!response.ok) throw new Error("خطا در دریافت اطلاعات تورنمنت‌ها");
+
+    let tournaments = await response.json();
+    if (!Array.isArray(tournaments)) {
+      tournaments = tournaments.results || tournaments.data || [tournaments];
+    }
+
+    tournaments.forEach(tournament => {
+      // عکس بنر از game.images یا fallback
+      let banner = "img/banner2.jpg";
+      if (tournament.game?.images?.length) {
+        const hero = tournament.game.images.find(img => img.image_type === "hero_banner");
+        banner = hero ? hero.image : tournament.game.images[0].image;
+      }
+
+      // زمان شروع و تاریخ
+      const start = new Date(tournament.start_date);
+      const timeStr = start.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
+      const dateStr = start.toLocaleDateString("fa-IR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+      // هزینه ورود
+      let price = tournament.is_free ? "رایگان" : (Number(tournament.entry_fee).toLocaleString("fa-IR") + " تومان");
+
+      const div = document.createElement("div");
+      div.className = "cart_container";
+      div.innerHTML = `
+        <!-- بالای کارت -->
+        <div class="cart_top">
+          <div class="cart_image">
+            <img src="${banner}" alt="banner">
+            <div class="cart_countdown_game">
+              <div class="cart_countdown">
+                <img src="img/icons/clock.svg" alt="clock">
+                <span>${timeRemaining(tournament.start_date)}</span>
+              </div>
+              <div class="cart_game_name">
+                <span>${tournament.game?.name || "-"}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- وسط کارت -->
+        <div class="cart_middle">
+          <div class="cart_date_time">
+            <span>${timeStr}</span>
+            <span>${dateStr}</span>
+          </div>
+          <div class="cart_title"><span>${tournament.name}</span></div>
+          <div class="cart_description"><span>${tournament.game?.description || ""}</span></div>
+        </div>
+        <!-- پایین کارت -->
+        <div class="cart_bottom">
+          <button class="cart_join">اضافه شو!</button>
+          <div class="cart_price"><span>${price}</span></div>
+        </div>
+      `;
+      container.appendChild(div);
+      
+      // اینجا event برای دکمه می‌ذاریم
+      const joinBtn = div.querySelector(".cart_join");
+      joinBtn.addEventListener("click", () => {
+        window.location.href = `game-loby.html?id=${tournament.id}`;
+      });
+      
+      container.appendChild(div);
+    });
+  } catch (err) {
+    container.innerHTML = `<p style="color:red">${err.message}</p>`;
+  }
+}
+
+// تابع ساده برای نمایش زمان باقی‌مانده
+function timeRemaining(startDate) {
+  const diff = new Date(startDate) - new Date();
+  if (diff <= 0) return "شروع شده";
+  const hours = Math.floor(diff / (1000*60*60));
+  const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
+  const secs = Math.floor((diff % (1000*60)) / 1000);
+  return `${hours.toString().padStart(2,"0")} : ${mins.toString().padStart(2,"0")} : ${secs.toString().padStart(2,"0")}`;
+}
+
+loadTournaments();
+
+
+
+
+// برای تایین رنگ سایه آیتم ها
+
+document.querySelectorAll('.cart_container').forEach(container => {
+  const img = container.querySelector('.cart_image img');
+  if (!img) return; // اگه عکسی نبود رد شو
+
+  img.addEventListener('load', () => {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = img.naturalWidth;
+    canvas.height = img.naturalHeight;
+    ctx.drawImage(img, 0, 0);
+
+    const pixel = ctx.getImageData(0, 0, 1, 1).data;
+    const topColor = `rgb(${pixel[0]}, ${pixel[1]}, ${pixel[2]})`;
+    container.style.setProperty('--top-color', topColor);
+  });
+});
+
+
