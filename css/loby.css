@@ -41,6 +41,13 @@ body {
     gap: 20px;
     display: grid;
 }
+
+.icon{
+    margin-left: 20px;
+    width: 18px;
+}
+
+
 .info_title{
     font-size: 20px;
     font-weight: normal;
@@ -50,16 +57,25 @@ body {
     opacity: 80%;
     font-size: 14px;
     font-weight: 300;
+    display: flex;
+    align-items: center;
+    justify-content: start;
 }
 .end_time{
     opacity: 80%;
     font-size: 14px;
     font-weight: 300;
+    display: flex;
+    align-items: center;
+    justify-content: start;
 }
 .tournament_mode{
     opacity: 80%;
     font-size: 14px;
     font-weight: 300;
+    display: flex;
+    align-items: center;
+    justify-content: start;
 }
 .admin_info{
     width: 100%;
@@ -109,20 +125,16 @@ body {
 }
 
 .admin_name{
-    font-size: 14px;
+    font-size: 16PX;
+    font-weight: 300;
     opacity: 80%;
 }
 .admin_nnumber{
-    font-size: 14px;
+    font-size: 16PX;
+    font-weight: 300;
     opacity: 80%;
 }
-.admin_icons{
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: start;
-    gap: 20px;
-}
+
 .info_description{
     font-size: 12px;
 }
