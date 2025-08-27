@@ -73,10 +73,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
 
 
-
-
 async function loadLeaderboard() {
-  const container = document.getElementById('grid-container'); // تغییر اینجا
+  const container = document.getElementById('grid-container');
   container.innerHTML = ''; // پاک‌سازی قبلی
 
   try {
@@ -84,31 +82,41 @@ async function loadLeaderboard() {
     if (!response.ok) throw new Error('خطا در دریافت داده از API');
 
     const players = await response.json();
-    players.forEach((player, index) => {
-      const div = document.createElement('div');
-      div.className = 'leaderboard_item';
-      div.innerHTML = `
-        <div class="leaeder_profile">
-          <div class="profile_img">
-            <img src="img/profile.jpg" alt="profile">
+
+    // مرتب‌سازی بر اساس امتیاز (نزولی)
+    const topPlayers = players
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 3); // فقط 3 نفر اول
+
+    if (topPlayers.length > 0) {
+      topPlayers.forEach((player, index) => {
+        const div = document.createElement('div');
+        div.className = 'leaderboard_item';
+        div.innerHTML = `
+          <div class="leaeder_profile">
+            <div class="profile_img">
+              <img src="img/profile.jpg" alt="profile">
+            </div>
+            <div class="user_name"><span>${player.username}</span></div>
+            <div class="user_rank"><span>${index + 1}</span></div>
           </div>
-          <div class="user_name"><span>${player.username}</span></div>
-          <div class="user_rank"><span>${index + 1}</span></div>
-        </div>
-        <div class="leader_info1 leader_info">
-          <span>تعداد برد :</span> <span>${player.wins}</span>
-        </div>
-        <div class="leader_info2 leader_info">
-          <span>امتیاز :</span> <span>${player.score}</span>
-        </div>
-        <div class="leader_info3 leader_info">
-          <span>مجموع جوایز :</span> <span>${player.total_winnings} تومان</span>
-        </div>
-      `;
-      container.appendChild(div);
-    });
+          <div class="leader_info1 leader_info">
+            <span>تعداد برد :</span> <span>${player.wins}</span>
+          </div>
+          <div class="leader_info2 leader_info">
+            <span>امتیاز :</span> <span>${player.score}</span>
+          </div>
+          <div class="leader_info3 leader_info">
+            <span>مجموع جوایز :</span> <span>${player.total_winnings} تومان</span>
+          </div>
+        `;
+        container.appendChild(div);
+      });
+    } else {
+      container.innerHTML = `<p class="eror">هیچ بازیکنی یافت نشد</p>`;
+    }
   } catch (err) {
-    container.innerHTML = `<p>خطا: ${err.message}</p>`;
+    container.innerHTML = `<p class="eror">${err.message}</p>`;
   }
 }
 
@@ -118,13 +126,7 @@ loadLeaderboard();
 
 
 
-
-
-
 // کد  های درخواست برای نمایش تورنومنت ها در صفحه اصلی
-
-
-
 
 
 
@@ -141,8 +143,14 @@ async function loadTournaments() {
       tournaments = tournaments.results || tournaments.data || [tournaments];
     }
 
-    tournaments.forEach(tournament => {
-      // عکس بنر از game.images یا fallback
+    // مرتب‌سازی بر اساس تاریخ شروع (جدیدترین اول)
+    tournaments.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
+
+    // فقط 3 تا از جدیدترین‌ها
+    const latestTournaments = tournaments.slice(0, 3);
+
+    latestTournaments.forEach(tournament => {
+      // عکس بنر
       let banner = "img/banner2.jpg";
       if (tournament.game?.images?.length) {
         const hero = tournament.game.images.find(img => img.image_type === "hero_banner");
@@ -191,31 +199,30 @@ async function loadTournaments() {
         </div>
       `;
       container.appendChild(div);
-      
-      // اینجا event برای دکمه می‌ذاریم
+
+      // رویداد دکمه
       const joinBtn = div.querySelector(".cart_join");
       joinBtn.addEventListener("click", () => {
         window.location.href = `game-loby.html?id=${tournament.id}`;
       });
-      
-      container.appendChild(div);
     });
   } catch (err) {
-    container.innerHTML = `<p style="color:red">${err.message}</p>`;
+    container.innerHTML = `<p class="eror">${err.message}</p>`;
   }
 }
 
-// تابع ساده برای نمایش زمان باقی‌مانده
+// تابع نمایش زمان باقی‌مانده
 function timeRemaining(startDate) {
   const diff = new Date(startDate) - new Date();
   if (diff <= 0) return "شروع شده";
-  const hours = Math.floor(diff / (1000*60*60));
-  const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
-  const secs = Math.floor((diff % (1000*60)) / 1000);
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const mins = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  const secs = Math.floor((diff % (1000 * 60)) / 1000);
   return `${hours.toString().padStart(2,"0")} : ${mins.toString().padStart(2,"0")} : ${secs.toString().padStart(2,"0")}`;
 }
 
 loadTournaments();
+
 
 
 

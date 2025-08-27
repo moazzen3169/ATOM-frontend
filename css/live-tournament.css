@@ -1,24 +1,17 @@
-body{
-    background-color: var(--background-color);
-    margin: 100px auto;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
 
 
 
 .live_tournament_cart{
-    width: 1350px;
+
     height: 220px;
     background: linear-gradient( to left, var(--background-color) 0%, var(--card-color) 100% );
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    padding: 14px 20px 14px 20px;
+    padding: 25px;
     display: grid;
-    grid-template-columns: repeat(2 , 1fr);
     direction: rtl;
-    margin: 0px 50px;
+
+    
 
 }
 .live_right{

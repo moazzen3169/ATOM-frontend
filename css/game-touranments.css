@@ -1,70 +1,168 @@
 
 
-*{
+body{
     padding: 0;
     margin: 0;
     box-sizing: border-box;
-
+    background-color: var(--background-color);
 }
-
-body{
-    overflow-x: hidden;
-
-}
-
-
 .container{
-
-    margin: 0 auto ;
-    display: flex;
-    padding: 0px 25px;
-
+  display: grid;
+  align-items: center;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0px auto  ;
+  
 }
-.head{
-    display: grid;
-    align-items: center;
-    margin: 0 auto ;
-    justify-content: center;
-    position: relative;
 
-}
-.head_image {
+.head {
     position: relative;
+    width: 100%;
+    height: 100vh; /* کل ارتفاع صفحه */
+    overflow: hidden;
+  }
+  
+  /* عکس بک‌گراند */
+  .head_image img {
+    position: fixed; /* فیکس روی صفحه */
+    top: 0;
+    left: 0;
     width: 100%;
     height: 100%;
-    margin: 0px auto;
-    object-fit: cover;
-    
-}
-.head_image img{
-
-}
-
-/* .head_image img::after */
-#header{
+    object-fit: cover; /* عکس کشیده نمیشه، کل صفحه رو پر میکنه */
+    z-index: -1; /* میره پشت همه چیز */
+    opacity: 30%;
+  }
+  
+  /* هدر */
+  #header {
     position: absolute;
     top: 0;
+    left: 0;
     width: 100%;
-    z-index: 60; /* بالاتر از عکس */
-
-}
-.head_image_contant{
-
-}
-.game_name{
-
-}
-.game_description{
-
-}
-.buttons{
-
-}
+    z-index: 10;
+  }
+  
+  /* محتوا در وسط */
+  .head_content {
+    position: relative;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center; /* وسط عمودی */
+    align-items: center;     /* وسط افقی */
+    text-align: center;
+    z-index: 5;
+    color: white;
+  }
+  
+  .game_name {
+    font-size: 60px;
+    line-height: 1;
+    font-weight: bold;
+    display: grid;
+  }
+  
+  .game_description {
+    font-size: 24px;
+    font-weight: 300;
+    max-width: 630px;
+    text-align: justify;
+    text-align: center;
+    direction: rtl;
+    margin-bottom: 30px;
+  }
+  
+  .buttons {
+    display: flex;
+    gap: 30px;
+  }
+  
+  .buttons button {
+    width: 300px;
+    height: 70px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  
 .leaderBoard{
-
+    border: 2px solid var(--white-color) ;
+    background-color: transparent;
+    color: var(--white-color);
 }
 .show_tournaments{
+    border: none;
+    background-color: var(--color-primary);
 
+}
+
+
+
+
+
+.game_tournaments_data {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px,  1fr));
+  align-items: center;
+  justify-content: center;
+  width: 100%;         /* ✔ عرض متناسب با صفحه */
+  max-width: 1400px;   /* ✔ بیشترین عرض روی دسکتاپ */
+  padding: 0 15px;
+  gap: 30px;
+  margin: 0 auto 20px auto;
+}
+
+.data_list{
+  height: 130px;
+  background-color: var(--card-color);
+  border: none;
+  border-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--white-color);
+  font-size: 16px;
+  font-weight: 300;
+}
+
+.data_list :first-child{
+  font-size: 30px;
+  font-weight: bold;
+}
+
+
+
+
+.tournaments_section{
+  width: 100%;
+  background-color: var(--background-color);
+}
+.live_tournaments_container{
+  max-width: 1400px;
+  width: 100%;
+  margin: 0px auto;
+  display: grid;
+  align-items: center;
+  gap: 20px;
+  padding: 0px 25px;
+}
+
+.grid-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(406px, 406px)); /* ریسپانسیو */
+  gap: 66px;
+  max-width: 1400px;
+  width: 100%;
+  margin: 0 auto; /* وسط‌چین کانتینر */
+  direction: rtl;
+  padding: 0px 25px;
+  justify-content: center;
 }
 
 
@@ -73,3 +171,39 @@ body{
 
 
 
+
+.titr{
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  direction: rtl;
+  max-width: 1400px;
+  width: 100%;
+  padding: 25px;
+  gap: 20px;
+  margin: 25px auto;  
+}
+
+.titr h2{
+  color: var(--white-color);
+  text-align: right;
+
+  font-size: 20px;
+}
+
+.dote{
+  width: 10px;
+  height: 10px;
+  border: none;
+  border-radius: 100px;
+  background-color: var(--color-primary);
+}
+
+
+.eror{
+  text-align: center;
+  color: var(--white-color) ;
+  font-weight: 300;
+  font-size: 20px;
+  margin: 0px auto;
+}

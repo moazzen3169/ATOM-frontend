@@ -21,13 +21,19 @@ body{
 
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill , minmax(406px , 406px));
+    grid-template-columns: repeat(auto-fill , minmax(406px , 406));
     gap: 58px;
+    width: 1400px;
     align-items: center;
-    margin: 50px auto;
     justify-content: center;
+    margin: 50px auto;
+
   }
-  
+  .product-section{
+    /* max-width: 1400px; */
+    margin: 50px auto;
+    overflow:hidden ;
+  }
 
   /* اینجا مربوط به بار جستجو و فیلتر لینک هستش */
 
@@ -424,3 +430,14 @@ margin-top: 100px;
     scrollbar-color: var(--primary-border) var(--background-color); /* thumb و track */
   }
 
+
+/* استایل خطا ها */
+
+  .eror{
+    text-align: center;
+    color: var(--white-color) ;
+    font-weight: 300;
+    font-size: 20px;
+    margin: 0px auto;
+    width: 1350px;  
+  }
