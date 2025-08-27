@@ -1,6 +1,14 @@
 
+.grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill , minmax(406px , 406px));
+    gap: 50px;
+    width: 1350px;
+    width: 100%;
+    justify-content: center;
+    margin: 50px auto;
 
-
+  }
 
 
 
@@ -21,7 +29,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, var(--top-color, transparent) 0%, #1E293B 80%);
+    background: linear-gradient(to bottom, #00f7ff7f 0% , #1E293B 80%);
     z-index: 1;
     pointer-events: none;
   }
@@ -151,8 +159,8 @@
 .cart_price{
    width: 50%;
    height: 100%;
-   background-color: var(--yellow-color); 
-   color: var(--white-color);
+   background-color: var(--color-primary); 
+   color: var(--background-color);
    border-radius: 10px 10px 50px 10px;
    position: absolute;
    left: 0%;

@@ -141,8 +141,22 @@ body{
 
 .tournaments_section{
   width: 100%;
+  position: relative;
   background-color: var(--background-color);
+  margin-top: 50px;
+
 }
+
+.tournaments_section::after{
+  content: "";
+  position: absolute;
+  top: -100px;
+  width: 100%;
+  height: 100px;
+  background: linear-gradient( to top, var(--background-color) 0%, #00000000 100%);
+
+}
+
 .live_tournaments_container{
   max-width: 1400px;
   width: 100%;
@@ -155,7 +169,7 @@ body{
 
 .grid-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(406px, 406px)); /* ریسپانسیو */
+  grid-template-columns: repeat(auto-fit, minmax(406px, 1fr)); /* ریسپانسیو */
   gap: 66px;
   max-width: 1400px;
   width: 100%;

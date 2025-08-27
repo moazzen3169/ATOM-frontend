@@ -2,7 +2,6 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: peyda;
 
 }
 
@@ -14,24 +13,20 @@ body{
 
 .container{
     max-width: 1400px;
-    margin: 50px auto;
-    padding:  0px 25px;
-    overflow:hidden ;
+    margin: 20px auto;
 }
 
 .grid-container {
     display: grid;
-    grid-template-columns: repeat(auto-fill , minmax(406px , 406));
-    gap: 58px;
-    width: 1400px;
-    align-items: center;
+    grid-template-columns: repeat(auto-fill , minmax(406px , 406px));
+    gap: 50px;
+    width: 1350px;
+    width: 100%;
     justify-content: center;
     margin: 50px auto;
 
   }
   .product-section{
-    /* max-width: 1400px; */
-    margin: 50px auto;
     overflow:hidden ;
   }
 
