@@ -29,7 +29,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background: linear-gradient(to bottom, #00f7ff7f 0% , #1E293B 80%);
+    background: linear-gradient(135deg, var(--background-color) 0% , #1E293B 80%);
     z-index: 1;
     pointer-events: none;
   }
@@ -75,6 +75,7 @@
     font-weight: normal;
     color: var(--white-color);
     column-gap: 5px;
+    direction: ltr;
 }
 
 .cart_countdown img{
@@ -117,11 +118,18 @@
     font-size: 15px;
     font-weight: bold; 
 }
-.cart_description{
-    color: rgba( 254, 254, 254, 0.5);
+.cart_description {
+    color: var(--white-color);
+    opacity: 40%;
     font-size: 14px;
     font-weight: 300;
+    display: -webkit-box;        /* ضروری برای خط‌ها */
+    -webkit-line-clamp: 3;       /* تعداد خطوط */
+    -webkit-box-orient: vertical;
+    overflow: hidden;            /* متن اضافی مخفی شود */
+    text-overflow: ellipsis;     /* اضافه کردن ... */
 }
+
 .cart_bottom{
     width: 362px;
     height: 50px;
@@ -148,14 +156,34 @@
     text-align: center;
     padding-left: 50px;
     transition: ease-in 0.2s;
+    position: relative;
 
 }
 
 .cart_join:hover{
+    color: var(--color-primary);
     opacity: 1;
-    font-weight: bold;
 
 }
+.cart_join::after {
+    content: "";
+    position: absolute;
+    inset: 0; /* همه اطراف */
+    border: 1px solid var(--color-primary);
+    border-left: 0px;
+    width: 0;                /* شروع از صفر */
+    right: 0;                /* از سمت راست شروع بشه */
+    top: 0;
+    bottom: 0;
+    transition: width 0.4s ease; /* انیمیشن روان */
+    border-radius: 0px 10px 10px 0px ;     /* همون شعاع خود دکمه */
+}
+
+.cart_join:hover::after {
+    width: 100%;  /* وقتی هاور شد تا کل دکمه پر بشه */
+    left: 0;      /* تا سمت چپ برسه */
+}
+
 .cart_price{
    width: 50%;
    height: 100%;

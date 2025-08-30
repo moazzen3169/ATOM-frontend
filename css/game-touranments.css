@@ -149,19 +149,9 @@ body{
 .tournaments_section {
   position: relative; /* برای اینکه ::before و ::after نسبت به همین بخش position بگیرن */
   z-index: 1;
-  padding-bottom: 50px;
+  padding: 50px 0px;
 }
 
-.tournaments_section::before {
-  content: "";
-  position: absolute;
-  top: -100px;
-  left: 0;
-  width: 100%;
-  height: 100px;
-  background: linear-gradient(to top, var(--background-color) 0%, #00000000 100%);
-  z-index: -1; /* تا روی محتوا نیاد */
-}
 
 
 
@@ -228,4 +218,20 @@ body{
   font-weight: 300;
   font-size: 20px;
   margin: 0px auto;
+}
+
+
+
+@media (max-width:900px) {
+  .buttons {
+    flex-direction: column;
+    width: 90%;
+  }
+
+  .buttons button {
+    width: 100%;
+    height: 40px;
+    font-size: 14px;
+  }
+
 }

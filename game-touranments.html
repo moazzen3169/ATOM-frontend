@@ -10,327 +10,78 @@
     <link rel="stylesheet" href="fonts/fonts.css">
     <link rel="stylesheet" href="css/live-tournament.css">
     <link rel="stylesheet" href="css/tournametn-cart.css">
-    <!-- <link rel="stylesheet" href="css/index.css"> -->
-
-    
 </head>
 <body>
-    
 
-    
-    <div class="head">
-        <!-- عکس -->
-        <div class="head_image">
-          <img src="img/banner9.jpg" alt="hero_banner" id="hero_banner">
-        </div>
-      
-        <!-- هدر -->
-        <div id="header">
-          <script src="js/header.js"></script>
-        </div>
-      
-        <!-- متن و دکمه‌ها -->
-        <div class="head_content">
-            <div class="game_name">
-                <span>FORTNITE </span>
-                <span>TOURNAMENTS</span>
-            </div>
-            <div class="game_description">
-                <span>
-                  با برترین بازیکنان جهان رقابت کن در نبردهایی نفس‌گیر با جوایز عظیم و سرنوشت‌ساز!
-                </span>
-            </div>
-            <div class="buttons">
-                <button class="leaderBoard">
-                  <img src="img/icons/forward.svg" alt="forward">
-                  <span>سایر بازی ها</span>
-                </button>
-                <button class="show_tournaments">
-                  <img src="img/icons/cup.svg" alt="cup">
-                  <span>  تورنومنت ها</span>
-                </button>
-            </div>
-        </div>
+<div class="head">
+    <!-- عکس -->
+    <div class="head_image">
+        <img src="" alt="hero_banner" id="hero_banner">
     </div>
 
-    <!-- نمایش داده های مربوط به تورنومنت های مخصوص این بازی -->
-
-    <div class="game_tournaments_data">
-
-        <div class="data_list tournamenys_number" >
-            <span>25</span>
-            <span>نورنومنت برگزار شده</span>
-        </div>
-
-        <div class="data_list active_users" >
-            <span>12K</span>
-            <span>کاربر فعال</span>
-        </div>
-
-        <div class="data_list active_tournaments" >
-            <span>2</span>
-            <span>تورنومنت فعال</span>
-        </div>
-
-        <div class="data_list total_prize" >
-            <span>15M</span>
-            <span>مجموع جوایز</span>
-        </div>
+    <!-- هدر -->
+    <div id="header">
+      <script src="js/header.js"></script>
     </div>
-    <!--  -->
-    
 
-    <div class="tournaments_section">
-        <div class="tournament_filter"></div>
-        
-        <!-- کارت نمایش تورنومنت های فعال برای عضو گیری -->
-        <div class="titr">
-          <div class="dote"></div>
-          <h2>تورنومنت های فعال</h2>
+    <!-- متن و دکمه‌ها -->
+    <div class="head_content">
+        <div class="game_name" id="game_name">
+            <span>GAME</span>
+            <span>TOURNAMENTS</span>
         </div>
-      
-
-
-        <div class="live_tournaments_container">
-        <div class="live_tournament_cart">
-          <div class="live_right">
-              <div class="live_game_name">
-                  <h3>FORTNITE</h3>
-                  <div class="live">
-                      <span></span>
-                      <span>زنده</span>
-                  </div>
-              </div>
-              <div class="live_title">
-                  <span>در این قسمت تیتر تورنومنت قرار میگیرد</span>
-              </div>
-              <div class="live_info">
-                  <div class="live_info_date">
-                      <img src="img/icons/tagvim.svg" alt="tagvim">
-                      <span>15 شهریور 1404</span>
-                  </div>
-                  <div class="info_sign_price">
-                      <img src="img/icons/money.svg" alt="money">
-                      <span>هزینه ورود : </span><span>100تومن</span>
-                  </div>
-              </div>
-          </div>
-          <div class="live_left">
-              <div class="live_award">
-                  <span>مجموع جوایز</span>
-                  <h3 class="award_money">5,000,000 تومان</h3>
-              </div>
-              <button class="live_join_link">
-                  <img src="img/icons/plus.svg" alt="+">
-                  اضافه شو!
-              </button>
-              
-          </div>
-  
-          <div class="bottom">
-          
-  
-              <div class="live-game-mode">
-                  <img src="img/icons/users.svg" alt="users">
-                  <span>بازی تیمی</span>
-              </div>
-              <div class="team-text" id="teamText">تیم 42 / 100</div>
-              <div class="line-bar-container">
-                  <div class="progress-line">
-                    <div class="progress-fill" id="progressFill"></div>
-                  </div>
-              </div>
-          </div>
-      </div>
-
-
-      <div class="live_tournament_cart">
-        <div class="live_right">
-            <div class="live_game_name">
-                <h3>FORTNITE</h3>
-                <div class="live">
-                    <span></span>
-                    <span>زنده</span>
-                </div>
-            </div>
-            <div class="live_title">
-                <span>در این قسمت تیتر تورنومنت قرار میگیرد</span>
-            </div>
-            <div class="live_info">
-                <div class="live_info_date">
-                    <img src="img/icons/tagvim.svg" alt="tagvim">
-                    <span>15 شهریور 1404</span>
-                </div>
-                <div class="info_sign_price">
-                    <img src="img/icons/money.svg" alt="money">
-                    <span>هزینه ورود : </span><span>100تومن</span>
-                </div>
-            </div>
+        <div class="game_description" id="game_description">
+            <span>توضیحات بازی...</span>
         </div>
-        <div class="live_left">
-            <div class="live_award">
-                <span>مجموع جوایز</span>
-                <h3 class="award_money">5,000,000 تومان</h3>
-            </div>
-            <button class="live_join_link">
-                <img src="img/icons/plus.svg" alt="+">
-                اضافه شو!
+        <div class="buttons">
+            <button class="leaderBoard">
+                <img src="img/icons/forward.svg" alt="forward">
+                <span>سایر بازی ها</span>
             </button>
-            
-        </div>
-
-        <div class="bottom">
-        
-
-            <div class="live-game-mode">
-                <img src="img/icons/users.svg" alt="users">
-                <span>بازی تیمی</span>
-            </div>
-            <div class="team-text" id="teamText">تیم 42 / 100</div>
-            <div class="line-bar-container">
-                <div class="progress-line">
-                  <div class="progress-fill" id="progressFill"></div>
-                </div>
-            </div>
+            <button class="show_tournaments">
+                <img src="img/icons/cup.svg" alt="cup">
+                <span>تورنامنت ها</span>
+            </button>
         </div>
     </div>
-  </div>
+</div>
 
-        
-        <div class="titr">
-          <div class="dote"></div>
-          <h2>تورنومنت هایی که در آینده برگزار میشوند</h2>
-        </div>
+<!-- بخش تورنومنت‌ها -->
+<div class="tournaments_section">
 
-            <!-- کارت تورنومنت ها اینجا نمایش داده میشه -->
-            <div class="grid-container" id="grid-container-tournaments"></div>
-
-
-
-
+    <!-- 🟢 لایو -->
+    <div class="titr" id="live">
+        <div class="dote"></div>
+        <h2>تورنومنت‌های فعال</h2>
     </div>
+    <div class="live_tournaments_container" id="live_tournaments"></div>
 
+    <!-- 🟢 بزودی -->
+    <div class="titr" id="upcoming">
+        <div class="dote"></div>
+        <h2>تورنومنت‌هایی که بزودی برگزار می‌شوند</h2>
+    </div>
+    <div class="grid-container" id="upcoming_tournaments"></div>
 
-      
+    <!-- 🟢 در حال برگزاری -->
+    <div class="titr" id="running">
+        <div class="dote"></div>
+        <h2>تورنومنت‌های در حال برگزاری</h2>
+    </div>
+    <div class="grid-container" id="running_tournaments"></div>
 
+    <!-- 🟢 تمام شده -->
+    <div class="titr" id="finished">
+        <div class="dote"></div>
+        <h2>تورنومنت‌های تمام شده</h2>
+    </div>
+    <div class="grid-container" id="finished_tournaments"></div>
 
-<script>
-    const totalUsers = 100;
-    const registeredUsers = 42;
-  
-    const percent = (registeredUsers / totalUsers) * 100;
-  
-    const progressFill = document.getElementById('progressFill');
-    progressFill.style.width = percent + '%';
-  
-    const teamText = document.getElementById('teamText');
-    teamText.textContent = `تیم ${registeredUsers} / ${totalUsers}`;
-
-
-
-    async function loadTournaments() {
-  const container = document.getElementById("grid-container-tournaments");
-  container.innerHTML = "";
-
-  try {
-    const response = await fetch("https://atom-game.ir/api/tournaments/tournaments/");
-    if (!response.ok) throw new Error("خطا در دریافت اطلاعات تورنمنت‌ها");
-
-    let tournaments = await response.json();
-    if (!Array.isArray(tournaments)) {
-      tournaments = tournaments.results || tournaments.data || [tournaments];
-    }
-
-    tournaments.forEach(tournament => {
-      // عکس بنر از game.images یا fallback
-      let banner = "img/banner2.jpg";
-      if (tournament.game?.images?.length) {
-        const hero = tournament.game.images.find(img => img.image_type === "hero_banner");
-        banner = hero ? hero.image : tournament.game.images[0].image;
-      }
-
-      // زمان شروع و تاریخ
-      const start = new Date(tournament.start_date);
-      const timeStr = start.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
-      const dateStr = start.toLocaleDateString("fa-IR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
-
-      // هزینه ورود
-      let price = tournament.is_free ? "رایگان" : (Number(tournament.entry_fee).toLocaleString("fa-IR") + " تومان");
-
-      const div = document.createElement("div");
-      div.className = "cart_container";
-      div.innerHTML = `
-        <!-- بالای کارت -->
-        <div class="cart_top">
-          <div class="cart_image">
-            <img src="${banner}" alt="banner">
-            <div class="cart_countdown_game">
-              <div class="cart_countdown">
-                <img src="img/icons/clock.svg" alt="clock">
-                <span>${timeRemaining(tournament.start_date)}</span>
-              </div>
-              <div class="cart_game_name">
-                <span>${tournament.game?.name || "-"}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- وسط کارت -->
-        <div class="cart_middle">
-          <div class="cart_date_time">
-            <span>${timeStr}</span>
-            <span>${dateStr}</span>
-          </div>
-          <div class="cart_title"><span>${tournament.name}</span></div>
-          <div class="cart_description"><span>${tournament.game?.description || ""}</span></div>
-        </div>
-        <!-- پایین کارت -->
-        <div class="cart_bottom">
-          <button class="cart_join">اضافه شو!</button>
-          <div class="cart_price"><span>${price}</span></div>
-        </div>
-      `;
-      container.appendChild(div);
-      
-      // اینجا event برای دکمه می‌ذاریم
-      const joinBtn = div.querySelector(".cart_join");
-      joinBtn.addEventListener("click", () => {
-        window.location.href = `game-loby.html?id=${tournament.id}`;
-      });
-      
-      container.appendChild(div);
-    });
-  } catch (err) {
-    container.innerHTML = `<p class="eror">${err.message}</p>`;
-  }
-}
-
-// تابع ساده برای نمایش زمان باقی‌مانده
-function timeRemaining(startDate) {
-  const diff = new Date(startDate) - new Date();
-  if (diff <= 0) return "شروع شده";
-  const hours = Math.floor(diff / (1000*60*60));
-  const mins = Math.floor((diff % (1000*60*60)) / (1000*60));
-  const secs = Math.floor((diff % (1000*60)) / 1000);
-  return `${hours.toString().padStart(2,"0")} : ${mins.toString().padStart(2,"0")} : ${secs.toString().padStart(2,"0")}`;
-}
-
-loadTournaments();
-
-
-
-
-
-
-
-
-
-
-
-  </script>
-
-</body>
+</div>
 
 <div id="footer"></div>
 <script src="js/footer.js"></script>
+<script src="js/game-touranments.js"></script>
+
+</body>
 </html>
