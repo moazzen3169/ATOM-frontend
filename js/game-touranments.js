@@ -2,35 +2,38 @@
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get("id");
 
-// ---------------------- 1. گرفتن اطلاعات بازی ----------------------
-async function loadGameData() {
+// ---------------------- 1. گرفتن اطلاعات تورنمنت ----------------------
+async function loadTournamentData() {
     try {
+        // API جدید که خودش آیدی را می‌گیرد
         const res = await fetch(`https://atom-game.ir/api/tournaments/games/${gameId}/`);
-        if (!res.ok) throw new Error("خطا در دریافت اطلاعات بازی");
+        if (!res.ok) throw new Error("خطا در دریافت اطلاعات تورنمنت");
 
-        let game = await res.json();
-        if (Array.isArray(game)) game = game[0];
+        const tournament = await res.json();
 
+        // نمایش بنر (اگر تصاویر وجود داشته باشد)
         let banner = "img/banner9.jpg";
-        if (game.images?.length) {
-            const hero = game.images.find(img => img.image_type === "hero_banner");
-            banner = hero ? hero.image : game.images[0].image;
+        if (tournament.images?.length) {
+            const hero = tournament.images.find(img => img.image_type === "hero_banner");
+            banner = hero ? hero.image : tournament.images[0].image;
         }
         document.getElementById("hero_banner").src = banner;
 
-        // نمایش اسم بازی در span اول و حفظ TOURNAMENTS
+        // نمایش اسم تورنمنت و حفظ TOURNAMENTS
         const nameSpans = document.querySelectorAll("#game_name span");
-        if(nameSpans[0]) nameSpans[0].textContent = game.name;
+        if(nameSpans[0]) nameSpans[0].textContent = tournament.name;
         if(nameSpans[1]) nameSpans[1].textContent = "TOURNAMENTS";
 
-        // نمایش توضیحات بازی در بخش پایین
+        // نمایش توضیحات تورنمنت
         const descSpan = document.querySelector("#game_description span");
-        if(descSpan) descSpan.textContent = game.description || "توضیحی موجود نیست";
+        if(descSpan) descSpan.textContent = tournament.description || "توضیحی موجود نیست";
 
     } catch (err) {
         console.error(err);
     }
 }
+
+loadTournamentData();
 
 
 // ---------------------- 2. گرفتن تورنومنت‌ها ----------------------
@@ -272,6 +275,5 @@ function startCountdowns() {
 }
 
 // ---------------------- 7. اجرای اولیه ----------------------
-loadGameData();
+loadTournamentData(); // اسم درستش اینه
 loadTournaments();
-

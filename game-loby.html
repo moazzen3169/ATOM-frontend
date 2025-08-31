@@ -1,106 +1,151 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>loby</title>
+    <link rel="stylesheet" href="css/loby.css">
+    <link rel="stylesheet" href="css/colors.css">
+    <link rel="stylesheet" href="fonts/fonts.css">
 </head>
-
-
-<link rel="stylesheet" href="css/loby.css">
-<link rel="stylesheet" href="css/colors.css">
-<link rel="stylesheet" href="fonts/fonts.css">
-
-
+<body>
 
 <div id="header"></div>
 <script src="js/header.js"></script>
 
-
-
-<body>
-    
-
-
-
-    <div class="loby_container">
-        <!-- قسمت اطلعات لابی -->
-        <div class="loby_right">
-            <div class="Summary_of_information">
-                <div class="info_title">
-                    <span>خلاصه اطلاعات</span>
-                </div>
-                <div class="start_time">
-                    <img src="img/icons/clock.svg" alt="clock" class="icon">
-                    <span>زمان شروع :</span>
-                    <span>امروز، ساعت ۸:۰۰ شب</span>
-                </div>
-                <div class="end_time">
-                    <img src="img/icons/clock.svg" alt="clock" class="icon">
-                    <span>زمان پایان :</span>
-                    <span> امروز، ساعت 12:۰۰ شب</span>
-                </div>
-                <div class="tournament_mode">
-                    <img src="img/icons/consol.svg" alt="consol" class="icon">
-                    <span>حالت :</span>
-                    <span>Battle Royale</span>
-                </div>
+<div class="loby_container">
+    <!-- سمت راست: اطلاعات و ادمین -->
+    <div class="loby_right">
+        <div class="Summary_of_information">
+            <div class="info_title"><span>خلاصه اطلاعات</span></div>
+            <div class="start_time">
+                <img src="img/icons/clock.svg" alt="clock" class="icon">
+                <span>زمان شروع  گیری :</span>
+                <span id="signup_time"></span>
             </div>
-            <!-- بخش اطلاعات با ادمین یا منیجر تورنومنت -->
-            <div class="admin_info">
-                <div class="admin_info_title">
-                    <span>ادمین مسابقه</span>
-                </div>
-                <div class="admin_content_section">
-                    <div class="admin_content">
-                        <div class="admin_name">
-                            <span>admin name</span>
-                        </div>
-                        <div class="admin_nnumber">
-                            <span>+98 99656555</span>
-                        </div>
-
-                    </div>
-                    <div class="admin_profile">
-                        <img src="img/profile.jpg" alt="profile">
-                    </div>
-                </div>
-                <hr>
-                <div class="info_description">
-                    <span>برای هرگونه سؤال یا مشکل مربوط به تورنومنت با من تماس بگیرید.</span>
-                </div>
+            <div class="tournament_time">
+                <img src="img/icons/clock.svg" alt="clock" class="icon">
+                <span>زمان شروع تورنومنت :</span>
+                <span id="start_time"></span>
             </div>
-            <div class="support">
-                <button class="support_btn"> پشتیبانی </button>
+            <div class="end_time">
+                <img src="img/icons/clock.svg" alt="clock" class="icon">
+                <span>زمان پایان :</span>
+                <span id="end_time"></span>
             </div>
-            <div class="laeder_board"></div>
-
+            <div class="tournament_mode">
+                <img src="img/icons/consol.svg" alt="consol" class="icon">
+                <span>حالت :</span>
+                <span id="tournament_mode"></span>
+            </div>
         </div>
 
-        <div class="loby_left">
-            <div class="loby_banner">
-                <div class="banner">
-                    <img src="img/banner5.jpg" alt="banner">
+        <!-- بخش ادمین -->
+        <div class="admin_info">
+            <div class="admin_info_title"><span>ادمین مسابقه</span></div>
+            <div class="admin_content_section">
+                <div class="admin_content">
+                    <div class="admin_name"><span>Admin Name</span></div>
+                    <div class="admin_nnumber"><span>+98 99656555</span></div>
                 </div>
-                <div class="contant">
-                    <div class="countdown">
-                        <span>13 : 56 : 15</span>
-                    </div>
-                    <div class="award">
-                        <span>مجموع جوایز  :</span>
-                        <span>15,000,000</span>
-                    </div>
-                    <div class="routnament_title">
-                        <span>CSGO TOURNOMENT </span>
-                    </div>
+                <div class="admin_profile">
+                    <img src="img/profile.jpg" alt="profile">
                 </div>
+            </div>
+            <hr>
+            <div class="info_description">
+                <span>برای هرگونه سؤال یا مشکل مربوط به تورنومنت با من تماس بگیرید.</span>
             </div>
         </div>
     </div>
 
+    <!-- سمت چپ: بنر و اطلاعات اصلی -->
+    <div class="loby_left">
+        <div class="loby_banner">
+            <div class="banner">
+                <img id="tournament_banner" src="" alt="banner">
+            </div>
+            <div class="contant">
+                <div class="countdown" id="countdown_section">
+                    <span id="countdown_timer">00 : 00 : 00</span>
+                </div>
+                <div class="award">
+                    <span>مجموع جوایز :</span>
+                    <span id="prize_pool"></span>
+                </div>
+                <div class="routnament_title">
+                    <span id="tournament_title"></span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
+<script>
+async function loadTournament() {
+    // گرفتن آیدی از URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const tournamentId = urlParams.get('id');
 
+    if (!tournamentId) return console.error("Tournament ID missing in URL");
 
+    // دریافت اطلاعات از API
+    const response = await fetch('https://atom-game.ir/api/tournaments/tournaments/${gameId}/`');
+    const tournaments = await response.json();
+
+    const tournament = tournaments.find(t => t.id == tournamentId);
+    if (!tournament) return console.error("Tournament not found");
+
+    // تبدیل تاریخ‌ها
+    const now = new Date();
+    const startDate = new Date(tournament.start_date);
+    const endDate = new Date(tournament.end_date || startDate); // اگر پایان نداشت همان شروع
+
+    // بخش خلاصه اطلاعات
+    const signupTimeEl = document.getElementById('signup_time');
+    signupTimeEl.textContent = (now < startDate) ? startDate.toLocaleString() : "عضو گیری آغاز شد";
+
+    document.getElementById('start_time').textContent = startDate.toLocaleString();
+    document.getElementById('end_time').textContent = endDate.toLocaleString();
+
+    // حالت تورنومنت
+    let modeText = tournament.type;
+    if (tournament.type === "team") {
+        modeText += ` (هر تیم ${tournament.team_size} نفر)`;
+    }
+    document.getElementById('tournament_mode').textContent = modeText;
+
+    // سمت چپ: بنر
+    document.getElementById('tournament_banner').src = tournament.image.image;
+
+    // مجموع جوایز و عنوان
+    document.getElementById('prize_pool').textContent = tournament.prize_pool || "0";
+    document.getElementById('tournament_title').textContent = tournament.name;
+
+    // شمارش معکوس (اگر زمان شروع گذشته و هنوز تورنمنت فعال است)
+    const countdownSection = document.getElementById('countdown_section');
+    if (now >= startDate) {
+        function updateCountdown() {
+            const diff = startDate - new Date();
+            if (diff <= 0) {
+                countdownSection.style.display = 'none';
+                clearInterval(timer);
+                return;
+            }
+            const hours = String(Math.floor(diff / 1000 / 3600)).padStart(2,'0');
+            const minutes = String(Math.floor(diff / 1000 % 3600 / 60)).padStart(2,'0');
+            const seconds = String(Math.floor(diff / 1000 % 60)).padStart(2,'0');
+            document.getElementById('countdown_timer').textContent = `${hours} : ${minutes} : ${seconds}`;
+        }
+        const timer = setInterval(updateCountdown, 1000);
+        updateCountdown();
+    } else {
+        countdownSection.style.display = 'none';
+    }
+}
+
+loadTournament();
+</script>
 
 </body>
 </html>
