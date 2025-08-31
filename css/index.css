@@ -475,3 +475,64 @@ margin-top: 100px;
     100% { transform: rotate(360deg); }
   }
   
+
+
+  /* استایل برای پاپ آپ */
+
+
+
+
+  /* کل پاپ‌آپ (پوشش پس‌زمینه) */
+.result-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7); /* نیمه شفاف */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+  }
+  
+  /* محتوای پاپ‌آپ */
+  .result-popup .popup-content {
+    background-color: #fff;
+    padding: 25px 30px;
+    border-radius: 10px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+    position: relative;
+    text-align: center;
+  }
+  
+  /* دکمه بستن */
+  .result-popup .close-popup {
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    font-size: 24px;
+    font-weight: bold;
+    color: #333;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  
+  .result-popup .close-popup:hover {
+    color: #ff0000;
+  }
+  
+  /* تیتر پاپ‌آپ */
+  .result-popup h2 {
+    margin-bottom: 15px;
+    font-size: 22px;
+  }
+  
+  /* متن محتوا */
+  .result-popup p {
+    font-size: 16px;
+    line-height: 1.5;
+  }
+  

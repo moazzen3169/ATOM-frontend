@@ -1,5 +1,4 @@
-// tournaments.js
-
+// ---------------------- تابع اصلی بارگذاری تورنمنت‌ها ----------------------
 async function loadTournaments(limit = null) {
   const container = document.getElementById("grid-container-tournaments");
   container.innerHTML = "";
@@ -16,32 +15,31 @@ async function loadTournaments(limit = null) {
     // مرتب‌سازی بر اساس تاریخ شروع (جدیدترین اول)
     tournaments.sort((a, b) => new Date(b.start_date) - new Date(a.start_date));
 
-    // اگه limit داده بشه → فقط به همون تعداد نمایش بده
-    if (limit) {
-      tournaments = tournaments.slice(0, limit);
-    }
+    // اعمال محدودیت تعداد نمایش
+    if (limit) tournaments = tournaments.slice(0, limit);
 
-    // ساخت کارت‌ها
     tournaments.forEach(tournament => {
-      // عکس بنر
+      // انتخاب بنر
       let banner = "img/banner2.jpg";
-      if (tournament.game?.images?.length) {
+      if (tournament.image?.image) {
+        banner = tournament.image.image;
+      } else if (Array.isArray(tournament.game?.images) && tournament.game.images.length > 0) {
         const hero = tournament.game.images.find(img => img.image_type === "hero_banner");
-        banner = hero ? hero.image : tournament.game.images[0].image;
+        banner = hero?.image || tournament.game.images[0].image;
       }
 
-      // زمان شروع و تاریخ
       const start = new Date(tournament.start_date);
+      const end = new Date(tournament.end_date);
+      const now = new Date();
+
       const timeStr = start.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
       const dateStr = start.toLocaleDateString("fa-IR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+      const price = tournament.is_free ? "رایگان" : (Number(tournament.entry_fee).toLocaleString("fa-IR") + " تومان");
 
-      // هزینه ورود
-      let price = tournament.is_free ? "رایگان" : (Number(tournament.entry_fee).toLocaleString("fa-IR") + " تومان");
-
+      // ساخت کارت تورنمنت
       const div = document.createElement("div");
       div.className = "cart_container";
       div.innerHTML = `
-        <!-- بالای کارت -->
         <div class="cart_top">
           <div class="cart_image">
             <img src="${banner}" alt="banner">
@@ -56,7 +54,6 @@ async function loadTournaments(limit = null) {
             </div>
           </div>
         </div>
-        <!-- وسط کارت -->
         <div class="cart_middle">
           <div class="cart_date_time">
             <span>${timeStr}</span>
@@ -65,19 +62,26 @@ async function loadTournaments(limit = null) {
           <div class="cart_title"><span>${tournament.name}</span></div>
           <div class="cart_description"><span>${tournament.description || ""}</span></div>
         </div>
-        <!-- پایین کارت -->
         <div class="cart_bottom">
-          <button class="cart_join">اضافه شو!</button>
+          <button class="cart_join"></button>
           <div class="cart_price"><span>${price}</span></div>
         </div>
       `;
       container.appendChild(div);
 
-      // رویداد دکمه
+      // تعیین متن و عملکرد دکمه
       const joinBtn = div.querySelector(".cart_join");
-      joinBtn.addEventListener("click", () => {
-        window.location.href = `game-loby.html?id=${tournament.id}`;
-      });
+      if (now >= end) {
+        joinBtn.textContent = "دیدن نتایج";
+        joinBtn.addEventListener("click", () => {
+          showResultPopup(tournament);
+        });
+      } else {
+        joinBtn.textContent = "اضافه شو!";
+        joinBtn.addEventListener("click", () => {
+          window.location.href = `game-loby.html?id=${tournament.id}`;
+        });
+      }
     });
 
   } catch (err) {
@@ -85,20 +89,39 @@ async function loadTournaments(limit = null) {
   }
 }
 
-// تابع نمایش زمان باقی‌مانده
+// ---------------------- تابع نمایش پاپ‌آپ نتایج ----------------------
+function showResultPopup(tournament) {
+  const popup = document.createElement("div");
+  popup.className = "result-popup";
+  popup.innerHTML = `
+    <div class="popup-content">
+      <span class="close-popup">&times;</span>
+      <h2>نتایج ${tournament.name}</h2>
+      <p>اینجا می‌تونید نتایج تورنمنت رو نمایش بدید.</p>
+      <!-- اطلاعات بیشتر مثل جدول رتبه‌بندی یا جوایز -->
+    </div>
+  `;
+  document.body.appendChild(popup);
+
+  // بستن پاپ‌آپ
+  popup.querySelector(".close-popup").addEventListener("click", () => {
+    document.body.removeChild(popup);
+  });
+}
+
+// ---------------------- تابع نمایش زمان باقی‌مانده ----------------------
 function timeRemaining(startCountdown, startDate, endDate) {
   const now = new Date();
-
   const countdownTime = new Date(startCountdown);
   const startTime = new Date(startDate);
   const endTime = new Date(endDate);
 
-  // 1. قبل از شروع شمارش معکوس
+  // قبل از شروع شمارش معکوس
   if (now < countdownTime) {
     return countdownTime.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
   }
 
-  // 2. بین start_countdown و start_date → شمارش معکوس تا شروع تورنمنت
+  // بین start_countdown و start_date
   if (now >= countdownTime && now < startTime) {
     const diff = startTime - now;
     const hours = Math.floor(diff / (1000 * 60 * 60));
@@ -107,12 +130,12 @@ function timeRemaining(startCountdown, startDate, endDate) {
     return `${hours.toString().padStart(2,"0")} : ${mins.toString().padStart(2,"0")} : ${secs.toString().padStart(2,"0")}`;
   }
 
-  // 3. بین start_date و end_date
+  // بین start_date و end_date
   if (now >= startTime && now < endTime) {
-    return " شروع شده";
+    return "شروع شده";
   }
 
-  // 4. بعد از پایان
+  // بعد از پایان
   if (now >= endTime) {
     return "پایان یافته";
   }
