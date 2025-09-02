@@ -27,7 +27,27 @@
 
 
     <!-- قسمت مربوط به فیلتر های -->
-    <div class="tournaments_filter_section"></div>
+        <div class="tournaments_filter_section">
+
+            <!-- فیلتر وضعیت تورنومنت‌ها -->
+        <div class="tournament-filters">
+            <button class="filter-btn active" data-filter="all">همه</button>
+            <button class="filter-btn" data-filter="upcoming">بزودی</button>
+            <button class="filter-btn" data-filter="live">در حال برگزاری</button>
+            <button class="filter-btn" data-filter="finished">تمام شده</button>
+        </div>
+  
+            <!-- مرتب‌سازی -->
+        <div class="tournament-sorting">
+            <select id="sortSelect">
+                <option value="start_date">تاریخ شروع (دور)</option>
+                <option value="-start_date">تاریخ شروع (نزدیک)</option>
+                <option value="entry_fee">هزینه ورودی (صعودی)</option>
+                <option value="-entry_fee">هزینه ورودی (نزولی)</option>
+            </select>
+        </div>
+
+    </div>
 
 
     <!-- سکشن مربوط به تورنومنت ها -->

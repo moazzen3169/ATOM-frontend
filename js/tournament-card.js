@@ -3,10 +3,8 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // بررسی وجود قبلی کارت برای جلوگیری از تکرار
     if (document.getElementById(`tournament-${tournament.id}`)) return;
 
-    // انتخاب بنر
     let banner = "img/banner2.jpg";
     if (tournament.image?.image) {
         banner = tournament.image.image;
@@ -23,7 +21,6 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
     const dateStr = start.toLocaleDateString("fa-IR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
     const price = tournament.is_free ? "رایگان" : (Number(tournament.entry_fee).toLocaleString("fa-IR") + " تومان");
 
-    // ساخت کارت تورنمنت
     const div = document.createElement("div");
     div.className = "cart_container";
     div.id = `tournament-${tournament.id}`;
@@ -62,13 +59,10 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
     `;
     container.appendChild(div);
 
-    // تعیین متن و عملکرد دکمه
     const joinBtn = div.querySelector(".cart_join");
     if (now >= end) {
         joinBtn.textContent = "دیدن نتایج";
-        joinBtn.addEventListener("click", () => {
-            showResultPopup(tournament);
-        });
+        joinBtn.addEventListener("click", () => showResultPopup(tournament));
     } else {
         joinBtn.textContent = "اضافه شو!";
         joinBtn.addEventListener("click", () => {
@@ -77,7 +71,7 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
     }
 }
 
-// ---------------------- تابع نمایش زمان باقی‌مانده ----------------------
+// ---------------------- تابع محاسبه زمان باقی‌مانده ----------------------
 function timeRemaining(startCountdown, startDate, endDate) {
     const now = new Date();
     const countdownTime = new Date(startCountdown);
@@ -87,20 +81,16 @@ function timeRemaining(startCountdown, startDate, endDate) {
     if (now < countdownTime) {
         return countdownTime.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
     }
-
     if (now >= countdownTime && now < startTime) {
         const diff = startTime - now;
         return formatDiff(diff);
     }
-
     if (now >= startTime && now < endTime) {
         return "شروع شده";
     }
-
     if (now >= endTime) {
         return "پایان یافته";
     }
-
     return "-";
 }
 
@@ -112,7 +102,7 @@ function formatDiff(diff) {
     return `${hours.toString().padStart(2,"0")} : ${mins.toString().padStart(2,"0")} : ${secs.toString().padStart(2,"0")}`;
 }
 
-// ---------------------- مدیریت به روزرسانی زمان‌های شمارش معکوس ----------------------
+// ---------------------- مدیریت به روزرسانی شمارش معکوس ----------------------
 function updateAllCountdowns() {
     const countdownElements = document.querySelectorAll('.countdown-timer');
     countdownElements.forEach(el => {
@@ -128,39 +118,4 @@ document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateAllCountdowns, 1000);
 });
 
-// ---------------------- بارگذاری 3 تورنمنت برای صفحه اصلی ----------------------
-async function loadHomeTournaments() {
-    const container = document.getElementById("grid-container-tournaments");
-    container.innerHTML = '<div class="loading">در حال بارگذاری تورنمنت‌ها...</div>';
 
-    try {
-        const response = await fetch(
-            `https://atom-game.ir/api/tournaments/tournaments/?page=1&page_size=3&ordering=start_date`
-        );
-
-        if (!response.ok) throw new Error("خطا در دریافت اطلاعات تورنمنت‌ها");
-
-        const data = await response.json();
-        const tournaments = data.results || [];
-
-        container.innerHTML = ""; // پاک کردن محتوای قبلی
-
-        if (tournaments.length === 0) {
-            container.innerHTML = "<p class='eror'>هیچ تورنمنتی یافت نشد.</p>";
-            return;
-        }
-
-        // پاس دادن داده‌ها به تابع renderTournamentCard
-        tournaments.forEach(t => {
-            renderTournamentCard(t, "grid-container-tournaments");
-        });
-
-    } catch (error) {
-        container.innerHTML = `<p class="eror">${error.message}</p>`;
-    }
-}
-
-// ---------------------- شروع اولیه ----------------------
-document.addEventListener("DOMContentLoaded", () => {
-    loadHomeTournaments();
-});

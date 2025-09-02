@@ -2,7 +2,8 @@
 .grid-container {
     display: grid;
     grid-template-columns: repeat(auto-fill , minmax(406px , 406px));
-    gap: 50px;
+    gap: clamp(10px,4vw, 66px);
+
     width: 1400px;
     width: 100%;
     justify-content: center;

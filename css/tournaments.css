@@ -99,3 +99,71 @@ body{
   cursor: not-allowed;
   opacity: 0.6;
 }
+
+
+
+
+
+/* مربوط به فیلتر */
+.tournaments_filter_section{
+    width: 100%;
+    height: 50px;
+    background-color: var(--card-color);
+    border-radius: 10px;
+    margin: 20px auto;
+    padding: 10px;
+    display: flex;
+
+    align-items: center;
+    justify-content: space-between;
+
+}
+.tournament-filters{
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+}
+.filter-btn{
+    min-width: 100px;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background-color: transparent;
+    color: var(--white-color);
+    cursor: pointer;
+}
+.fillter-active{
+    background-color: var(--color-half);
+    border: 1px solid var(--color-primary);
+
+
+}
+.tournament-sorting option{
+    background-color: var(--card-color);
+    padding: 10px;
+
+}
+#sortSelect{
+    min-width: 200px;
+    height: 30px;
+    padding: 5px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background-color: transparent;
+    color: var(--white-color);
+    cursor: pointer;
+    text-align: center;
+}
+
+
+.error {
+    margin: 0;
+    color: var(--white-color);
+    width: 100%;
+    text-align: center;
+    direction: rtl;
+    grid-column: 1/4;
+  }
+  
