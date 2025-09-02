@@ -1,20 +1,4 @@
 
-// کد های مورد نیاز برای لودیینگ
-
-
-
-// 
-// 
-// 
-// 
-
-
-
-
-
-
-
-
 
   const goTOp = document.querySelector(".go-top");
 
@@ -25,7 +9,6 @@
     });
   });
   
-
 
   // بخش مربوط به اسلایدر بازی ها
 document.addEventListener("DOMContentLoaded", function () {
@@ -50,12 +33,7 @@ document.addEventListener("DOMContentLoaded", function () {
 });
 
 
-
-
-
 // برای نمایش اطالعات 3کاربر برتر سایت
-
-
 
 async function loadLeaderboard() {
   const container = document.getElementById('grid-container');
@@ -104,5 +82,7 @@ async function loadLeaderboard() {
   }
 }
 
-loadLeaderboard()
-loadTournaments(3); // فقط سه تورنومنت
+
+
+
+

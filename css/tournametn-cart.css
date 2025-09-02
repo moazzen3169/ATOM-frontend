@@ -3,7 +3,7 @@
     display: grid;
     grid-template-columns: repeat(auto-fill , minmax(406px , 406px));
     gap: 50px;
-    width: 1350px;
+    width: 1400px;
     width: 100%;
     justify-content: center;
     margin: 50px auto;
