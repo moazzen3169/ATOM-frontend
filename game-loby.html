@@ -8,6 +8,12 @@
     <link rel="stylesheet" href="css/colors.css">
     <link rel="stylesheet" href="fonts/fonts.css">
 </head>
+
+    <!-- بخش لودیینگ -->
+    <div id="preloader">
+        <div class="loader"></div>
+   </div>
+
 <body>
 
 <div id="header"></div>
@@ -18,14 +24,14 @@
     <div class="loby_right">
         <div class="Summary_of_information">
             <div class="info_title"><span>خلاصه اطلاعات</span></div>
-            <div class="start_time">
+            <div class="start_timer">
                 <img src="img/icons/clock.svg" alt="clock" class="icon">
-                <span>زمان شروع  گیری :</span>
+                <span>زمان عضوگیری   :</span>
                 <span id="signup_time"></span>
             </div>
             <div class="tournament_time">
                 <img src="img/icons/clock.svg" alt="clock" class="icon">
-                <span>زمان شروع تورنومنت :</span>
+                <span>زمان شروع :</span>
                 <span id="start_time"></span>
             </div>
             <div class="end_time">
@@ -81,71 +87,10 @@
     </div>
 </div>
 
-<script>
-async function loadTournament() {
-    // گرفتن آیدی از URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const tournamentId = urlParams.get('id');
 
-    if (!tournamentId) return console.error("Tournament ID missing in URL");
-
-    // دریافت اطلاعات از API
-    const response = await fetch('https://atom-game.ir/api/tournaments/tournaments/${gameId}/`');
-    const tournaments = await response.json();
-
-    const tournament = tournaments.find(t => t.id == tournamentId);
-    if (!tournament) return console.error("Tournament not found");
-
-    // تبدیل تاریخ‌ها
-    const now = new Date();
-    const startDate = new Date(tournament.start_date);
-    const endDate = new Date(tournament.end_date || startDate); // اگر پایان نداشت همان شروع
-
-    // بخش خلاصه اطلاعات
-    const signupTimeEl = document.getElementById('signup_time');
-    signupTimeEl.textContent = (now < startDate) ? startDate.toLocaleString() : "عضو گیری آغاز شد";
-
-    document.getElementById('start_time').textContent = startDate.toLocaleString();
-    document.getElementById('end_time').textContent = endDate.toLocaleString();
-
-    // حالت تورنومنت
-    let modeText = tournament.type;
-    if (tournament.type === "team") {
-        modeText += ` (هر تیم ${tournament.team_size} نفر)`;
-    }
-    document.getElementById('tournament_mode').textContent = modeText;
-
-    // سمت چپ: بنر
-    document.getElementById('tournament_banner').src = tournament.image.image;
-
-    // مجموع جوایز و عنوان
-    document.getElementById('prize_pool').textContent = tournament.prize_pool || "0";
-    document.getElementById('tournament_title').textContent = tournament.name;
-
-    // شمارش معکوس (اگر زمان شروع گذشته و هنوز تورنمنت فعال است)
-    const countdownSection = document.getElementById('countdown_section');
-    if (now >= startDate) {
-        function updateCountdown() {
-            const diff = startDate - new Date();
-            if (diff <= 0) {
-                countdownSection.style.display = 'none';
-                clearInterval(timer);
-                return;
-            }
-            const hours = String(Math.floor(diff / 1000 / 3600)).padStart(2,'0');
-            const minutes = String(Math.floor(diff / 1000 % 3600 / 60)).padStart(2,'0');
-            const seconds = String(Math.floor(diff / 1000 % 60)).padStart(2,'0');
-            document.getElementById('countdown_timer').textContent = `${hours} : ${minutes} : ${seconds}`;
-        }
-        const timer = setInterval(updateCountdown, 1000);
-        updateCountdown();
-    } else {
-        countdownSection.style.display = 'none';
-    }
-}
-
-loadTournament();
-</script>
+    
+<script src="js/loby.js"></script>
+<script src="js/loading.js"></script>
 
 </body>
 </html>
