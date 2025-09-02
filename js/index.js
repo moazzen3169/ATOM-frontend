@@ -120,6 +120,5 @@ async function loadLeaderboard() {
   }
 }
 
-loadLeaderboard();
 
 loadTournaments(3); // فقط سه تورنومنت

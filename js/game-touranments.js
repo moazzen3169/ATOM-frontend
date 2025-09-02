@@ -163,9 +163,7 @@ function createTournamentCard(t, isLive = false, isFinished = false, countdownSt
                 <div class="cart_price"><span>${t.prize_won || "تمام شده"}</span></div>
             </div>
         `;
-        div.querySelector(".cart_join").addEventListener("click", () => {
-            window.location.href = `tournament-results.html?id=${t.id}`;
-        });
+
     } else {
         div.innerHTML = `
             <div class="cart_top">
