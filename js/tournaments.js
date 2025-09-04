@@ -1,6 +1,6 @@
 // ---------------------- تنظیمات ----------------------
 let currentPage = 1;
-let pageSize = 3;
+let pageSize = 9;
 let ordering = "start_date"; // پیش‌فرض مرتب‌سازی
 let filterType = "all";      // پیش‌فرض همه
 

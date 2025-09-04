@@ -112,7 +112,12 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
             <div class="live_left">
                 <div class="live_award">
                     <span>مجموع جوایز</span>
-                    <h3 class="award_money">${tournament.prize_won || "نامشخص"}</h3>
+                        <h3 class="award_money">
+                          ${tournament.prize_pool 
+                              ? Number(tournament.prize_pool).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " تومان"
+                              : "نامشخص"}
+                        </h3>
+
                 </div>
                 <button class="live_join_link">اضافه شو!</button>
             </div>
@@ -231,7 +236,7 @@ function renderTournamentsByCategory(categories) {
             if (container) container.style.display = "none";
             if (titr) titr.style.display = "none";
         } else {
-            if (container) container.style.display = key === "live" ? "flex" : "grid";
+            if (container) container.style.display = key === "live" ? "block" : "grid";
             if (titr) titr.style.display = "flex";
         }
     });
