@@ -53,8 +53,14 @@
     height:220px ;
     border-radius: 10px;
     background-size: cover;
+    opacity: 50%;
     
 }
+
+
+/* استایل برای تورنومنت های تمام شده */
+
+/* .finish_tournaments */
 
 
 .cart_countdown_game{

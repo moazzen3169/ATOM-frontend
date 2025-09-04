@@ -2,6 +2,8 @@
 
 header{
     direction: rtl;
+    background: linear-gradient(to bottom , var(--header-gradiant) , #00000000 );
+
 }
 a{
     text-decoration: none;
@@ -148,9 +150,9 @@ li{
 }
 
 
-.user-menu-wrapper:hover .user_info_links {
+/* .user-menu-wrapper:hover .user_info_links {
     display: block;
-}
+} */
 /* * ۱. والد (Wrapper) */ 
 .user-menu-wrapper {
     position: relative; /* ایجاد نقطه مرجع برای منوی شناور */
@@ -161,7 +163,7 @@ li{
 .user_info_links {
     display: none;
     position: absolute;   /* این خط اضافه شده است */
-    top: 100%; /* مقدار 120% به 100% تغییر کرد تا منو به والد بچسبد */
+    top: 120%; /* مقدار 120% به 100% تغییر کرد تا منو به والد بچسبد */
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;         /* این خط اضافه شده است - تضمین می‌کند که منو روی عناصر دیگر قرار بگیرد */
@@ -228,11 +230,11 @@ li{
     gap: 8px;
 }
 /* نمایش کادر اعلان‌ها زمانی که ماوس روی نگهدارنده اصلی قرار می‌گیرد */
-.notification_bar:hover .notification_hover {
-    visibility: visible; /* قابل مشاهده */
-    opacity: 1; /* کاملا نمایان */
-    top: 100%; /* موقعیت نهایی برای نمایش */
-}
+/* .notification_bar:hover .notification_hover {
+    visibility: visible; 
+    opacity: 1; 
+    top: 100%; 
+} */
 
 .notification_hover hr{
     border: 0.5px solid var(--border-color);
@@ -483,9 +485,9 @@ li{
     font-weight: normal;
     color: var(--white-color);
 }
-.sidebar_links_bottom{
+/* .sidebar_links_bottom{
 
-}
+} */
 .exit_account{
     width: 250px;
     height: 50px;
@@ -509,7 +511,9 @@ li{
 
 
 
-
+.hidden{
+    display: none;
+}
 
 
 

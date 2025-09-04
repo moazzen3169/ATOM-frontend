@@ -79,3 +79,30 @@ function initHeaderAndSidebar() {
     if (menuCloseButton) menuCloseButton.addEventListener('click', closeSidebar);
     if (overlay) overlay.addEventListener('click', closeSidebar);
 }
+
+
+
+const userMenu = document.querySelector(".open_user_links");
+const userHiddenMenu = document.querySelector(".user_info_links");
+
+// toggle با کلیک روی دکمه
+userMenu.addEventListener("click", function (e) {
+  e.stopPropagation(); // جلوگیری از بستن فوری
+  userHiddenMenu.classList.toggle("hidden");
+});
+
+// بستن با کلیک بیرون
+document.addEventListener("click", function (e) {
+  if (!userHiddenMenu.classList.contains("hidden")) {
+    if (!userHiddenMenu.contains(e.target) && !userMenu.contains(e.target)) {
+      userHiddenMenu.classList.add("hidden");
+    }
+  }
+});
+
+// بستن با ESC
+document.addEventListener("keydown", function (e) {
+  if (e.key === "Escape") {
+    userHiddenMenu.classList.add("hidden");
+  }
+});
