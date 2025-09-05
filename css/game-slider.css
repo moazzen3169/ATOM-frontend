@@ -76,7 +76,7 @@ body{
     display: grid;
     align-items: center;
     justify-content: start;
-    gap: 8px;
+    gap: 10px;
 
 }
 .game_banner_title{
@@ -85,10 +85,13 @@ body{
     color: var(--white-color);
 }
 .game_banner_description{
-    font-size: 20px;
+    font-size: 16px;
     font-weight: 300;
     color: var(--white-color);
     max-width: 600px;
+    min-height: 70px;
+    text-align: justify;
+    margin-bottom: 10px;
 }
 .game_banner_date_usercount{
     display: flex;
