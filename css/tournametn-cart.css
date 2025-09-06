@@ -53,6 +53,7 @@
     height:220px ;
     border-radius: 10px;
     background-size: cover;
+    object-fit: cover;
     opacity: 50%;
     
 }

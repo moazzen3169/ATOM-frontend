@@ -3,14 +3,16 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
     const container = document.getElementById(containerId);
     if (!container) return;
 
+    // جلوگیری از اضافه شدن کارت تکراری
     if (document.getElementById(`tournament-${tournament.id}`)) return;
 
-    let banner = "img/banner2.jpg";
+    // انتخاب تصویر اصلی تورنومنت یا fallback به تصویر بازی
+    let banner = "img/banner2.jpg"; // تصویر پیش‌فرض
     if (tournament.image?.image) {
-        banner = tournament.image.image;
+        banner = tournament.image.image; // تصویر خود تورنومنت
     } else if (Array.isArray(tournament.game?.images) && tournament.game.images.length > 0) {
         const hero = tournament.game.images.find(img => img.image_type === "hero_banner");
-        banner = hero?.image || tournament.game.images[0].image;
+        banner = hero?.image || tournament.game.images[0].image; // fallback تصویر بازی
     }
 
     const start = new Date(tournament.start_date);
@@ -117,5 +119,3 @@ function updateAllCountdowns() {
 document.addEventListener('DOMContentLoaded', () => {
     setInterval(updateAllCountdowns, 1000);
 });
-
-
