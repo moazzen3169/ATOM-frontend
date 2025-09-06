@@ -88,7 +88,7 @@ body{
     font-size: 16px;
     font-weight: 300;
     color: var(--white-color);
-    max-width: 600px;
+    max-width: 400px;
     min-height: 70px;
     text-align: justify;
     margin-bottom: 10px;
