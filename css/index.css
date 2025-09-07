@@ -148,11 +148,12 @@ body{
 
 }
 .leaderboard_item{
-    height: 280px;
+    height: 270px;
     border: 0.5px solid var(--primary-border);
     border-radius: 10px;
     background: linear-gradient(135deg, rgba(0, 245, 255, 0.05) 0%, rgba(0, 0, 0, 0) 100%);
     padding: 30px;
+
 
 }
 .leaeder_profile{
