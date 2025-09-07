@@ -14,125 +14,152 @@ body{
 
 
 
-.games_container{
-  z-index: 1;
-  width: 100%;
-  display: grid;
-  align-items: center;
-}
-.game_item{
-  width: 100%;
-  max-height: 100vh;
-  position: relative;
-
-}
-.game_image{
-  width: 100%;
-  height: 100vh;
-}
-
-.game_image {
-  position: relative;
-  width: 100%;
-  height: 100vh;
-  overflow: hidden;
-}
-
-.game_image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  opacity: 80%;
-}
-
-.game_image::after {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background: linear-gradient(to left,var(--background-color) ,  rgba(0,0,0,0));
-}
 
 
+  .games_container{
+      display: grid;
+      grid-template-columns: repeat(auto-fill , minmax(406px , 1fr));
+      max-width: 1400px;
+      gap: 50px;
+      padding: 25px;
+      margin: 0px auto;
+      direction: rtl;
 
-.game_content{
-  position: absolute;
-  top: 15%;
-  right: 10%;
-  direction: rtl;
-  max-width: 1400px;
-  padding: 25px;
-  margin: 0px auto;
-  display: grid;
-  align-items: start;
-  gap: 10px;
-}
-
-.game_cover{
-  width: 220px;
-  height: 330px;
-}
-
-.game_cover img{
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-
-}
-
-.game_title{
-  font-size: 30px;
-  font-weight: normal;
-  color: var(--white-color);
-} 
-.game_description{
-  font-size: 18px;
-  font-weight: 300;
-  color: var(--white-color);
-  opacity: 80%;
-  max-width: 800px;
-  text-align: justify;
-  direction: rtl;
-}
-.show_tournaments{
-  width: 220px;
-  height: 45px;
-  background-color: var(--white-color);
-  color: var(--background-color);
-  text-decoration: none;
-  display: flex;
-  text-align: center;
-  align-items: center;
-  justify-content: center;
-
-}
-
-
-#header{
-  position: absolute;
-  top: 0px;
-  width: 100%;
-  z-index: 1000;
-}
-
-
-
-
-
-
-@media (max-width: 700px) {
-  .game_content {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    right: auto;   /* غیرفعال کردن راست */
-    max-width: 90%; /* اختیاری، برای جلوگیری از پر شدن کل صفحه */
-    padding: 20px;  /* می‌توانی اندازه padding را تغییر بدهی */
-    display: grid;
-    align-items: center; /* وسط‌چین شدن محتوا */
-    gap: 10px;
   }
+  .game_item{
+    position: relative; /* لازم برای overlay */
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-around;
+    padding: 10px 0px;
+    overflow: hidden; /* تا overlay بیرون نزنه */
+    z-index: 2;
+    height: 430px;
+
+  }
+
+
+  .game_item::after{
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(45deg, var(--background-color) 0% , #1E293B 80%);
+    background-size: 200% 200%;
+    z-index: 1;
+    pointer-events: none;
+
+  }
+
+
+
+  .game_image{
+    width: 95%;
+    height: 220px;
+    margin: 0px auto;
+    z-index: 2;
+    position: absolute;
+    top: 10px;
+    
+
+
+  }
+
+  .game_image  img{
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 5px;
+
+  }
+
+  .game_content{
+    display: grid;
+    align-items: center;
+    justify-content: start;
+    color: var(--white-color);
+    gap: 5px;
+    font-size: 16px;
+    font-weight: 300;
+    margin: 20px auto;
+    width: 90%;
+    z-index: 2;
+    direction: rtl;
+    position: absolute;
+    top: 230px;
+
+
+  }
+  .game_title{
+  }
+  .game_live_tournaments_count{
+
+  }
+  .game_all_tournaments_count{
+
+  }
+  .game_link {
+    width: 90%;
+    height: 50px;
+    background-color: var(--border-color);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--white-color);
+    margin: 20px auto;
+    z-index: 2;
+    border-radius: 5px;
+    opacity: 0.8;
+    position: relative;
+    overflow: hidden; /* اضافه شد */
+    top: 160px;
+}
+
+.game_link::after {
+    content: "";
+    width: 50%;
+    height: 100%;
+    /* transform: rotate(45deg); */
+    position: absolute;
+    z-index: 3;
+    left: -2%; /* شروع از خارج دکمه */
+    background-color: #fff;
+    animation: gameCTA 2s ease-in-out infinite;
+    filter: blur(100px);
+}
+
+@keyframes gameCTA {
+    0% {
+        left: -2%; /* شروع از خارج سمت چپ */
+    }
+    50% {
+        left: 102%; /* حرکت به سمت راست */
+    }
+    100% {
+        left: -2%; /* بازگشت به موقعیت اولیه */
+    }
+}
+
+
+
+
+
+/* مربوط به استایل های comming soon */
+
+.comming-soon img{
+  opacity: 30%;
+}
+
+.comming-soon .game_title :first-child{
+  color: var(--yellow-color);
+}
+.comming-soon .game_link{
+  background-color: var(--card-color);
+}
+
+.comming-soon .game_link::after {
+  background-color: transparent;
+  animation:  0s;
 }

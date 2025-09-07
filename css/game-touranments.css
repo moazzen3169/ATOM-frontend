@@ -159,11 +159,9 @@ body{
 .live_tournaments_container{
   max-width: 1400px;
   width: 100%;
-  margin: 0px auto;
-  display: grid;
+  margin:   0px auto;
   align-items: center;
-  gap: 20px;
-  padding: 0px 25px;
+  padding:  25px;
 }
 
 .grid-container {

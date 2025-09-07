@@ -1,118 +1,61 @@
-          
-          
-          
-          
-document.addEventListener('DOMContentLoaded', () => {
-    const container = document.querySelector('.games_container');
-  
-    fetch('https://atom-game.ir/api/tournaments/games/')
-      .then(res => {
-        if (!res.ok) throw new Error('Network response was not ok');
-        return res.json();
-      })
-      .then(games => {
-        container.innerHTML = ''; // پاک کردن محتوای دستی قبلی
-  
-        games.forEach(game => {
-          const heroBanner = game.images.find(img => img.image_type === 'hero_banner')?.image || '';
-          const gameImg = game.images.find(img => img.image_type === 'game_image')?.image || '';
-          // در صورت نیاز به slider، میتوانید مشابه آن را اضافه کنید
-  
-          const gameItem = document.createElement('div');
-          gameItem.classList.add('game_item');
-  
-          gameItem.innerHTML = `
-            <div class="game_image">
-              <img src="${heroBanner}" alt="hero_banner">
-            </div>
-            <div class="game_content">
-              <div class="game_cover">
-                <img src="${gameImg}" alt="game_cover">
-              </div>
-              <div class="game_title"><span>${game.name}</span></div>
-              <div class="game_description"><span>${game.description}</span></div>
-              <a href="game-touranments.html?id=${game.id}" class="show_tournaments">مشاهده تورنومنت ها</a>
-            </div>
-          `;
-  
-          container.appendChild(gameItem);
+async function loadGames() {
+    try {
+        const response = await fetch("https://atom-game.ir/api/tournaments/games/");
+        const games = await response.json();
+
+        const container = document.getElementById("games_container");
+        if (!container) return;
+        container.innerHTML = ""; // خالی کردن قبل از پر کردن
+
+        // مرتب کردن بازی‌ها: اول غیر coming_soon، آخر coming_soon
+        const sortedGames = [...games].sort((a, b) => {
+            if (a.status === "coming_soon" && b.status !== "coming_soon") return 1;
+            if (a.status !== "coming_soon" && b.status === "coming_soon") return -1;
+            return 0;
         });
-      })
-      .catch(err => {
-        console.error('Fetch error:', err);
-        container.innerHTML = '<p>خطا در بارگذاری بازی‌ها. لطفاً بعداً تلاش کنید.</p>';
-      });
-  });
-  
 
+        // ساختن کارت‌ها
+        sortedGames.forEach(game => {
+            const banner = game.images?.find(img => img.image_type === "hero_banner")?.image || "img/default.jpg";
 
+            const gameItem = document.createElement("div");
+            gameItem.classList.add("game_item");
+            if (game.status === "coming_soon") gameItem.classList.add("comming-soon");
 
+            const activeTournaments = game.tournaments_count?.active || 0;
+            const heldTournaments = game.tournaments_count?.held || 0;
 
+            gameItem.innerHTML = `
+                <div class="game_image">
+                    <img src="${banner}" alt="${game.name}">
+                </div>
+                <div class="game_content">
+                    <div class="game_title">
+                        <span>${game.name}</span>
+                        ${game.status === "coming_soon" ? `<span> (coming soon)</span>` : ""}
+                    </div>
+                    ${game.status !== "coming_soon" ? `
+                        <div class="game_live_tournaments_count">
+                            <span>تعداد تورنومنت های فعال: </span><span>${activeTournaments}</span>
+                        </div>
+                        <div class="game_all_tournaments_count">
+                            <span>تورنومنت های پایان یافته: </span><span>${heldTournaments}</span>
+                        </div>
+                    ` : ""}
+                </div>
+                ${
+                    game.status === "coming_soon"
+                        ? `<span class="game_link disabled">بزودی...</span>`
+                        : `<a href="game-touranments.html?id=${game.id}" class="game_link">+ مشاهده تورنومنت</a>`
+                }
+            `;
 
+            container.appendChild(gameItem);
+        });
 
+    } catch (error) {
+        console.error("خطا در گرفتن دیتا:", error);
+    }
+}
 
-
-  document.addEventListener("DOMContentLoaded", () => {
-    let currentPage = 0;
-    let isScrolling = false;
-  
-    const footer = document.querySelector("#footer");
-    const clamp = (n, min, max) => Math.min(Math.max(n, min), max);
-    const getPages = () => Array.from(document.querySelectorAll(".game_item"));
-  
-    const scrollToPage = () => {
-      const pages = getPages();
-      if (footer && currentPage === pages.length) {
-        window.scrollTo({ top: footer.offsetTop, behavior: "smooth" });
-      } else {
-        window.scrollTo({ top: currentPage * window.innerHeight, behavior: "smooth" });
-      }
-    };
-  
-    // دسکتاپ (چرخ موس)
-    window.addEventListener("wheel", (e) => {
-      e.preventDefault();
-      if (isScrolling) return;
-      isScrolling = true;
-  
-      const dir = e.deltaY > 0 ? 1 : -1;
-      const pages = getPages();
-      const maxPage = pages.length + (footer ? 1 : 0) - 1;
-      currentPage = clamp(currentPage + dir, 0, maxPage);
-  
-      scrollToPage();
-  
-      setTimeout(() => { isScrolling = false; }, 300);
-    }, { passive: false });
-  
-    // موبایل (لمس / swipe)
-    let touchStartY = 0;
-    window.addEventListener("touchstart", (e) => {
-      touchStartY = e.touches[0].clientY;
-    });
-  
-    window.addEventListener("touchend", (e) => {
-      if (isScrolling) return;
-      let touchEndY = e.changedTouches[0].clientY;
-      let deltaY = touchStartY - touchEndY;
-  
-      if (Math.abs(deltaY) < 30) return; // جلوگیری از اسکرول ناچیز
-  
-      isScrolling = true;
-  
-      const dir = deltaY > 0 ? 1 : -1;
-      const pages = getPages();
-      const maxPage = pages.length + (footer ? 1 : 0) - 1;
-      currentPage = clamp(currentPage + dir, 0, maxPage);
-  
-      scrollToPage();
-  
-      setTimeout(() => { isScrolling = false; }, 300);
-    });
-  
-    window.addEventListener("resize", () => {
-      scrollToPage();
-    });
-  });
-  
-  
+loadGames();
