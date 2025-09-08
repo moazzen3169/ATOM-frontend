@@ -52,7 +52,7 @@ async function loadLeaderboard() {
       const players = await response.json();
       console.log(players); // برای بررسی داده‌ها
 
-      const topPlayers = players.sort((a,b) => b.score - a.score).slice(0,6);
+      const topPlayers = players.sort((a,b) => b.score - a.score).slice(0,3);
 
       if (topPlayers.length > 0) {
           topPlayers.forEach((player,index) => {
@@ -95,7 +95,8 @@ async function loadHomeTournaments() {
 
   try {
       const response = await fetch(
-          `https://atom-game.ir/api/tournaments/tournaments/?page=1&page_size=6&ordering=start_date`
+          `https://atom-game.ir/api/tournaments/tournaments/?page=1&page_size=6&ordering=start_date
+`
       );
 
       if (!response.ok) throw new Error("خطا در دریافت اطلاعات تورنمنت‌ها");
