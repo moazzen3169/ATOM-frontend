@@ -32,7 +32,7 @@
 
 /* رنگ سایه ها */
 
---primary-color-shadow:var(--color-primary);       /* drop-shadow با رنگ اصلی*/ 
+--primary-color-shadow: #00f7ff49 ;       /* drop-shadow با رنگ اصلی*/ 
 
 /* گرادیانت */
 
@@ -47,9 +47,15 @@
 --overlay-color:rgba(0, 0, 0, 0.3);
 
 
-
 /* discord bg color */
 --discord-bg:#811CDA;
+
+
+--red-color:#C97878;
+--green-color:#82E995;
+
+
+
 
 }
 

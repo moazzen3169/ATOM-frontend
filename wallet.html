@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>کیف پول من</title>
+
+    <link rel="stylesheet" href="css/colors.css">
+    <link rel="stylesheet" href="fonts/fonts.css">
+    <link rel="stylesheet" href="css/wallet.css">
+
+
+</head>
+<body>
+    
+
+<div class="wallet_container">
+
+    <div class="wallet_head">
+        <span>کیف پول من</span>
+        <a href="index.html" class="back_link">
+            بازگشت
+            <img src="img/icons/back.svg" alt="">
+            </a>
+    </div>
+
+    <div class="wallet_info_and_management">
+        <div class="wallet_info">
+            <div class="wallet_info_head">
+                <span>موجودی کلی</span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="#000000"><path fill="#fff" d="M19 7h-1V6a3 3 0 0 0-3-3H5a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h14a3 3 0 0 0 3-3v-8a3 3 0 0 0-3-3ZM5 5h10a1 1 0 0 1 1 1v1H5a1 1 0 0 1 0-2Zm15 10h-1a1 1 0 0 1 0-2h1Zm0-4h-1a3 3 0 0 0 0 6h1v1a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8.83A3 3 0 0 0 5 9h14a1 1 0 0 1 1 1Z"/></svg>
+            </div>
+            <div class="Wallet_balance">
+                <span>۱۲,۴۵۰.۷۵</span>
+                <span>تومان</span>
+            </div>
+            <div class="Withdrawable_wallet_balance">
+                <span>قابل برداشت :</span>
+                <span> 1,000,000 تومان</span>
+            </div>
+        </div>
+
+        <div class="Wallet_balance_management">
+            <div class="Wallet_balance_management_title">
+                <span>مدریت موجودی </span>
+                <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="#000000"><path fill="none" stroke="var(--white-color)" stroke-width="2" d="M2 7h18m-4-5l5 5l-5 5m6 5H4m4-5l-5 5l5 5"/></svg>
+            </div>
+            <div class="Withdraw_Deposit_btn">
+                <button class="Deposit_btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="#000000"><path fill="none" stroke="#000000" stroke-width="2" d="M2 7h18m-4-5l5 5l-5 5m6 5H4m4-5l-5 5l5 5"/></svg>
+                    واریز
+                </button>
+                <button class="Withdraw_btn">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="200" height="200" viewBox="0 0 24 24" fill="#000000"><path fill="none" stroke="var(--color-primary)" stroke-width="2" d="M2 7h18m-4-5l5 5l-5 5m6 5H4m4-5l-5 5l5 5"/></svg>
+                    برداشت
+                </button>
+            </div>
+        </div>
+    </div>
+
+    
+    <!-- بخش موبوط به ریز تراکنشات ئ فیلتر هاش -->
+
+
+    <div class="Transaction">
+
+
+        <div class="Transaction_filters_ordering">
+            <div class="Transaction_filters">
+                <button id="all" class="filter_item  active">همه تراکنش ها</button>
+                <button id="Withdraw" class="filter_item  none_active">برداشت ها</button>
+                <button id="Deposit" class="filter_item  none_active "> واریز ها</button>
+            </div>
+            <div class="Transaction_ordering">
+                <select name="ordering" id="ordering">
+                    <option value="last">اخیر</option>
+                    <option value="start">از اول به آخر</option>
+                    <option value="end">از آخر به اول</option>
+                </select>
+            </div>
+        </div>
+
+            <!-- در این قسمت تراکنش ها نمایش داده میشن اگه فیلتری اعمال شد  متن فیلتر نمایش داده میشود در اینجا -->
+
+
+        <div class="Transactions_container">
+            <div class="Transaction_item  Withdraw">
+                <div class="icon_container ">
+                    <div class="Withdraw_icon"></div>
+                </div>
+                <div class="Transaction_mode_date">
+                    <span>برداشت</span>
+                    <div class="date">12 : 53      دیروز</div>
+                </div>
+                <div class="Transaction_prise_status">
+                    <div class="prise">
+                        <span>15,000,000</span><span>تومان</span>
+                    </div>
+                    <div class="status Not_done" >
+                        <span>انجام نشده</span>
+                    </div>
+                </div>
+            </div>
+            <div class="Transaction_item  Deposit">
+                <div class="icon_container">
+                    <div class="Deposit_icon"></div>
+                </div>
+                <div class="Transaction_mode_date">
+                    <span>واریز</span>
+                    <div class="date">13 : 00      دیروز</div>
+                </div>
+                <div class="Transaction_prise_status">
+                    <div class="prise">
+                        <span>1,000,000</span><span>تومان</span>
+                    </div>
+                    <div class="status done" >
+                        <span>انجام شده</span>
+                    </div>
+                </div>
+            </div>
+            <div class="Transaction_item  Spending">
+                <div class="icon_container ">
+                    <div class="Spending_icon"></div>
+                </div>
+                <div class="Transaction_mode_date">
+                    <span>خرج شده</span>
+                    <div class="date">15 : 31      دیروز</div>
+                </div>
+                <div class="Transaction_prise_status">
+                    <div class="prise">
+                        <span>1,700,000</span><span>تومان</span>
+                    </div>
+                    <div class="status done" >
+                        <span>انجام شده</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+
+
+
+</div>
+
+
+
+
+
+</body>
+
+<div id="footer"></div>
+<script src="js/footer.js"></script>
+</html>

@@ -1,0 +1,413 @@
+
+
+
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    background-color: var(--background-color);
+    direction: rtl;
+
+}
+
+
+
+.wallet_container{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: start;
+    max-width: 1400px;
+    width: 100%;
+    padding: 25px;
+    margin: 0px auto;
+
+}
+.wallet_head{
+    font-size: 30px;
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    color: var(--white-color);
+    margin-top: 20px;
+
+}
+.back_link{
+    text-decoration: none;
+    color: var(--white-color);
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+
+
+.wallet_info_and_management{
+    display: grid;
+
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    width: 100%;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    margin-top: 40px;
+
+}
+.wallet_info{
+    height: 200px;
+    width: 100%;
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: center;
+    gap: 24px;
+    color: var(--white-color);
+
+
+}
+.wallet_info_head{
+    width: 100%;
+    font-size: 16px;
+    font-weight: 300;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    
+}
+
+.wallet_info_head svg{
+    width: 24px;
+    height: 24px;
+}
+
+
+
+.Wallet_balance{
+
+    font-size: 30px;
+    font-weight: bold;
+
+}
+.Withdrawable_wallet_balance{
+
+    
+    font-size: 16px;
+    font-weight: 300;
+
+}
+.Wallet_balance_management{
+
+    height: 200px;
+    width: 100%;
+    background-color: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: space-around;
+    gap: 24px;
+    color: var(--white-color);
+
+}
+.Wallet_balance_management_title{
+
+    display: flex;
+    align-items: center;
+    width: 100%;
+    justify-content: space-between;
+    font-size: 30px;
+    font-weight: bold;
+
+}
+
+.Wallet_balance_management_title svg{
+    width: 24px;
+    height: 24px;
+
+}
+.Withdraw_Deposit_btn{
+    direction: ltr;
+    display: grid;
+    grid-template-columns: repeat(2 , 1fr);
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+}
+.Deposit_btn{
+    cursor: pointer;
+    direction: rtl;
+    height: 54px;
+    border: none;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: normal;
+    background-color: var(--color-primary);
+    color: var(--background-color);
+    box-shadow: 0px 0px 10px var(--primary-color-shadow);
+
+}
+.Withdraw_btn{
+    cursor: pointer;
+    direction: rtl;
+    height: 54px;
+    border: 1px solid var(--color-primary);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-size: 18px;
+    font-weight: normal;
+    background-color: var(--background-color);
+    color: var(--color-primary);    
+    box-shadow: 0px 0px 10px var(--primary-color-shadow);
+
+
+}
+.Withdraw_Deposit_btn svg{
+    width: 20px;
+    height: 20px;
+
+}
+
+
+
+
+/* از اینجا به بعد مربوط به فیلت تراکنش ها هست */
+
+
+
+
+.Transaction{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-top: 20px;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+
+}
+.Transaction_filters_ordering{
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+
+.Transaction_filters{
+    display: flex;
+    gap: 10px;
+}
+
+.Transaction_filters button{
+
+    border: none;
+    min-width: 120px;
+    max-width: 200px;
+    height: 40px;
+    font-size: 16px;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.none_active{
+    background-color: var(--background-color);
+    color: var(--white-color);
+    font-weight: 300;
+}
+.active{
+    background-color: var(--color-primary);
+    color: var(--background-color);
+    font-weight: normal;
+}
+
+.none_active:hover{
+    border:1px solid var(--border-color);
+}
+
+.all{}
+.filter_item{}
+
+
+.Transaction_ordering select{
+    border: none;
+    width: 150px;
+    height: 30px;
+    padding: 5px;
+    font-size: 14px;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: transparent;
+    color: var(--white-color);
+    border: 1px solid var(--border-color);
+    font-weight: 300;
+}
+
+.Transaction_ordering select option{
+    background-color: var(--card-color);
+    border: none;
+    font-size: 14px;
+
+}
+
+
+/* از این قسمت به پایین کد های مربوط به استایل تراکنش ها هست */
+
+
+
+.Transactions_container{
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: start;
+    gap: 10px;
+    margin-top: 20px;
+}
+.Transaction_item{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    background-color: var(--card-color);
+    padding: 10px;
+    border-radius: 5px;
+    position: relative;
+
+}
+
+
+ /* //////////////////////////////////// */
+/* 
+ .Withdraw{
+    border: 1px solid var(--red-color);
+ }
+ .Deposit{
+    border: 1px solid var(--green-color);
+ }
+ .Spending{
+    border: 1px solid var(--color-primary);
+ }
+  */
+  /* //////////////////////////////////// */
+
+
+.Transaction_mode_date{
+    position: absolute;
+    right: 70px;
+    color: var(--white-color);
+    font-size: 16px;
+    font-weight: 300;
+    display: flex   ;
+    
+}
+.date{
+    position: absolute;
+    right: 100px;
+    display: flex;
+    min-width: 100px;
+}
+
+
+
+.Transaction_prise_status{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+}
+.prise{
+    color: var(--white-color);
+    font-size: 16px;
+    font-weight: 300;
+}
+
+
+
+
+
+
+/* status */
+
+.status{
+    font-size: 14px;
+    font-weight: normal;
+    margin-left: 20px;
+}
+
+ .Not_done{
+    color: var(--red-color);
+}
+ .done{
+    color: var(--green-color);
+
+}
+
+
+
+
+
+/* Icons style */
+
+.icon_container{
+    width: 34px;
+    height: 44px;
+    border-radius: 1000px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--background-color);
+
+}
+
+ .icon_container  .Withdraw_icon  {
+    width: 20px;
+    height: 20px;
+    background: url("/img/icons/up-arrow.svg") no-repeat center;
+    background-size: contain;
+    
+  }
+  
+   .icon_container  .Deposit_icon  {
+    width: 20px;
+    height: 20px;
+    background: url("/img/icons/down-arrow.svg") no-repeat center;
+    background-size: contain;
+    
+  }
+  
+   .icon_container  .Spending_icon  {
+    width: 20px;
+    height: 20px;
+    background: url("/img/icons/money.svg") no-repeat center;
+    background-size: contain;
+    
+  }
+  
+
+
+
+
