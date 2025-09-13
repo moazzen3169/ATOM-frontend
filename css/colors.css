@@ -99,3 +99,14 @@
   0% { transform: rotate(0deg); }
   100% { transform: rotate(360deg); }
 }
+
+
+
+
+
+/* کد های اسکرول بار */
+
+* {
+  scrollbar-width: auto; /* یا 'auto' یا 'none' */
+  scrollbar-color: var(--primary-border) var(--background-color); /* thumb و track */
+}

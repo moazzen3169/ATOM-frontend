@@ -421,10 +421,7 @@ margin-top: 100px;
 
 /*  کد های مربوط به اسکرول بار */
 
-* {
-    scrollbar-width: auto; /* یا 'auto' یا 'none' */
-    scrollbar-color: var(--primary-border) var(--background-color); /* thumb و track */
-  }
+
 
 
 /* استایل خطا ها */
