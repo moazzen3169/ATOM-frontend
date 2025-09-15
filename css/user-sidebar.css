@@ -71,17 +71,99 @@ a{
 
 }
 .exit{
-    background-color: var(--logout-color);
+    color: var(--logout-color);
 
 
 }
-.exit:hover{
-    background-color: var(--red-color);
-
-}
 
 
+/* ✅ وقتی عرض صفحه 1300px یا کمتر شد */
+@media (max-width: 1300px) {
+    .user_sidebar_container {
+      max-width: 70px;   /* سایدبار باریک‌تر */
+      width: 70px;
+      padding: 0;
+      align-items: center;
+    }
+  
+    .sidebar_logo img {
+      right: 50%;
+      transform: translateX(50%); /* لوگو وسط بشه */
+      width: 40px;
+      height: auto;
+    }
+  
+    .sidebar_links {
+      right: 7px;
+      width: 80%;
+      align-items: center;
+      padding: 0;
+      display: grid;
+      
+    }
+  
+    .sidebar_link {
+      justify-content: center;
+      padding: 0;
+      width: 100%;
+    }
+  
+    .sidebar_link span,   /* متن داخل لینک‌ها */
+    .sidebar_link p {
+      display: none; /* متن مخفی */
+    }
+  
+    .sidebar_link svg {
+      margin: 0;
+    }
+  }
+  
 
+
+
+
+
+  /* استایل پایه برای overlay + سایدبار */
+.right_sidebar_container {
+    display: none; /* در ابتدا مخفی */
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 100%; /* برای overlay */
+    height: 100%;
+    background: rgba(0,0,0,0.5); /* overlay */
+    z-index: 999; 
+  }
+  
+  /* خود سایدبار */
+  .right_sidebar {
+    position: absolute;
+    top: 0;
+    right: -300px; /* در ابتدا بیرون صفحه */
+    width: 300px;
+    height: 100%;
+    background: #fff;
+    transition: 0.3s ease;
+    padding: 20px;
+  }
+  
+  /* وقتی فعال بشه */
+  .right_sidebar_container.active {
+    display: block;
+  }
+  
+  .right_sidebar_container.active .right_sidebar {
+    right: 0; /* وارد صفحه میشه */
+  }
+  
+  /* دکمه بستن */
+  .close_btn {
+    background: none;
+    border: none;
+    font-size: 24px;
+    cursor: pointer;
+  }
+  
 
 
 

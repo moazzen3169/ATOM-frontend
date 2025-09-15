@@ -21,6 +21,7 @@
 
 --white-color:#FEFEFE;     /* رنگ سفید برای متن ها  */
 --dark-color:#0F172A;      /* رنگ تیره برای متن ها*/
+--gray-color:#57667D;      /* رنگ تیره برای متن ها*/
 --logout-color:#F87171;         /* رنگ دکمه های حذف یا خروج */ 
 --yellow-color:#D99F09;         /* رنگ دکمه های ریپورت */ 
       
@@ -49,8 +50,6 @@
 
 /* discord bg color */
 --discord-bg:#811CDA;
-
-
 --red-color:#C97878;
 --green-color:#82E995;
 
@@ -106,7 +105,16 @@
 
 /* کد های اسکرول بار */
 
-* {
-  scrollbar-width: auto; /* یا 'auto' یا 'none' */
-  scrollbar-color: var(--primary-border) var(--background-color); /* thumb و track */
+/* برای Chrome، Edge و Safari */
+::-webkit-scrollbar {
+  width: 5px; /* عرض عمودی */
+  height: 5px; /* ارتفاع افقی */
+}
+
+::-webkit-scrollbar-track {
+  background:transparent; /* رنگ پس‌زمینه‌ی track */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--primary-border); /* رنگ اسکرول */
 }
