@@ -3,222 +3,131 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <link rel="stylesheet" href="css/index.css">  
+    <link rel="stylesheet" href="css/index.css">
     <link rel="stylesheet" href="css/colors.css">
     <link rel="stylesheet" href="fonts/fonts.css">
-    <!-- <link rel="stylesheet" href="css/header.css"> -->
     <link rel="stylesheet" href="css/tournametn-cart.css">
     <link rel="stylesheet" href="css/game-slider.css">
-
-    <title> ATOM HOME PAGE</title>
+    <title>ATOM HOME PAGE</title>
 </head>
-
-    <!-- بخش لودیینگ -->
-    <div id="preloader">
-         <div class="loader"></div>
-    </div>
-
-
-<div id="header"></div>
-<script src="js/header.js"></script>
-
-
 <body>
-
-    <div class="scroll-container">
-
-    <!-- قسمت فیلترلینک ها و جستحو -->
-
-    <div class="search_bar_coontainer">
-        <div class="search_bar">
-            <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="11" cy="11" r="8"></circle>
-                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-              </svg>
-              
-              <input type="search" class="search-input" placeholder="جستجو..">
-        </div>
-        <div class="filters_link">
-            <a href="all-games.html/new">جدید ترین ها</a>
-            <a href="all-games.html/top">برگزیده ها</a>
-        </div>
+    <!-- Preloader -->
+    <div id="preloader">
+        <div class="loader"></div>
     </div>
 
+    <!-- Header -->
+    <div id="header"></div>
+    <script src="js/header.js"></script>
 
-        
-<!-- از این قسمت به پایین کد های موبوط به اسلایدر برای اندازه دسکاپ و تبلت رو داریم -->
-
-<div class="game_slider_container">
-    <div class="game_banner">
-        <div class="game_bg"><img src="" alt="banner"></div>
-        <div class="game_banner_content">
-            <div class="game_banner_title"><span></span></div>
-            <div class="game_banner_description"><span></span></div>
-            <div class="game_banner_links">
-                <button class="watch_tourament">مشاهده تورنومنت</button>
-                <a class="all_tournaments_link" href="tournaments.html"><span>همه تورنومنت ها</span></a>
+    <main class="scroll-container">
+        <!-- Search bar and filters -->
+        <div class="search_bar_coontainer">
+            <div class="search_bar">
+                <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                </svg>
+                <input type="search" class="search-input" placeholder="جستجو..">
+            </div>
+            <div class="filters_link">
+                <a href="all-games.html/new">جدید ترین ها</a>
+                <a href="all-games.html/top">برگزیده ها</a>
             </div>
         </div>
-    </div>
-    <div class="game_list">
 
-    </div>
-</div>
-
-<!-- این بخش مربوط به ریسپانسیو اسلایدر هستش در حالت موبایل -->
-
-
-<div class="mobile_slider_container">
-    <div class="mobile_slide">
-        <div class="mobile_game_banner"><img src="" alt="mobile banner"></div>
-        <div class="mobile_banner_content">
-            <div class="m_content_top">
-                <div class="mobile_join_link"><button><img src="img/icons/plus.svg" alt="join"></button></div>
-            </div>
-            <div class="m_content_bottom">
-                <div class="mobilr_content_title"> <span></span> </div>
-                <div class="mobile_content_description"> <span></span> </div>
-                <div class="mobile_content_user_count"> <span></span> </div>
-            </div>
-
-        </div>
-    </div>
-</div>
-
-
-
-
-
-<script src="js/slider-items.js"></script>
-
-
-
-
-
-    <div class="container">
-        
-
-
-        <section class="product-section">
-            <div class="section_title">
-                <span>بازیکنان برتر</span>
-            </div>
-            <div class="grid-container" id="grid-container"></div>
-                
-    <!-- قسمت 3نفر برتر تورنومنت -->
-     
-    <!-- <div class="leaderboard_item">
-        <div class="leaeder_profile">
-            <div class="profile_img">
-                <img src="img/profile.jpg" alt="profile">
-            </div>
-            <div class="user_name">
-                <span>QuantumQueen</span>
-            </div>
-            <div class="user_rank">
-                <span>1</span>
-            </div>
-        </div>
-        <div class="leader_info1 leader_info">
-            <span>تعداد برد :</span>
-            <span>190</span>
-        </div>
-        <div class="leader_info2 leader_info">
-            <span>امتیاز :</span>
-            <span>48,000</span>
-        </div>
-        <div class="leader_info3 leader_info">
-            <span>مجموع جوایز :</span>
-            <span>16,000,000تومان</span>
-        </div>
-    </div> -->
-
-
-
-          
-
-        </section>
-
-
-
-        <section class="product-section">
-            <div class="section_title">
-                <span>تورنمنت‌های پیش رو</span>
-            </div>
-            <!-- کارت تورنومنت ها اینجا نمایش داده میشه -->
-            <div class="grid-container" id="grid-container-tournaments"></div>
-
-                <a class="section_showALL" href="tournaments.html">مشاهده  همه</a>
-
-        </section>
-
-
-
-
-
-
-
-
-
-
-
-
-        
-
-        <section class="product-section">
-            <div class="grid-container">
-                <!-- اطلاعات کلی سایت -->
-
-                <div class="web_info_item">
-                    <div class="web_info_item_data">
-                        <span>۱۸.۷ میلیون دلار </span>
-                    </div>
-                    <div class="web_info_item_titr">
-                        <span> جوایز اهدا شده</span>
-                    </div>
-                </div>
-            
-                <div class="web_info_item">
-                    <div class="web_info_item_data">
-                        <span>2.4 هزار</span>
-                    </div>
-                    <div class="web_info_item_titr">
-                        <span> کابر فعال</span>
-                    </div>
-                </div>
-            
-                <div class="web_info_item">
-                    <div class="web_info_item_data">
-                        <span>125</span>
-                    </div>
-                    <div class="web_info_item_titr">
-                        <span> تورنمنت‌‌های برگزارشده</span>
+        <!-- Desktop and tablet slider -->
+        <div class="game_slider_container">
+            <div class="game_banner">
+                <div class="game_bg"><img src="img/placeholder.jpg" alt="banner"></div>
+                <div class="game_banner_content">
+                    <div class="game_banner_title"><span></span></div>
+                    <div class="game_banner_description"><span></span></div>
+                    <div class="game_banner_links">
+                        <button class="watch_tourament">مشاهده تورنومنت</button>
+                        <a class="all_tournaments_link" href="tournaments.html"><span>همه تورنومنت ها</span></a>
                     </div>
                 </div>
             </div>
+            <div class="game_list"></div>
+        </div>
 
-            <div class="section_showALL go-top"> برو بالا</div>
-        </section>
+        <!-- Mobile slider -->
+        <div class="mobile_slider_container">
+            <div class="mobile_slide">
+                <div class="mobile_game_banner"><img src="img/placeholder.jpg" alt="mobile banner"></div>
+                <div class="mobile_banner_content">
+                    <div class="m_content_top">
+                        <div class="mobile_join_link"><button><img src="img/icons/plus.svg" alt="join"></button></div>
+                    </div>
+                    <div class="m_content_bottom">
+                        <div class="mobilr_content_title"><span></span></div>
+                        <div class="mobile_content_description"><span></span></div>
+                        <div class="mobile_content_user_count"><span></span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
+        <script src="js/slider-items.js"></script>
 
+        <div class="container">
+            <!-- Top players section -->
+            <section class="product-section">
+                <div class="section_title">
+                    <span>بازیکنان برتر</span>
+                </div>
+                <div class="grid-container" id="grid-container"></div>
+            </section>
 
-    </div>
-</div>
+            <!-- Upcoming tournaments section -->
+            <section class="product-section">
+                <div class="section_title">
+                    <span>تورنمنت‌های پیش رو</span>
+                </div>
+                <div class="grid-container" id="grid-container-tournaments"></div>
+                <a class="section_showALL" href="tournaments.html">مشاهده همه</a>
+            </section>
 
+            <!-- Site info section -->
+            <section class="product-section">
+                <div class="grid-container">
+                    <div class="web_info_item">
+                        <div class="web_info_item_data">
+                            <span>۱۸.۷ میلیون دلار</span>
+                        </div>
+                        <div class="web_info_item_titr">
+                            <span>جوایز اهدا شده</span>
+                        </div>
+                    </div>
+                    <div class="web_info_item">
+                        <div class="web_info_item_data">
+                            <span>2.4 هزار</span>
+                        </div>
+                        <div class="web_info_item_titr">
+                            <span>کاربر فعال</span>
+                        </div>
+                    </div>
+                    <div class="web_info_item">
+                        <div class="web_info_item_data">
+                            <span>125</span>
+                        </div>
+                        <div class="web_info_item_titr">
+                            <span>تورنمنت‌های برگزارشده</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="section_showALL go-top">برو بالا</div>
+            </section>
+        </div>
+    </main>
 
-    <!------------------------------------------->
+    <!-- Footer -->
+    <div id="footer"></div>
+    <script src="js/footer.js"></script>
 
     <script src="js/tournament-card.js"></script>
     <script src="js/index.js"></script>
     <script src="js/loading.js"></script>
-
-
-    
 </body>
-
-    <div id="footer"></div>
-    <script src="js/footer.js"></script>
-
-
 </html>
