@@ -79,54 +79,57 @@ function initHeaderAndSidebar() {
   if (menuCloseButton) menuCloseButton.addEventListener('click', closeSidebar);
   if (overlay) overlay.addEventListener('click', closeSidebar);
 
-  // -------------------------------
-  document.addEventListener("DOMContentLoaded", function() {
-    const userButton = document.querySelector(".open_user_links");
-    const userMenu = document.querySelector(".user_info_links");
-    const notifButton = document.querySelector(".notification");
-    const notifMenu = document.querySelector(".notification_hover");
+  // کنترل منوهای کاربر و نوتیفیکیشن
+  const userButton = document.querySelector(".open_user_links");
+  const userMenu = document.querySelector(".user_info_links");
+  const notifButton = document.querySelector(".notification");
+  const notifMenu = document.querySelector(".notification_hover");
 
-    // در ابتدا منوها مخفی هستند
-    userMenu.style.display = "none";
-    notifMenu.style.display = "none";
+  if (userMenu) userMenu.style.display = "none";
+  if (notifMenu) notifMenu.style.display = "none";
 
-    function toggleMenu(menuToToggle, otherMenu) {
-        if (menuToToggle.style.display === "none") {
-            // منوی دیگر را ببند
-            otherMenu.style.display = "none";
-            // منوی مورد نظر را باز کن
-            menuToToggle.style.display = "block";
-        } else {
-            menuToToggle.style.display = "none";
-        }
-    }
+  function toggleMenu(menuToToggle, otherMenu) {
+      if (menuToToggle && menuToToggle.style.display === "none") {
+          // منوی دیگر را ببند
+          if (otherMenu) otherMenu.style.display = "none";
+          // منوی مورد نظر را باز کن
+          menuToToggle.style.display = "block";
+      } else if (menuToToggle) {
+          menuToToggle.style.display = "none";
+      }
+  }
 
-    // کلیک روی دکمه کاربر
+  // کلیک روی دکمه کاربر
+  if (userButton) {
     userButton.addEventListener("click", function(e) {
         e.stopPropagation(); // جلوگیری از بسته شدن منو توسط کلیک روی سند
         toggleMenu(userMenu, notifMenu);
     });
+  }
 
-    // کلیک روی دکمه نوتیفیکیشن
+  // کلیک روی دکمه نوتیفیکیشن
+  if (notifButton) {
     notifButton.addEventListener("click", function(e) {
         e.stopPropagation();
         toggleMenu(notifMenu, userMenu);
     });
+  }
 
-    // کلیک بیرون از منوها باعث بسته شدن آنها می‌شود
-    document.addEventListener("click", function() {
-        userMenu.style.display = "none";
-        notifMenu.style.display = "none";
-    });
+  // کلیک بیرون از منوها باعث بسته شدن آنها می‌شود
+  document.addEventListener("click", function() {
+      if (userMenu) userMenu.style.display = "none";
+      if (notifMenu) notifMenu.style.display = "none";
+  });
 
-    // جلوگیری از بسته شدن منو هنگام کلیک روی خود منوها
+  // جلوگیری از بسته شدن منو هنگام کلیک روی خود منوها
+  if (userMenu) {
     userMenu.addEventListener("click", function(e) {
         e.stopPropagation();
     });
+  }
+  if (notifMenu) {
     notifMenu.addEventListener("click", function(e) {
         e.stopPropagation();
     });
-});
-
-  
+  }
 }
