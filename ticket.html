@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>بخش تیکت</title>
+  <style>
+    /* Reset and base */
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      margin: 0;
+      font-family: "Tahoma", sans-serif;
+      background-color: #121828;
+      color: #e0e6f1;
+      direction: rtl;
+    }
+    a {
+      color: #00e0ff;
+      text-decoration: none;
+    }
+    a:hover {
+      text-decoration: underline;
+    }
+    button {
+      cursor: pointer;
+      border: none;
+      font-family: inherit;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 0 15px;
+      display: grid;
+      grid-template-columns: 1fr 400px;
+      gap: 20px;
+      min-height: 80vh;
+    }
+
+    /* Header */
+    .header-section {
+      grid-column: 1 / -1;
+      margin-bottom: 20px;
+    }
+    .header-section h1 {
+      margin: 0 0 5px 0;
+      font-weight: bold;
+      font-size: 1.8rem;
+    }
+    .header-section p {
+      margin: 0;
+      color: #a0a9c1;
+      font-size: 0.9rem;
+    }
+    .back-link {
+      color: #00e0ff;
+      font-size: 0.9rem;
+      margin-bottom: 10px;
+      display: inline-block;
+    }
+
+    /* Ticket list */
+    .ticket-list {
+      background-color: #1e293b;
+      border-radius: 10px;
+      padding: 15px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      overflow-y: auto;
+      max-height: 75vh;
+    }
+    .ticket-list-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    .ticket-list-header button {
+      background-color: #00e0ff;
+      color: #121828;
+      padding: 8px 15px;
+      border-radius: 6px;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+    .ticket-list-header button:hover {
+      background-color: #00b8cc;
+    }
+    .ticket-item {
+      background-color: #273549;
+      border-radius: 8px;
+      padding: 10px 15px;
+      border-left: 4px solid transparent;
+      cursor: pointer;
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    .ticket-item:hover {
+      background-color: #33415c;
+    }
+    .ticket-item.active {
+      border-left-color: #00e0ff;
+      background-color: #33415c;
+    }
+    .ticket-item .status {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-bottom: 5px;
+      color: white;
+    }
+    .status.reviewing {
+      background-color: #a855f7;
+    }
+    .status.answered {
+      background-color: #fbbf24;
+      color: #121828;
+    }
+    .status.in-progress {
+      background-color: #3b82f6;
+    }
+    .ticket-item .title {
+      font-weight: bold;
+      font-size: 1rem;
+      margin-bottom: 3px;
+    }
+    .ticket-item .excerpt {
+      font-size: 0.85rem;
+      color: #a0a9c1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .ticket-item .date {
+      font-size: 0.75rem;
+      color: #64748b;
+      margin-top: 5px;
+    }
+
+    /* Ticket detail */
+    .ticket-detail {
+      background-color: #1e293b;
+      border-radius: 10px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+      max-height: 75vh;
+      overflow-y: auto;
+    }
+    .ticket-detail .subject {
+      font-weight: bold;
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+    .ticket-detail .message {
+      background-color: #273549;
+      border-radius: 8px;
+      padding: 15px;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      white-space: pre-wrap;
+    }
+    .ticket-detail .support-message {
+      background-color: #33415c;
+      color: #a0a9c1;
+      font-size: 0.85rem;
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 6px;
+      white-space: pre-wrap;
+    }
+
+    /* Reply form */
+    .reply-form {
+      margin-top: auto;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      background-color: #273549;
+      border-radius: 8px;
+      padding: 10px;
+    }
+    .reply-form textarea {
+      flex-grow: 1;
+      resize: vertical;
+      min-height: 50px;
+      max-height: 150px;
+      border-radius: 6px;
+      border: none;
+      padding: 10px;
+      font-size: 0.9rem;
+      font-family: inherit;
+      background-color: #1e293b;
+      color: #e0e6f1;
+    }
+    .reply-form textarea::placeholder {
+      color: #64748b;
+    }
+    .reply-form button {
+      background-color: #00e0ff;
+      color: #121828;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-weight: bold;
+      transition: background-color 0.3s ease;
+    }
+    .reply-form button:hover {
+      background-color: #00b8cc;
+    }
+    .reply-form .attach {
+      color: #00e0ff;
+      font-size: 0.9rem;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .reply-form .attach input[type="file"] {
+      display: none;
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .container {
+        grid-template-columns: 1fr;
+        max-width: 100%;
+      }
+      .ticket-list {
+        max-height: 300px;
+      }
+      .ticket-detail {
+        max-height: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="#" class="back-link">بازگشت به داشبورد</a>
+    <div class="header-section">
+      <h1>بخش تیکت</h1>
+      <p>در این بخش می‌توانید تیکت‌های خود را مدیریت کنید</p>
+    </div>
+
+    <div class="ticket-detail">
+      <div class="subject">مشکل در ورود به حساب کاربری</div>
+      <div class="message">
+        من نمی‌توانم با رمز خود وارد حساب کاربری شوم. پیام خطای "رمز عبور نادرست است" را دریافت می‌کنم در حالی که مطمئنم رمز عبور را درست وارد کرده‌ام. لطفاً راهنمایی کنید.
+      </div>
+      <div class="support-message">
+        تیم پشتیبانی<br />
+        ۱۴۰۲/۰۵/۲۰ - ۱۶:۳۰<br />
+        سلام و وقت بخیر، لطفا مراحل زیر را انجام دهید:<br />
+        ۱. مرورگر خود را آپدیت کنید<br />
+        ۲. کوکی‌ها و کش مرورگر را پاک کنید<br />
+        ۳. مجدداً وارد شوید<br />
+        اگر مشکل ادامه داشت لطفاً اسکرین شات از خطا ارسال کنید.
+      </div>
+
+      <form class="reply-form" onsubmit="event.preventDefault(); alert('پیام ارسال شد!'); this.querySelector('textarea').value = '';">
+        <textarea placeholder="پاسخ خود را وارد کنید .."></textarea>
+        <label class="attach" for="file-input">+ افزودن پیوست
+          <input type="file" id="file-input" />
+        </label>
+        <button type="submit">ارسال پیام</button>
+      </form>
+    </div>
+
+    <div class="ticket-list">
+      <div class="ticket-list-header">
+        <span>تیکت های شما</span>
+        <button id="new-ticket-btn">+ ایجاد تیکت جدید</button>
+      </div>
+      <div class="ticket-item active">
+        <div class="status reviewing">در حال بررسی</div>
+        <div class="title">مشکل در ورود به حساب کاربری</div>
+        <div class="excerpt">من نمی‌توانم با رمز خود وارد حساب کاربری شوم...</div>
+        <div class="date">۱۴۰۲/۰۵/۲۰</div>
+      </div>
+      <div class="ticket-item">
+        <div class="status answered">پاسخ داده شد</div>
+        <div class="title">مشکل در ورود به حساب کاربری</div>
+        <div class="excerpt">من نمی‌توانم با رمز خود وارد حساب کاربری شوم...</div>
+        <div class="date">۱۴۰۲/۰۵/۲۰</div>
+      </div>
+      <div class="ticket-item">
+        <div class="status in-progress">در صف بررسی</div>
+        <div class="title">مشکل در ورود به حساب کاربری</div>
+        <div class="excerpt">من نمی‌توانم با رمز خود وارد حساب کاربری شوم...</div>
+        <div class="date">۱۴۰۲/۰۵/۲۰</div>
+      </div>
+      <div class="ticket-item">
+        <div class="status reviewing">در حال بررسی</div>
+        <div class="title">مشکل در ورود به حساب کاربری</div>
+        <div class="excerpt">من نمی‌توانم با رمز خود وارد حساب کاربری شوم...</div>
+        <div class="date">۱۴۰۲/۰۵/۲۰</div>
+      </div>
+    </div>
+
+    <!-- New Ticket Form Modal -->
+    <div id="new-ticket-modal" style="display:none; position: fixed; top:0; left:0; width:100%; height:100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;">
+      <div style="background:#1e293b; padding: 20px; border-radius: 10px; max-width: 500px; width: 90%; color: #e0e6f1; display: flex; flex-direction: column; gap: 15px;">
+        <h2>ایجاد تیکت جدید</h2>
+        <form id="new-ticket-form">
+          <label for="ticket-subject">موضوع تیکت:</label>
+          <input type="text" id="ticket-subject" name="subject" required style="width: 100%; padding: 8px; border-radius: 6px; border: none; background: #273549; color: #e0e6f1;"/>
+          <label for="ticket-message">متن پیام:</label>
+          <textarea id="ticket-message" name="message" rows="5" required style="width: 100%; padding: 8px; border-radius: 6px; border: none; background: #273549; color: #e0e6f1;"></textarea>
+          <div style="display: flex; justify-content: flex-end; gap: 10px;">
+            <button type="button" id="cancel-new-ticket" style="background: #64748b; color: #e0e6f1; padding: 8px 15px; border-radius: 6px;">انصراف</button>
+            <button type="submit" style="background: #00e0ff; color: #121828; padding: 8px 15px; border-radius: 6px;">ارسال تیکت</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const newTicketBtn = document.getElementById('new-ticket-btn');
+    const newTicketModal = document.getElementById('new-ticket-modal');
+    const cancelNewTicketBtn = document.getElementById('cancel-new-ticket');
+    const newTicketForm = document.getElementById('new-ticket-form');
+
+    newTicketBtn.addEventListener('click', () => {
+      newTicketModal.style.display = 'flex';
+    });
+
+    cancelNewTicketBtn.addEventListener('click', () => {
+      newTicketModal.style.display = 'none';
+    });
+
+    newTicketForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      alert('تیکت جدید ارسال شد!');
+      newTicketModal.style.display = 'none';
+      newTicketForm.reset();
+    });
+  </script>
+</body>
+</html>

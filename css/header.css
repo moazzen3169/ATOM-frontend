@@ -2,18 +2,21 @@ header {
     direction: rtl;
     background: linear-gradient(to bottom, var(--header-gradiant), #00000000);
   }
-  
+
   a {
     text-decoration: none;
   }
-  
+
   li {
     list-style: none;
   }
-  
+
+  .hidden {
+    display: none !important;
+  }
+
   .header_container {
-    display: grid;
-    grid-template-columns: 185px 600px;
+    display: flex;
     justify-content: space-between;
     max-width: 1400px;
     height: 80px;
@@ -21,10 +24,11 @@ header {
     align-items: center;
     padding: 0px 25px;
   }
-  
+
   .right_section {
-    display: grid;
-    grid-template-columns: 185px 380px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
   }
   
   .logo {
@@ -275,6 +279,18 @@ header {
   }
   
   /* ===================== حالت ریسپانسیو ===================== */
+  @media (max-width: 1200px) {
+    .header_container {
+      padding: 0px 15px;
+    }
+    .nav ul {
+      gap: 20px;
+    }
+    .nav ul li a {
+      font-size: 14px;
+    }
+  }
+
   @media (max-width: 900px) {
     .header_container {
       display: none;

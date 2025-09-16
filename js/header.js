@@ -1,16 +1,16 @@
 document.addEventListener("DOMContentLoaded", function () {
-  fetch("../header.html")
+  fetch("header.html")
     .then(response => response.text())
     .then(data => {
       document.getElementById("header").innerHTML = data;
 
-      // بعد از لود شدن هدر، بقیه کدها رو اجرا کن
+      // After loading header, initialize functions
       initHeaderAndSidebar();
 
-      // اسکرول به بالای صفحه
+      // Scroll to top
       window.scrollTo(0, 0);
     })
-    .catch(error => console.error("خطا در بارگذاری هدر:", error));
+    .catch(error => console.error("Error loading header:", error));
 });
 
 function initHeaderAndSidebar() {
@@ -23,22 +23,22 @@ function initHeaderAndSidebar() {
 
   const userToken = localStorage.getItem('userAuthToken');
 
-  // نمایش بر اساس وضعیت لاگین
+  // Show/hide based on login status
   if (userToken) {
-    if (headerUserLoggedIn) headerUserLoggedIn.style.display = 'flex';
-    if (headerRegister) headerRegister.style.display = 'none';
-    if (sidebarUserLoggedIn) sidebarUserLoggedIn.style.display = 'flex';
-    if (sidebarUserNotLoggedIn) sidebarUserNotLoggedIn.style.display = 'none';
-    if (exitButton) exitButton.style.display = 'block';
+    if (headerUserLoggedIn) headerUserLoggedIn.classList.remove('hidden');
+    if (headerRegister) headerRegister.classList.add('hidden');
+    if (sidebarUserLoggedIn) sidebarUserLoggedIn.classList.remove('hidden');
+    if (sidebarUserNotLoggedIn) sidebarUserNotLoggedIn.classList.add('hidden');
+    if (exitButton) exitButton.classList.remove('hidden');
   } else {
-    if (headerUserLoggedIn) headerUserLoggedIn.style.display = 'none';
-    if (headerRegister) headerRegister.style.display = 'flex';
-    if (sidebarUserLoggedIn) sidebarUserLoggedIn.style.display = 'none';
-    if (sidebarUserNotLoggedIn) sidebarUserNotLoggedIn.style.display = 'flex';
-    if (exitButton) exitButton.style.display = 'none';
+    if (headerUserLoggedIn) headerUserLoggedIn.classList.add('hidden');
+    if (headerRegister) headerRegister.classList.remove('hidden');
+    if (sidebarUserLoggedIn) sidebarUserLoggedIn.classList.add('hidden');
+    if (sidebarUserNotLoggedIn) sidebarUserNotLoggedIn.classList.remove('hidden');
+    if (exitButton) exitButton.classList.add('hidden');
   }
 
-  // ورود آزمایشی
+  // Test login button
   if (sidebarLoginButton) {
     sidebarLoginButton.addEventListener('click', function (event) {
       event.preventDefault();
@@ -47,7 +47,7 @@ function initHeaderAndSidebar() {
     });
   }
 
-  // خروج از حساب
+  // Logout button
   if (exitButton) {
     exitButton.addEventListener('click', function (event) {
       event.preventDefault();
@@ -56,7 +56,7 @@ function initHeaderAndSidebar() {
     });
   }
 
-  // کنترل منو موبایل
+  // Mobile menu control
   const menuOpenButton = document.querySelector('.hidden_menu_btn');
   const menuCloseButton = document.querySelector('.close_btn');
   const overlay = document.querySelector('.mobile_overlay');
@@ -79,7 +79,7 @@ function initHeaderAndSidebar() {
   if (menuCloseButton) menuCloseButton.addEventListener('click', closeSidebar);
   if (overlay) overlay.addEventListener('click', closeSidebar);
 
-  // کنترل منوهای کاربر و نوتیفیکیشن
+  // User and notification menu control
   const userButton = document.querySelector(".open_user_links");
   const userMenu = document.querySelector(".user_info_links");
   const notifButton = document.querySelector(".notification");
@@ -90,24 +90,24 @@ function initHeaderAndSidebar() {
 
   function toggleMenu(menuToToggle, otherMenu) {
       if (menuToToggle && menuToToggle.style.display === "none") {
-          // منوی دیگر را ببند
+          // Close other menu
           if (otherMenu) otherMenu.style.display = "none";
-          // منوی مورد نظر را باز کن
+          // Open target menu
           menuToToggle.style.display = "block";
       } else if (menuToToggle) {
           menuToToggle.style.display = "none";
       }
   }
 
-  // کلیک روی دکمه کاربر
+  // Click user button
   if (userButton) {
     userButton.addEventListener("click", function(e) {
-        e.stopPropagation(); // جلوگیری از بسته شدن منو توسط کلیک روی سند
+        e.stopPropagation(); // Prevent closing menu on document click
         toggleMenu(userMenu, notifMenu);
     });
   }
 
-  // کلیک روی دکمه نوتیفیکیشن
+  // Click notification button
   if (notifButton) {
     notifButton.addEventListener("click", function(e) {
         e.stopPropagation();
@@ -115,13 +115,13 @@ function initHeaderAndSidebar() {
     });
   }
 
-  // کلیک بیرون از منوها باعث بسته شدن آنها می‌شود
+  // Click outside menus closes them
   document.addEventListener("click", function() {
       if (userMenu) userMenu.style.display = "none";
       if (notifMenu) notifMenu.style.display = "none";
   });
 
-  // جلوگیری از بسته شدن منو هنگام کلیک روی خود منوها
+  // Prevent closing menu when clicking inside menus
   if (userMenu) {
     userMenu.addEventListener("click", function(e) {
         e.stopPropagation();

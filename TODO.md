@@ -1,7 +1,7 @@
-# TODO: Optimize Tournaments Page
+# Header Optimization Tasks
 
-- [x] Clean up tournaments.html: Fix indentation, structure, and ensure consistent HTML.
-- [x] Organize css/tournaments.css: Group rules logically, remove redundancies.
-- [x] Refactor js/tournaments.js: Improve readability, naming, comments, error handling.
-- [x] Report any duplicate code found across the files.
-- [x] Test the page functionality using browser_action. (Skipped due to tool limitation, but code is optimized.)
+- [x] Edit header.html: Remove full HTML document structure, keep only <header> element. Remove inline styles, add classes for login states.
+- [x] Edit css/header.css: Change layout to flexbox for responsiveness. Adjust dropdowns for mobile. Add touch-friendly styles.
+- [x] Edit js/header.js: Add touch event support, keyboard navigation, ARIA attributes for accessibility.
+- [ ] Test header functionality in browser.
+- [ ] Verify responsiveness and touch interactions.

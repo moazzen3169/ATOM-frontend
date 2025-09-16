@@ -1,18 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <!-- پالت رنگی و فونت ها -->
 
-     <link rel="stylesheet" href="css/colors.css">
-     <link rel="stylesheet" href="fonts/fonts.css">
+<link rel="stylesheet" href="css/colors.css">
+<link rel="stylesheet" href="css/header.css">
+<link rel="stylesheet" href="fonts/fonts.css">
 
-    <!-- استایل هدر -->
-
-    <link rel="stylesheet" href="css/header.css">
-
-</head>
 
 <header>
     <div class="header_container">
@@ -32,57 +22,56 @@
             </div>
         </div>
 
-        <div class="register"  style="display: none;" >
+        <div class="register hidden">
             <div class="login">
                 <a href="register/login.html">ورود</a>
             </div>
             <div class="signin">
                 <a href="register/signup.html">ثبنام</a>
             </div>
-
         </div>
 
         <!-- بخش پایین زمانی نمایش داده میشود که کاربر وارد حساب کاربری خود شده باشه -->
-        <div class="user_islogin_to_register" style="display: none;">
+        <div class="user_islogin_to_register hidden">
 
             <div class="wallet_info">
                 <span>12,000,000 تومان</span>
                 <img src="img/icons/wallet.svg" alt="wallet">
-            </div>  
+            </div>
 
-            
+
             <div class="user-menu-wrapper">
-                <button class="open_user_links">
+                <button class="open_user_links" aria-haspopup="true" aria-expanded="false" aria-controls="userMenu">
                     <img src="img/icons/user-icon.svg" alt="user-icon" width="20px">
                 </button>
                                 <!-- این بخش بعد از هاور روی دکمه  کاربر نمایش داده مشود -->
 
-                <div class="user_info_links ">
-                    <div class="link_item">
+                <div class="user_info_links " id="userMenu" role="menu" tabindex="-1">
+                    <div class="link_item" role="menuitem">
                         <a href="#">
                             <img src="img/icons/user-icon.svg" alt="user-icon" width="14px">
                             <span>پروفایل</span>
                         </a>
                     </div>
-                    <div class="link_item">
+                    <div class="link_item" role="menuitem">
                         <a href="#">
                             <img src="img/icons/wallet.svg" alt="user-icon" width="14px">
                             <span>کیف پول من</span>
                         </a>
                     </div>
-                    <div class="link_item">
+                    <div class="link_item" role="menuitem">
                         <a href="#">
                             <img src="img/icons/check.svg" alt="user-icon" width="14px">
                             <span>تیکت</span>
                         </a>
                     </div>
-                    <div class="link_item">
+                    <div class="link_item" role="menuitem">
                         <a href="#">
                             <img src="img/icons/chat.svg" alt="user-icon" width="14px">
                             <span>گفتگو با دوستان</span>
                         </a>
                     </div>
-                    <div class="link_item exit_item">
+                    <div class="link_item exit_item" role="menuitem">
                         <a href="#">
                             <img src="img/icons/exit.svg" alt="user-icon" width="14px">
                             <span>خروج</span>
@@ -92,10 +81,10 @@
             </div>
 
             <div class="notification_bar">
-                <button class="notification">
+                <button class="notification" aria-haspopup="true" aria-expanded="false" aria-controls="notifMenu">
                     <img src="img/icons/notification.svg" alt="notification">
                 </button>
-                <div class="notification_hover">
+                <div class="notification_hover" id="notifMenu" role="menu" tabindex="-1">
                     <div class="notification_title">
                         <img src="img/icons/edit.svg" alt="notification">
                         <span>اعلان ها</span>
@@ -124,7 +113,7 @@
     <div class="hidden_mobile_section">
 
         <div class="menu_and_register">
-            <button class="hidden_menu_btn">
+            <button class="hidden_menu_btn" aria-label="Open menu">
                 <img src="img/icons/menu.svg" alt="menu" width="24px" >
             </button>
         </div>
@@ -135,19 +124,19 @@
 
     </div>
     <!-- بخش  سایدبار و overlay -->
-     
+
     <div class="mobile_overlay"></div>
     <div class="mobile_sidbar">
 
         <div class="close">
-            <button class="close_btn">
+            <button class="close_btn" aria-label="Close menu">
                 <img src="img/icons/close.svg" alt="close" width="18px">
             </button>
         </div>
 
         <!-- این درحالتی است که کاربر وارد حساب کاربری شده باشد -->
 
-        <div class="user_info_islogin" style="display: none;">
+        <div class="user_info_islogin hidden">
             <div class="edit">
                 <a href="#"><img src="img/icons/edit.svg" alt="edit"></a>
             </div>
@@ -164,7 +153,7 @@
 
         <!-- این در حالتی است که کابر وارد حساب کاربری نشده باشد -->
 
-        <div class="user_info_isnontlogin" style="display: none;">
+        <div class="user_info_isnontlogin hidden">
             <div class="please_login_title">
                 <span>خوش آمدیداز این بخش وارد حساب خود بشوید</span>
             </div>
@@ -184,11 +173,11 @@
                     <li><a href="#">رتبه بندی بازی کن ها</a></li>
                     <li><a href="#">کیف پول من</a></li>
                     <li><a href="#">گفتگو</a></li>
-                </ul>    
+                </ul>
             </div>
 
             <div class="sidebar_links_bottom">
-                <div class="exit_account" style="display: none;">
+                <div class="exit_account hidden">
                     <a href="#">
                         <img src="img/icons/exit.svg" alt="exit" width="24px">
                         <span>خروج</span>
@@ -201,6 +190,3 @@
 
     </div>
 </header>
-
-<script src="js/header.js"></script>
-</html>
