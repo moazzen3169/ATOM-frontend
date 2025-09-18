@@ -16,7 +16,7 @@
     position: fixed;
     top: 20px;
 
-}
+  }
 
 
 .sidebar_logo img{ 
@@ -25,9 +25,7 @@
     right: 52.91px;
     width: 121.18px;
     height: 48.13px;
-
-
-}
+  }
 .sidebar_links{
     position: absolute;
     top: 150px;
@@ -85,36 +83,41 @@ a{
       padding: 0;
       align-items: center;
     }
-  
+
     .sidebar_logo img {
       right: 50%;
       transform: translateX(50%); /* لوگو وسط بشه */
       width: 40px;
       height: auto;
     }
-  
+
     .sidebar_links {
       right: 7px;
       width: 80%;
       align-items: center;
       padding: 0;
       display: grid;
-      
+
     }
-  
+
     .sidebar_link {
       justify-content: center;
       padding: 0;
       width: 100%;
     }
-  
+
     .sidebar_link span,   /* متن داخل لینک‌ها */
     .sidebar_link p {
       display: none; /* متن مخفی */
     }
-  
+
     .sidebar_link svg {
       margin: 0;
+    }
+
+    /* Hide the sidebar toggle button on screens 1300px or less */
+    .page_title button {
+      display: none;
     }
   }
   
@@ -128,7 +131,7 @@ a{
     display: none; /* در ابتدا مخفی */
     position: fixed;
     top: 0;
-    right: 0;
+    right: 0px;
     width: 100%; /* برای overlay */
     height: 100%;
     background: rgba(0,0,0,0.5); /* overlay */
@@ -139,7 +142,7 @@ a{
   .right_sidebar {
     position: absolute;
     top: 0;
-    right: -300px; /* در ابتدا بیرون صفحه */
+    /* right: -300px; در ابتدا بیرون صفحه */
     width: 300px;
     height: 100%;
     background: #fff;

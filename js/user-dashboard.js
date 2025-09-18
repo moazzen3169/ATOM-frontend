@@ -19,28 +19,27 @@ closeBtn.addEventListener("click", function() {
       .then(res => res.text())
       .then(data => {
         document.getElementById("sidebar").innerHTML = data;
-      });
 
-
-
-
-
-    //   کد های سایدبار مخفی
-
-
-
-    function openSidebar() {
-        document.getElementById("rightSidebar").classList.add("active");
-      }
-  
-      function closeSidebar() {
-        document.getElementById("rightSidebar").classList.remove("active");
-      }
-  
-      // بستن با کلیک روی overlay
-      document.getElementById("rightSidebar").addEventListener("click", function(e) {
-        if (e.target.id === "rightSidebar") {
-          closeSidebar();
+        // کد های سایدبار مخفی بعد از لود شدن
+        function openSidebar() {
+          document.getElementById("rightSidebar").classList.add("active");
         }
-          });ent.querySelector(".close_btn").addEventListener("click", closeSidebar);
+
+        function closeSidebar() {
+          document.getElementById("rightSidebar").classList.remove("active");
+        }
+
+        // بستن با کلیک روی overlay
+        document.getElementById("rightSidebar").addEventListener("click", function(e) {
+          if (e.target.id === "rightSidebar") {
+            closeSidebar();
+          }
+        });
+
+        // بستن با دکمه close
+        document.querySelector(".close_btn").addEventListener("click", closeSidebar);
+
+        // باز کردن سایدبار از طریق دکمه در HTML
+        window.openSidebar = openSidebar;
+      });
   
