@@ -1,8 +1,16 @@
 document.addEventListener("DOMContentLoaded", function () {
+  const headerContainer = document.getElementById("header");
+
+  if (!headerContainer) {
+    initHeaderMenuDelegation();
+    initHeaderAndSidebar();
+    return;
+  }
+
   fetch("header.html")
     .then(response => response.text())
     .then(data => {
-      document.getElementById("header").innerHTML = data;
+      headerContainer.innerHTML = data;
 
       // After loading header, initialize functions
       initHeaderAndSidebar();
@@ -12,6 +20,106 @@ document.addEventListener("DOMContentLoaded", function () {
     })
     .catch(error => console.error("Error loading header:", error));
 });
+
+const closest = (element, selector) => {
+  if (!element || typeof element.closest !== "function") {
+    return null;
+  }
+
+  return element.closest(selector);
+};
+
+const getHeaderElements = () => ({
+  userButton: document.querySelector(".open_user_links"),
+  userMenu: document.querySelector(".user_info_links"),
+  notifButton: document.querySelector(".notification"),
+  notifMenu: document.querySelector(".notification_hover")
+});
+
+const closeMenus = () => {
+  const { userMenu, notifMenu, userButton, notifButton } = getHeaderElements();
+
+  if (userMenu) userMenu.classList.remove("is-open");
+  if (notifMenu) notifMenu.classList.remove("is-open");
+  if (userButton) userButton.setAttribute("aria-expanded", "false");
+  if (notifButton) notifButton.setAttribute("aria-expanded", "false");
+};
+
+const toggleMenu = (type) => {
+  const {
+    userMenu,
+    notifMenu,
+    userButton,
+    notifButton
+  } = getHeaderElements();
+
+  const isUser = type === "user";
+  const menuToToggle = isUser ? userMenu : notifMenu;
+  const otherMenu = isUser ? notifMenu : userMenu;
+  const trigger = isUser ? userButton : notifButton;
+  const otherTrigger = isUser ? notifButton : userButton;
+
+  if (!menuToToggle || !trigger) return;
+
+  if (otherMenu) {
+    otherMenu.classList.remove("is-open");
+  }
+
+  if (otherTrigger) {
+    otherTrigger.setAttribute("aria-expanded", "false");
+  }
+
+  const isOpen = menuToToggle.classList.toggle("is-open");
+  trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+};
+
+function initHeaderMenuDelegation() {
+  if (window.__headerMenuDelegationInitialized) {
+    return;
+  }
+
+  document.addEventListener("click", function (event) {
+    const target = event.target;
+    if (!target) return;
+
+    const userToggle = closest(target, ".open_user_links");
+    if (userToggle) {
+      event.preventDefault();
+      toggleMenu("user");
+      return;
+    }
+
+    const notifToggle = closest(target, ".notification");
+    if (notifToggle) {
+      event.preventDefault();
+      toggleMenu("notification");
+      return;
+    }
+
+    if (
+      closest(target, ".user_info_links") ||
+      closest(target, ".notification_hover")
+    ) {
+      return;
+    }
+
+    closeMenus();
+  });
+
+  window.__headerMenuDelegationInitialized = true;
+  window.__headerCloseMenus = closeMenus;
+}
+
+function bindNamedHandler(element, handlerKey, handler) {
+  if (!element) return;
+
+  if (element[handlerKey]) {
+    element.removeEventListener("click", element[handlerKey]);
+  }
+
+  element.addEventListener("click", handler);
+  element[handlerKey] = handler;
+}
 
 function initHeaderAndSidebar() {
   const headerUserLoggedIn = document.querySelector('.user_islogin_to_register');
@@ -39,22 +147,18 @@ function initHeaderAndSidebar() {
   }
 
   // Test login button
-  if (sidebarLoginButton) {
-    sidebarLoginButton.addEventListener('click', function (event) {
-      event.preventDefault();
-      localStorage.setItem('userAuthToken', 'DUMMY_LOGGED_IN_TOKEN_12345');
-      location.reload();
-    });
-  }
+  bindNamedHandler(sidebarLoginButton, "__headerLoginHandler", function (event) {
+    event.preventDefault();
+    localStorage.setItem('userAuthToken', 'DUMMY_LOGGED_IN_TOKEN_12345');
+    location.reload();
+  });
 
   // Logout button
-  if (exitButton) {
-    exitButton.addEventListener('click', function (event) {
-      event.preventDefault();
-      localStorage.removeItem('userAuthToken');
-      location.reload();
-    });
-  }
+  bindNamedHandler(exitButton, "__headerLogoutHandler", function (event) {
+    event.preventDefault();
+    localStorage.removeItem('userAuthToken');
+    location.reload();
+  });
 
   // Mobile menu control
   const menuOpenButton = document.querySelector('.hidden_menu_btn');
@@ -75,106 +179,11 @@ function initHeaderAndSidebar() {
     body.style.overflow = '';
   };
 
-  if (menuOpenButton) menuOpenButton.addEventListener('click', openSidebar);
-  if (menuCloseButton) menuCloseButton.addEventListener('click', closeSidebar);
-  if (overlay) overlay.addEventListener('click', closeSidebar);
+  bindNamedHandler(menuOpenButton, "__headerMenuOpenHandler", openSidebar);
+  bindNamedHandler(menuCloseButton, "__headerMenuCloseHandler", closeSidebar);
+  bindNamedHandler(overlay, "__headerOverlayHandler", closeSidebar);
 
-  // User and notification menu control
-  const userButton = document.querySelector(".open_user_links");
-  const userMenu = document.querySelector(".user_info_links");
-  const notifButton = document.querySelector(".notification");
-  const notifMenu = document.querySelector(".notification_hover");
-
-  const toggleMenu = (menuToToggle, otherMenu, trigger, otherTrigger) => {
-    if (!menuToToggle) return;
-
-    const isOpen = menuToToggle.classList.toggle("is-open");
-
-    if (trigger) {
-      trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
-    }
-
-    if (otherMenu) {
-      otherMenu.classList.remove("is-open");
-    }
-
-    if (otherTrigger) {
-      otherTrigger.setAttribute("aria-expanded", "false");
-    }
-  };
-
-  const closeMenus = () => {
-    if (userMenu) userMenu.classList.remove("is-open");
-    if (notifMenu) notifMenu.classList.remove("is-open");
-    if (userButton) userButton.setAttribute("aria-expanded", "false");
-    if (notifButton) notifButton.setAttribute("aria-expanded", "false");
-  };
-
-  // Always ensure menus start in a closed state on each init call
+  // Always ensure menus start in a closed state and handlers are ready
   closeMenus();
-
-  const menusReady = userButton || notifButton;
-
-  if (!menusReady) {
-    if (window.__headerDocumentClickHandler) {
-      document.removeEventListener("click", window.__headerDocumentClickHandler);
-      window.__headerDocumentClickHandler = null;
-    }
-    return;
-  }
-
-  const ensureHandler = (element, handlerName, handlerFactory) => {
-    if (!element) return null;
-
-    if (element[handlerName]) {
-      element.removeEventListener("click", element[handlerName]);
-    }
-
-    const handler = handlerFactory();
-    element.addEventListener("click", handler);
-    element[handlerName] = handler;
-    return handler;
-  };
-
-  ensureHandler(userButton, "__headerToggleHandler", () => function(e) {
-    e.stopPropagation();
-    toggleMenu(userMenu, notifMenu, userButton, notifButton);
-  });
-
-  ensureHandler(notifButton, "__headerToggleHandler", () => function(e) {
-    e.stopPropagation();
-    toggleMenu(notifMenu, userMenu, notifButton, userButton);
-  });
-
-  if (userMenu) {
-    ensureHandler(userMenu, "__headerStopPropagation", () => function(e) {
-      e.stopPropagation();
-    });
-  }
-
-  if (notifMenu) {
-    ensureHandler(notifMenu, "__headerStopPropagation", () => function(e) {
-      e.stopPropagation();
-    });
-  }
-
-  if (window.__headerDocumentClickHandler) {
-    document.removeEventListener("click", window.__headerDocumentClickHandler);
-  }
-
-  window.__headerDocumentClickHandler = function(e) {
-    if (
-      (userMenu && userMenu.contains(e.target)) ||
-      (userButton && userButton.contains(e.target)) ||
-      (notifMenu && notifMenu.contains(e.target)) ||
-      (notifButton && notifButton.contains(e.target))
-    ) {
-      return;
-    }
-
-    closeMenus();
-  };
-
-  document.addEventListener("click", window.__headerDocumentClickHandler);
-  window.__headerCloseMenus = closeMenus;
+  initHeaderMenuDelegation();
 }
