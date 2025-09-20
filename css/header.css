@@ -178,6 +178,11 @@ header {
     padding-top: 15px;
     margin-top: 10px;
   }
+
+  .user_info_links.is-open {
+    display: flex;
+    flex-direction: column;
+  }
   
 
   
@@ -213,7 +218,6 @@ header {
   }
   
   .notification_hover {
-
     position: absolute;
     transform: translateX(85%);
     top: 150%;
@@ -229,6 +233,10 @@ header {
     gap: 8px;
     z-index: 50;
     transition: opacity 0.3s ease;
+  }
+
+  .notification_hover.is-open {
+    display: flex;
   }
   
 
