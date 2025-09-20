@@ -115,39 +115,66 @@ function initHeaderAndSidebar() {
 
   const menusReady = userButton || notifButton;
 
-  if (!window.__headerMenuEventsBound && menusReady) {
-    if (userButton) {
-      userButton.addEventListener("click", function(e) {
-        e.stopPropagation();
-        toggleMenu(userMenu, notifMenu, userButton, notifButton);
-      });
+  if (!menusReady) {
+    if (window.__headerDocumentClickHandler) {
+      document.removeEventListener("click", window.__headerDocumentClickHandler);
+      window.__headerDocumentClickHandler = null;
     }
-
-    if (notifButton) {
-      notifButton.addEventListener("click", function(e) {
-        e.stopPropagation();
-        toggleMenu(notifMenu, userMenu, notifButton, userButton);
-      });
-    }
-
-    document.addEventListener("click", closeMenus);
-
-    if (userMenu) {
-      userMenu.addEventListener("click", function(e) {
-        e.stopPropagation();
-      });
-    }
-
-    if (notifMenu) {
-      notifMenu.addEventListener("click", function(e) {
-        e.stopPropagation();
-      });
-    }
-
-    window.__headerMenuEventsBound = true;
-    window.__headerCloseMenus = closeMenus;
-  } else if (typeof window.__headerCloseMenus === "function") {
-    // Subsequent calls should still collapse any open state without re-binding listeners
-    window.__headerCloseMenus();
+    return;
   }
+
+  const ensureHandler = (element, handlerName, handlerFactory) => {
+    if (!element) return null;
+
+    if (element[handlerName]) {
+      element.removeEventListener("click", element[handlerName]);
+    }
+
+    const handler = handlerFactory();
+    element.addEventListener("click", handler);
+    element[handlerName] = handler;
+    return handler;
+  };
+
+  ensureHandler(userButton, "__headerToggleHandler", () => function(e) {
+    e.stopPropagation();
+    toggleMenu(userMenu, notifMenu, userButton, notifButton);
+  });
+
+  ensureHandler(notifButton, "__headerToggleHandler", () => function(e) {
+    e.stopPropagation();
+    toggleMenu(notifMenu, userMenu, notifButton, userButton);
+  });
+
+  if (userMenu) {
+    ensureHandler(userMenu, "__headerStopPropagation", () => function(e) {
+      e.stopPropagation();
+    });
+  }
+
+  if (notifMenu) {
+    ensureHandler(notifMenu, "__headerStopPropagation", () => function(e) {
+      e.stopPropagation();
+    });
+  }
+
+  if (window.__headerDocumentClickHandler) {
+    document.removeEventListener("click", window.__headerDocumentClickHandler);
+  }
+
+  window.__headerDocumentClickHandler = function(e) {
+    if (
+      (userMenu && userMenu.contains(e.target)) ||
+      (userButton && userButton.contains(e.target)) ||
+      (notifMenu && notifMenu.contains(e.target)) ||
+      (notifButton && notifButton.contains(e.target))
+    ) {
+      return;
+    }
+
+    closeMenus();
+  };
+
+  document.addEventListener("click", window.__headerDocumentClickHandler);
+  window.__headerCloseMenus = closeMenus;
 }
