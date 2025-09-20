@@ -85,51 +85,69 @@ function initHeaderAndSidebar() {
   const notifButton = document.querySelector(".notification");
   const notifMenu = document.querySelector(".notification_hover");
 
-  if (userMenu) userMenu.style.display = "none";
-  if (notifMenu) notifMenu.style.display = "none";
+  const toggleMenu = (menuToToggle, otherMenu, trigger, otherTrigger) => {
+    if (!menuToToggle) return;
 
-  function toggleMenu(menuToToggle, otherMenu) {
-      if (menuToToggle && menuToToggle.style.display === "none") {
-          // Close other menu
-          if (otherMenu) otherMenu.style.display = "none";
-          // Open target menu
-          menuToToggle.style.display = "block";
-      } else if (menuToToggle) {
-          menuToToggle.style.display = "none";
-      }
-  }
+    const isOpen = menuToToggle.classList.toggle("is-open");
 
-  // Click user button
-  if (userButton) {
-    userButton.addEventListener("click", function(e) {
-        e.stopPropagation(); // Prevent closing menu on document click
-        toggleMenu(userMenu, notifMenu);
-    });
-  }
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    }
 
-  // Click notification button
-  if (notifButton) {
-    notifButton.addEventListener("click", function(e) {
+    if (otherMenu) {
+      otherMenu.classList.remove("is-open");
+    }
+
+    if (otherTrigger) {
+      otherTrigger.setAttribute("aria-expanded", "false");
+    }
+  };
+
+  const closeMenus = () => {
+    if (userMenu) userMenu.classList.remove("is-open");
+    if (notifMenu) notifMenu.classList.remove("is-open");
+    if (userButton) userButton.setAttribute("aria-expanded", "false");
+    if (notifButton) notifButton.setAttribute("aria-expanded", "false");
+  };
+
+  // Always ensure menus start in a closed state on each init call
+  closeMenus();
+
+  const menusReady = userButton || notifButton;
+
+  if (!window.__headerMenuEventsBound && menusReady) {
+    if (userButton) {
+      userButton.addEventListener("click", function(e) {
         e.stopPropagation();
-        toggleMenu(notifMenu, userMenu);
-    });
-  }
+        toggleMenu(userMenu, notifMenu, userButton, notifButton);
+      });
+    }
 
-  // Click outside menus closes them
-  document.addEventListener("click", function() {
-      if (userMenu) userMenu.style.display = "none";
-      if (notifMenu) notifMenu.style.display = "none";
-  });
+    if (notifButton) {
+      notifButton.addEventListener("click", function(e) {
+        e.stopPropagation();
+        toggleMenu(notifMenu, userMenu, notifButton, userButton);
+      });
+    }
 
-  // Prevent closing menu when clicking inside menus
-  if (userMenu) {
-    userMenu.addEventListener("click", function(e) {
+    document.addEventListener("click", closeMenus);
+
+    if (userMenu) {
+      userMenu.addEventListener("click", function(e) {
         e.stopPropagation();
-    });
-  }
-  if (notifMenu) {
-    notifMenu.addEventListener("click", function(e) {
+      });
+    }
+
+    if (notifMenu) {
+      notifMenu.addEventListener("click", function(e) {
         e.stopPropagation();
-    });
+      });
+    }
+
+    window.__headerMenuEventsBound = true;
+    window.__headerCloseMenus = closeMenus;
+  } else if (typeof window.__headerCloseMenus === "function") {
+    // Subsequent calls should still collapse any open state without re-binding listeners
+    window.__headerCloseMenus();
   }
 }
