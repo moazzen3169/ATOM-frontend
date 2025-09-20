@@ -85,25 +85,29 @@ function initHeaderAndSidebar() {
   const notifButton = document.querySelector(".notification");
   const notifMenu = document.querySelector(".notification_hover");
 
-  if (userMenu) userMenu.style.display = "none";
-  if (notifMenu) notifMenu.style.display = "none";
+  function toggleMenu(menuToToggle, otherMenu, trigger, otherTrigger) {
+    if (!menuToToggle) return;
 
-  function toggleMenu(menuToToggle, otherMenu) {
-      if (menuToToggle && menuToToggle.style.display === "none") {
-          // Close other menu
-          if (otherMenu) otherMenu.style.display = "none";
-          // Open target menu
-          menuToToggle.style.display = "block";
-      } else if (menuToToggle) {
-          menuToToggle.style.display = "none";
-      }
+    const isOpen = menuToToggle.classList.toggle("is-open");
+
+    if (trigger) {
+      trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+    }
+
+    if (otherMenu) {
+      otherMenu.classList.remove("is-open");
+    }
+
+    if (otherTrigger) {
+      otherTrigger.setAttribute("aria-expanded", "false");
+    }
   }
 
   // Click user button
   if (userButton) {
     userButton.addEventListener("click", function(e) {
         e.stopPropagation(); // Prevent closing menu on document click
-        toggleMenu(userMenu, notifMenu);
+        toggleMenu(userMenu, notifMenu, userButton, notifButton);
     });
   }
 
@@ -111,14 +115,16 @@ function initHeaderAndSidebar() {
   if (notifButton) {
     notifButton.addEventListener("click", function(e) {
         e.stopPropagation();
-        toggleMenu(notifMenu, userMenu);
+        toggleMenu(notifMenu, userMenu, notifButton, userButton);
     });
   }
 
   // Click outside menus closes them
   document.addEventListener("click", function() {
-      if (userMenu) userMenu.style.display = "none";
-      if (notifMenu) notifMenu.style.display = "none";
+      if (userMenu) userMenu.classList.remove("is-open");
+      if (notifMenu) notifMenu.classList.remove("is-open");
+      if (userButton) userButton.setAttribute("aria-expanded", "false");
+      if (notifButton) notifButton.setAttribute("aria-expanded", "false");
   });
 
   // Prevent closing menu when clicking inside menus
