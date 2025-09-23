@@ -170,12 +170,13 @@ header {
     left: 50%;
     transform: translateX(-50%);
     z-index: 1000;
-    gap: 20px;
+    gap: 0px;
     width: 165px;
+    height: 211px;
     background-color: var(--card-color);
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    padding-top: 15px;
+    padding: 5px;
     margin-top: 10px;
   }
 
@@ -184,10 +185,22 @@ header {
     flex-direction: column;
   }
   
+  .link_item.exit{
+    background-color: #ff00001e;
+  }
 
+  .link_item.exit:hover{
+    background-color: #ff000067;
+  }
   
   .link_item {
     padding: 10px;
+    border-radius: 5px;
+    transition: 0.1s ease;
+  }
+
+  .link_item:hover{
+    background-color: var(--border-color);
   }
   
   .link_item a {
@@ -237,6 +250,7 @@ header {
 
   .notification_hover.is-open {
     display: flex;
+    flex-direction: column;
   }
   
 
