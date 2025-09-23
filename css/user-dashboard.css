@@ -14,9 +14,9 @@
   /* ======= Layout Container ======= */
   .body_container {
     display: grid;
-    grid-template-columns:  repeat(10 , 1fr); /* دسکتاپ پیش‌فرض */
-    gap: 20px;
-    max-width: 1400px;
+    grid-template-columns:  repeat(12 , 1fr); /* دسکتاپ پیش‌فرض */
+    /* gap: 100px; */
+    max-width: 1500px;
     margin: 0 auto 25px auto;
     padding: 20px;
   }
@@ -26,7 +26,7 @@
   }
   
   main {
-    grid-column: 3/11;
+    grid-column: 3/13;
     display: grid;
     grid-template-columns: repeat(9, 1fr);
     gap: 20px;
@@ -158,11 +158,14 @@
     display: none;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    width: 100%;
+    height: 100%;
   }
   
   .user_info_edit_form.show {
     display: flex;
+
   }
   
   .user_info_edit_form form {
@@ -342,16 +345,18 @@
   }
   
 
+  .hidden_menu_sidebar_btn{
+    display: none;
+  }
 
   @media (max-width:1300px) {
     
     #sidebar {
-        grid-column: 1/0;
-        display: none;
+        grid-column: 1/2;
       }
       
       main {
-        grid-column: 1/11;
+        grid-column: 2/13;
         display: grid;
         /* grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); */
         gap: 20px;
@@ -359,21 +364,48 @@
   }
 
   
-  @media (max-width:920px) {
-    
+  @media (max-width:1064px) { 
 
-    .user_info_edit {
-        grid-column: 1/10;
+    /* در اینجا باید منو داشبورد ظاهر بشه */
+    #sidebar {
+      display: none;
+    }
+      main {
+        grid-column: 1/13;
       }
 
-      .user_teams_creat {
-        grid-column: 1/10;
-      }
-  
-      
-      .user_tournaments_history {
-        grid-column: 1/10;
+      .hidden_menu_sidebar_btn{
+        display: flex;
+        margin: 10px;
+        background-color: transparent;
+        border: none;
+
       }
 
+      .page_title{
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 200px;
+      }
 
   }
+
+  @media (max-width:876px) { 
+
+    .user_info_edit {
+      grid-column: 1/10;
+    }
+
+    .user_teams_creat {
+      grid-column: 1/10;
+    }
+
+    
+    .user_tournaments_history {
+      grid-column: 1/10;
+    }
+
+  }
+
+

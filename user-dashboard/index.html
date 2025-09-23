@@ -15,31 +15,30 @@
     
 
 
-
+    
 
 <div class="body_container">
-    <div id="sidebar"></div>
-    
-
-
-    
-
-    <main>
-
-        <div class="dashboard_header">
-            <div class="page_title">
-                <button onclick="openSidebar()">نمایش سایدبار</button>
-                <span>داشبورد</span>
-            </div>
-    
-            <div class="head_user_id">
-                <img class="head_user_profile" src="/img/profile.jpg" alt="profile">
-                <span>user name</span>
-            </div>
+    <!-- سایدبار -->
+    <aside id="sidebar" class="sidebar"></aside>
+  
+    <!-- محتوای اصلی -->
+    <main class="main_content">
+      
+      <!-- هدر -->
+      <header class="dashboard_header">
+        <div class="page_title">
+            <button class="hidden_menu_sidebar_btn"><img src="/img/icons/menu.svg" alt=""></button>
+          <span>داشبورد</span>
         </div>
-
-
-        
+  
+        <div class="head_user_id">
+          <img class="head_user_profile" src="/img/profile.jpg" alt="profile">
+          <span>user name</span>
+        </div>
+      </header>
+  
+      <!-- پروفایل کاربر -->
+      <section class="user_info_edit">
         <div class="user_info_edit">
             <div class="user_edit_title">
                 <span>پروفایل</span>
@@ -107,11 +106,11 @@
                 </form>
                 
             </div>
-
-
-
-
         </div>
+    </section>
+  
+      <!-- تیم‌ها -->
+      <section class="user_teams_creat">
         <div class="user_teams_creat">
 
 
@@ -232,20 +231,14 @@
                         </div>
                     </div>
                 </div>
-
-
-
             </div>
-
-
-
-
-
         </div>
+    </section>
 
 
-
-
+  
+      <!-- تاریخچه تورنومنت -->
+      <section class="user_tournaments_history">
         <div class="user_tournaments_history">
             <div class="user_history_title">
                 <span>تاریخچه تورنومنت ها</span>
@@ -326,19 +319,18 @@
                 </tbody>
               </table>
             </div>
-
-
         </div>
-
-
+    </section>
+      
     </main>
-
-
-
-</div>
+  </div>
 
 <script src="/js/user-dashboard.js"></script>
 
 
 </body>
 </html>
+
+
+
+  
