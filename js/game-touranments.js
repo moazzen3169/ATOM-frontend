@@ -2,15 +2,42 @@
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get("id");
 
-if (!gameId) console.error("gameId موجود نیست!");
+let allTournaments = [];
+
+// ---------------------- عناصر UI خطا و لودینگ ----------------------
+const errorContainer = document.createElement("div");
+errorContainer.id = "error-message";
+errorContainer.style.cssText = "display:none; color:red; text-align:center; margin:20px;";
+document.body.appendChild(errorContainer);
+
+const loadingContainer = document.createElement("div");
+loadingContainer.id = "loading-message";
+loadingContainer.style.cssText = "text-align:center; margin:20px;";
+loadingContainer.innerHTML = "<p>در حال بارگذاری...</p>";
+document.body.appendChild(loadingContainer);
 
 // ---------------------- 2. گرفتن اطلاعات بازی و تورنومنت‌ها ----------------------
 async function loadGameTournaments() {
+    if (!gameId) {
+        errorContainer.textContent = "شناسه بازی موجود نیست. لطفا از طریق لینک معتبر وارد شوید.";
+        errorContainer.style.display = "block";
+        loadingContainer.style.display = "none";
+        return;
+    }
+
+    loadingContainer.style.display = "block";
+    errorContainer.style.display = "none";
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
     try {
         const [gameRes, tournamentsRes] = await Promise.all([
-            fetch(`https://atom-game.ir/api/tournaments/games/${gameId}/`),
-            fetch(`https://atom-game.ir/api/tournaments/tournaments/?game=${gameId}`)
+            fetch(`https://atom-game.ir/api/tournaments/games/${gameId}/`, { signal: controller.signal }),
+            fetch(`https://atom-game.ir/api/tournaments/tournaments/?game=${gameId}`, { signal: controller.signal })
         ]);
+
+        clearTimeout(timeoutId);
 
         if (!gameRes.ok) throw new Error("خطا در دریافت اطلاعات بازی");
         if (!tournamentsRes.ok) throw new Error("خطا در دریافت اطلاعات تورنومنت‌ها");
@@ -21,6 +48,8 @@ async function loadGameTournaments() {
             ? tournamentsData
             : tournamentsData.results || tournamentsData.data || [];
 
+        allTournaments = tournamentsData;
+
         // ---------------------- 3. نمایش بنر و توضیحات بازی ----------------------
         const defaultBanner = "img/banner9.jpg";
         const banner = gameData.images?.length
@@ -30,8 +59,8 @@ async function loadGameTournaments() {
         const heroBannerEl = document.getElementById("hero_banner");
         if (heroBannerEl) heroBannerEl.src = banner;
 
-        const nameSpans = document.querySelectorAll("#game_name span");
-        if (nameSpans[0]) nameSpans[0].textContent = gameData.name;
+        const nameEl = document.querySelector("#game_name span");
+        if (nameEl) nameEl.textContent = gameData.name;
 
         const descSpan = document.querySelector("#game_description span");
         if (descSpan) descSpan.textContent = gameData.description || "توضیحی موجود نیست";
@@ -50,11 +79,11 @@ async function loadGameTournaments() {
 
             if (end <= now) finishedTournaments.push(t);
             else if (start <= now && end > now) liveTournaments.push(t);
-            else if (start > now && countdownStart <= now) runningTournaments.push(t);
-            else upcomingTournaments.push({ ...t, countdownStart });
+            else if (countdownStart <= now && start > now) runningTournaments.push(t);
+            else upcomingTournaments.push(t);
         });
 
-        // ---------------------- 5. پاس دادن داده‌ها به tournament-card.js ----------------------
+        // ---------------------- 5. رندر تورنومنت‌ها ----------------------
         renderTournamentsByCategory({
             live: liveTournaments,
             upcoming: upcomingTournaments,
@@ -62,13 +91,21 @@ async function loadGameTournaments() {
             finished: finishedTournaments
         });
 
+        loadingContainer.style.display = "none";
+
     } catch (err) {
+        clearTimeout(timeoutId);
+        loadingContainer.style.display = "none";
+        errorContainer.textContent = (err.name === 'AbortError')
+            ? "زمان درخواست به پایان رسید. لطفا دوباره تلاش کنید."
+            : "خطا در بارگذاری داده‌ها. لطفا صفحه را دوباره بارگذاری کنید.";
+        errorContainer.style.display = "block";
         console.error("خطا در loadGameTournaments:", err);
     }
 }
 
 // ---------------------- تابع نمایش کارت تورنومنت ----------------------
-function renderTournamentCard(tournament, containerId = "grid-container-tournaments") {
+function renderTournamentCard(tournament, containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
@@ -77,27 +114,34 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
     const now = new Date();
 
     const registered = tournament.type === "team" ? (tournament.teams?.length || 0) : (tournament.participants?.length || 0);
-    const capacity = tournament.type === "team" ? (tournament.max_participants / (tournament.team_size || 1)) : (tournament.max_participants || 1);
-    const percent = capacity ? (registered / capacity) * 100 : 0;
+    const capacity = tournament.type === "team"
+        ? (tournament.max_participants / (tournament.team_size || 1))
+        : (tournament.max_participants || 1);
 
-    const price = tournament.is_free ? "رایگان" : (Number(tournament.entry_fee).toLocaleString("fa-IR") + " تومان");
+    let percent = capacity && Number.isFinite(registered) ? (registered / capacity) * 100 : 0;
+    percent = Math.min(Math.max(percent, 0), 100);
+
+    const entryFee = Number(tournament.entry_fee);
+    const price = tournament.is_free ? "رایگان" :
+        (Number.isFinite(entryFee) ? entryFee.toLocaleString("fa-IR") + " تومان" : "نامشخص");
+
     const dateStr = start.toLocaleDateString("fa-IR", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
     const timeStr = start.toLocaleTimeString("fa-IR", { hour: "2-digit", minute: "2-digit" });
-    const banner = tournament.image?.image || (tournament.game?.images?.[0]?.image || "img/banner2.jpg");
+    const banner = tournament.image?.image || (tournament.game?.images?.[0]?.image || "img/banner9.jpg");
 
     const div = document.createElement("div");
     div.id = `tournament-${tournament.id}`;
 
-    // ---------------------- شرط برای کارت لایو ----------------------
+    // ---------------------- کارت لایو ----------------------
     if (start <= now && end > now && containerId === "live_tournaments") {
         div.className = "live_tournament_cart";
         div.innerHTML = `
             <div class="live_right">
                 <div class="live_game_name">
-                    <h3>${tournament.game?.name || "-"}</h3>
+                    <h3>${escapeHTML(tournament.game?.name || "-")}</h3>
                     <div class="live"><span></span><span>زنده</span></div>
                 </div>
-                <div class="live_title"><span>${tournament.name}</span></div>
+                <div class="live_title"><span>${escapeHTML(tournament.name)}</span></div>
                 <div class="live_info">
                     <div class="live_info_date">
                         <img src="img/icons/tagvim.svg" alt="tagvim">
@@ -112,12 +156,11 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
             <div class="live_left">
                 <div class="live_award">
                     <span>مجموع جوایز</span>
-                        <h3 class="award_money">
-                          ${tournament.prize_pool 
-                              ? Number(tournament.prize_pool).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") + " تومان"
-                              : "نامشخص"}
-                        </h3>
-
+                    <h3 class="award_money">
+                        ${tournament.prize_pool
+                            ? Number(tournament.prize_pool).toLocaleString("fa-IR") + " تومان"
+                            : "نامشخص"}
+                    </h3>
                 </div>
                 <button class="live_join_link">اضافه شو!</button>
             </div>
@@ -128,28 +171,29 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
                 </div>
                 <div class="team-text" id="teamText${tournament.id}">${registered} / ${capacity}</div>
                 <div class="line-bar-container">
-                  <div class="progress-line">
-                    <div class="progress-fill" id="progressFill${tournament.id}" style="width:${percent}%"></div>
-                  </div>
+                    <div class="progress-line">
+                        <div class="progress-fill" id="progressFill${tournament.id}" style="width:${percent}%"></div>
+                    </div>
                 </div>
             </div>
         `;
-
         div.querySelector(".live_join_link").addEventListener("click", () => {
-            window.location.href = `game-loby.html?id=${tournament.id}`;
+            window.location.href = `game-lobby.html?id=${tournament.id}`;
         });
+
     } else {
+        // ---------------------- کارت معمولی ----------------------
         div.className = "cart_container";
         div.innerHTML = `
             <div class="cart_top">
                 <div class="cart_image">
-                    <img src="${banner}" alt="banner" loading="lazy">
+                    <img src="${banner}" alt="banner" loading="lazy" onerror="this.src='img/banner9.jpg'">
                     <div class="cart_countdown_game">
                         <div class="cart_countdown">
-                            <span>${timeRemaining(tournament.start_countdown, tournament.start_date, tournament.end_date)}</span>
+                            <span id="countdown-${tournament.id}">${timeRemaining(tournament.countdown_start_time, tournament.start_date, tournament.end_date)}</span>
                         </div>
                         <div class="cart_game_name">
-                            <span>${tournament.game?.name || "-"}</span>
+                            <span>${escapeHTML(tournament.game?.name || "-")}</span>
                         </div>
                     </div>
                 </div>
@@ -159,15 +203,14 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
                     <span>${timeStr}</span>
                     <span>${dateStr}</span>
                 </div>
-                <div class="cart_title"><span>${tournament.name}</span></div>
-                <div class="cart_description"><span>${tournament.description || ""}</span></div>
+                <div class="cart_title"><span>${escapeHTML(tournament.name)}</span></div>
+                <div class="cart_description"><span>${escapeHTML(tournament.description || "")}</span></div>
             </div>
             <div class="cart_bottom">
                 <button class="cart_join"></button>
                 <div class="cart_price"><span>${price}</span></div>
             </div>
         `;
-
         const joinBtn = div.querySelector(".cart_join");
         if (now >= end) {
             joinBtn.textContent = "دیدن نتایج";
@@ -175,7 +218,7 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
         } else {
             joinBtn.textContent = "اضافه شو!";
             joinBtn.addEventListener("click", () => {
-                window.location.href = `game-loby.html?id=${tournament.id}`;
+                window.location.href = `game-lobby.html?id=${tournament.id}`;
             });
         }
     }
@@ -203,17 +246,15 @@ function timeRemaining(startCountdown, startDate, endDate) {
     return "-";
 }
 
-// ---------------------- رندر تورنومنت‌ها بر اساس دسته و مخفی کردن بخش‌های خالی ----------------------
+// ---------------------- رندر بر اساس دسته ----------------------
 function renderTournamentsByCategory(categories) {
     const { live, upcoming, running, finished } = categories;
-
     const containers = {
         live: document.getElementById("live_tournaments"),
         upcoming: document.getElementById("upcoming_tournaments"),
         running: document.getElementById("running_tournaments"),
         finished: document.getElementById("finished_tournaments")
     };
-
     const titrs = {
         live: document.getElementById("live"),
         upcoming: document.getElementById("upcoming"),
@@ -223,10 +264,10 @@ function renderTournamentsByCategory(categories) {
 
     Object.values(containers).forEach(c => { if (c) c.innerHTML = ""; });
 
-    if (live?.length && containers.live) live.forEach(t => renderTournamentCard(t, "live_tournaments"));
-    if (upcoming?.length && containers.upcoming) upcoming.forEach(t => renderTournamentCard(t, "upcoming_tournaments"));
-    if (running?.length && containers.running) running.forEach(t => renderTournamentCard(t, "running_tournaments"));
-    if (finished?.length && containers.finished) finished.forEach(t => renderTournamentCard(t, "finished_tournaments"));
+    if (live?.length) live.forEach(t => renderTournamentCard(t, "live_tournaments"));
+    if (upcoming?.length) upcoming.forEach(t => renderTournamentCard(t, "upcoming_tournaments"));
+    if (running?.length) running.forEach(t => renderTournamentCard(t, "running_tournaments"));
+    if (finished?.length) finished.forEach(t => renderTournamentCard(t, "finished_tournaments"));
 
     // مخفی کردن بخش‌های خالی
     Object.keys(containers).forEach(key => {
@@ -240,6 +281,31 @@ function renderTournamentsByCategory(categories) {
             if (titr) titr.style.display = "flex";
         }
     });
+}
+
+// ---------------------- نمایش نتایج ----------------------
+function showResultPopup(tournament) {
+    window.location.href = `results.html?id=${tournament.id}`;
+}
+
+// ---------------------- بروزرسانی تایمر فقط برای کارت‌های فعال ----------------------
+setInterval(() => {
+    allTournaments.forEach(t => {
+        const span = document.getElementById(`countdown-${t.id}`);
+        if (span) {
+            span.textContent = timeRemaining(t.countdown_start_time, t.start_date, t.end_date);
+        }
+    });
+}, 1000);
+
+// ---------------------- Escape HTML برای امنیت ----------------------
+function escapeHTML(str) {
+    return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
 }
 
 // ---------------------- شروع ----------------------
