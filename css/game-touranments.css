@@ -91,10 +91,14 @@ body{
     cursor: pointer;
   }
   
-.leaderBoard{
+.games_link{
     border: 2px solid var(--white-color) ;
     background-color: transparent;
-    color: var(--white-color);
+}
+
+.games_link a{
+  color: var(--white-color);
+
 }
 .show_tournaments{
     border: none;

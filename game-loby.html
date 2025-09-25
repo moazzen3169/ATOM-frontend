@@ -1,96 +1,141 @@
 <!DOCTYPE html>
 <html lang="fa">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>loby</title>
-    <link rel="stylesheet" href="css/loby.css">
-    <link rel="stylesheet" href="css/colors.css">
-    <link rel="stylesheet" href="fonts/fonts.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lobby</title>
+  <link rel="stylesheet" href="css/loby.css">
+  <link rel="stylesheet" href="css/colors.css">
+  <link rel="stylesheet" href="fonts/fonts.css">
 </head>
-
-    <!-- بخش لودیینگ -->
-    <div id="preloader">
-        <div class="loader"></div>
-   </div>
-
 <body>
+  <!-- بخش لودیینگ -->
+  <div id="preloader">
+    <div class="loader"></div>
+  </div>
 
-<div id="header"></div>
-<script src="js/header.js"></script>
+  <div id="header"></div>
+  <script src="js/header.js"></script>
 
-<div class="loby_container">
-    <!-- سمت راست: اطلاعات و ادمین -->
-    <div class="loby_right">
+  <!-- پیام لاگین -->
+  <div id="login_required" class="login_required" style="display:none;">
+    <p>برای مشاهده این تورنومنت باید وارد حساب خود شوید.</p>
+    <a href="/login.html" class="btn">ورود</a>
+    <a href="/signup.html" class="btn">ثبت‌نام</a>
+  </div>
+
+  <div id="lobby_page" style="display:none;">
+    <div class="loby_container">
+      <!-- سمت راست -->
+      <div class="loby_right">
         <div class="Summary_of_information">
-            <div class="info_title"><span>خلاصه اطلاعات</span></div>
-            <div class="start_timer">
-                <img src="img/icons/clock.svg" alt="clock" class="icon">
-                <span>زمان عضوگیری   :</span>
-                <span id="signup_time"></span>
-            </div>
-            <div class="tournament_time">
-                <img src="img/icons/clock.svg" alt="clock" class="icon">
-                <span>زمان شروع :</span>
-                <span id="start_time"></span>
-            </div>
-            <div class="end_time">
-                <img src="img/icons/clock.svg" alt="clock" class="icon">
-                <span>زمان پایان :</span>
-                <span id="end_time"></span>
-            </div>
-            <div class="tournament_mode">
-                <img src="img/icons/consol.svg" alt="consol" class="icon">
-                <span>حالت :</span>
-                <span id="tournament_mode"></span>
-            </div>
+          <div class="info_title"><span>خلاصه اطلاعات</span></div>
+          <div class="start_timer">
+            <img src="img/icons/clock.svg" class="icon">
+            <span>زمان عضوگیری :</span>
+            <span id="signup_time"></span>
+          </div>
+          <div class="tournament_time">
+            <img src="img/icons/clock.svg" class="icon">
+            <span>زمان شروع :</span>
+            <span id="start_time"></span>
+          </div>
+          <div class="end_time">
+            <img src="img/icons/clock.svg" class="icon">
+            <span>زمان پایان :</span>
+            <span id="end_time"></span>
+          </div>
+          <div class="tournament_mode">
+            <img src="img/icons/consol.svg" class="icon">
+            <span>حالت :</span>
+            <span id="tournament_mode"></span>
+          </div>
         </div>
 
-        <!-- بخش ادمین -->
+        <!-- ادمین -->
         <div class="admin_info">
-            <div class="admin_info_title"><span>ادمین مسابقه</span></div>
-            <div class="admin_content_section">
-                <div class="admin_content">
-                    <div class="admin_name"><span>Admin Name</span></div>
-                    <div class="admin_nnumber"><span>+98 99656555</span></div>
-                </div>
-                <div class="admin_profile">
-                    <img src="img/profile.jpg" alt="profile">
-                </div>
+          <div class="admin_info_title"><span>ادمین مسابقه</span></div>
+          <div class="admin_content_section">
+            <div class="admin_content">
+              <div class="admin_name"><span>Admin Name</span></div>
+              <div class="admin_nnumber"><span>+98 99656555</span></div>
             </div>
-            <hr>
-            <div class="info_description">
-                <span>برای هرگونه سؤال یا مشکل مربوط به تورنومنت با من تماس بگیرید.</span>
+            <div class="admin_profile">
+              <img src="img/profile.jpg" alt="profile">
             </div>
+          </div>
+          <hr>
+          <div class="info_description">
+            <span>برای هرگونه سؤال یا مشکل مربوط به تورنومنت با من تماس بگیرید.</span>
+          </div>
         </div>
-    </div>
+        <!-- لیدر بورد بعد از اتمام تورنومنت و تایید کردن برندگان از سوی ادمین تورنومنت کاربران برنده رو نمایش میده -->
+        <div class="loby_leaderboard">
 
-    <!-- سمت چپ: بنر و اطلاعات اصلی -->
-    <div class="loby_left">
+        </div>
+
+      </div>
+
+      <!-- سمت چپ -->
+      <div class="loby_left">
         <div class="loby_banner">
-            <div class="banner">
-                <img id="tournament_banner" src="" alt="banner">
+          <div class="banner">
+            <img id="tournament_banner" src="" alt="banner">
+          </div>
+          <div class="contant">
+            <div class="countdown" id="countdown_section">
+              <span id="countdown_timer">00 : 00 : 00</span>
             </div>
-            <div class="contant">
-                <div class="countdown" id="countdown_section">
-                    <span id="countdown_timer">00 : 00 : 00</span>
-                </div>
-                <div class="award">
-                    <span>مجموع جوایز :</span>
-                    <span id="prize_pool"></span>
-                </div>
-                <div class="routnament_title">
-                    <span id="tournament_title"></span>
-                </div>
+            <div class="award">
+              <span>مجموع جوایز :</span>
+              <span id="prize_pool"></span>
             </div>
+            <div class="routnament_title">
+              <span id="tournament_title"></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 📌 لیست بازیکن‌ها / تیم‌ها -->
+        <div id="participants_section" class="participants_section">
+            
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+
+
+
+    <!-- 🔹 مودال انفرادی -->
+    <div id="modal_individual" class="modal">
+        <div class="modal_content">
+          <span class="modal_close" onclick="closeModal('modal_individual')">&times;</span>
+          <h2>ثبت‌نام در تورنومنت</h2>
+          <p>نام کاربری خود را در بازی وارد کنید:</p>
+          <input type="text" id="game_username" placeholder="نام کاربری در بازی">
+          <button onclick="confirmIndividualJoin()">تایید</button>
+        </div>
+      </div>
+    
+      <!-- 🔹 مودال تیمی -->
+        <div id="modal_team" class="modal">
+        <div class="modal_content">
+          <span class="modal_close" onclick="closeModal('modal_team')">&times;</span>
+          <h2>انتخاب تیم</h2>
+          <p>یکی از تیم‌هایی که کاپیتان آن هستید را انتخاب کنید:</p>
+          <div id="team_list"></div>
+          <button onclick="confirmTeamJoin()">تایید</button>
         </div>
     </div>
-</div>
-
-
     
-<script src="js/loby.js"></script>
-<script src="js/loading.js"></script>
 
+
+
+
+
+  <script src="js/loby.js"></script>
+  <script src="js/loading.js"></script>
 </body>
 </html>
