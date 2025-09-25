@@ -75,6 +75,7 @@
     align-items: center;
     color: var(--white-color);
     font-size: 18px;
+    width: 100%;
   }
   
   .edit_user_btn,
@@ -180,6 +181,18 @@
   .user_info_edit_form input[type=file] {
     display: none;
   }
+
+  .user_info_edit_form  .profile  {
+    border:2px solid var(--color-primary);
+    border-radius: 999px;
+  }
+
+  .user_info_edit_form h2{
+    text-align: center;
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--white-color);
+  }
   
   .user_info_edit_form input,
   .user_info_edit_form button {
@@ -195,8 +208,10 @@
     color: var(--white-color);
   }
   
-  .user_info_edit_form button {
-    background: var(--color-primary);
+  .user_info_edit_form button[type="submit"] {
+    display: flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
   }
   

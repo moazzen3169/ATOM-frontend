@@ -15,7 +15,7 @@ closeBtn.addEventListener("click", function() {
 
 
     // سایدبار رو لود کن
-    fetch("user-sidebar.html")
+    fetch("../user-dashboard/user-sidebar.html")
       .then(res => res.text())
       .then(data => {
         document.getElementById("sidebar").innerHTML = data;
