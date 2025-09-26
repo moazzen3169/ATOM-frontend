@@ -296,7 +296,7 @@ hr{
   transition: transform 0.2s;
 }
 .team_detail:hover {
-  transform: translateY(-4px);
+  transform: scale(1.1);
 }
 
 /* نام تیم یا بازیکن */
@@ -336,10 +336,11 @@ hr{
   cursor: pointer;
   color: var(--white-color);
   font-size: 14px;
-  transition: background 0.3s;
+  transition: ease 0.3s;
 }
 .team_empty:hover {
-  background: rgba(255, 255, 255, 0.05);
+  background-color: var(--color-primary);
+  color: var(--background-color);
 }
 .team_empty img {
   width: 18px;
@@ -429,7 +430,7 @@ hr{
 .alert_stack {
     position: fixed;
     top: 16px;
-    left: 16px; /* برای راست‌به‌چپ: می‌تونی right بذاری */
+    right: 16px; /* برای راست‌به‌چپ: می‌تونی right بذاری */
     z-index: 2000;
     display: flex;
     flex-direction: column;

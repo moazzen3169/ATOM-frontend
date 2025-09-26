@@ -178,7 +178,7 @@ function renderTournamentCard(tournament, containerId) {
             </div>
         `;
         div.querySelector(".live_join_link").addEventListener("click", () => {
-            window.location.href = `game-lobby.html?id=${tournament.id}`;
+            window.location.href = `game-loby.html?id=${tournament.id}`;
         });
 
     } else {
@@ -218,7 +218,7 @@ function renderTournamentCard(tournament, containerId) {
         } else {
             joinBtn.textContent = "اضافه شو!";
             joinBtn.addEventListener("click", () => {
-                window.location.href = `game-lobby.html?id=${tournament.id}`;
+                window.location.href = `game-loby.html?id=${tournament.id}`;
             });
         }
     }
@@ -312,3 +312,9 @@ function escapeHTML(str) {
 document.addEventListener("DOMContentLoaded", () => {
     loadGameTournaments();
 });
+
+
+
+
+// میخام تمامی مشکلات این کد هارو پیدا کنی و درستش کنی
+// میخام کد های بهینه بهم بدی
