@@ -124,7 +124,7 @@ async function loadTournament() {
 function formatDateTime(dateStr) {
   if (!dateStr) return "";
   const date = new Date(dateStr);
-  const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  const options = { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }; // Removed 'year'
   return date.toLocaleDateString('fa-IR', options);
 }
 
@@ -134,7 +134,9 @@ function renderTournament(tournament) {
   document.getElementById("end_time").textContent = formatDateTime(tournament.end_date);
   document.getElementById("tournament_mode").textContent =
     tournament.type === "team" ? `تیمی (هر تیم ${tournament.team_size} نفر)` : "انفرادی";
-  document.getElementById("tournament_banner").src = tournament.image?.image || "img/default.jpg";
+  const bannerElement = document.getElementById("tournament_banner");
+  bannerElement.src = tournament.image?.image || "/img/banner6.jpg";
+  bannerElement.alt = tournament.image?.alt || "بنر پیش‌فرض تورنومنت";
   document.getElementById("prize_pool").textContent = `${Number(tournament.prize_pool).toLocaleString("fa-IR")} تومان`;
   document.getElementById("tournament_title").textContent = tournament.name;
 
@@ -153,6 +155,14 @@ function renderTournament(tournament) {
   // Assume real for now, as no is_fake field
   status += " ";
   document.getElementById("tournament_status").textContent = status;
+
+  // Show leaderboard only if the tournament has ended
+  const leaderboard = document.querySelector(".loby_leaderboard");
+  if (status.includes("تمام شد")) {
+    leaderboard.style.display = "block";
+  } else {
+    leaderboard.style.display = "none";
+  }
 
   renderParticipants(tournament);
 

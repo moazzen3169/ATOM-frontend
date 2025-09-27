@@ -296,7 +296,7 @@ hr{
   transition: transform 0.2s;
 }
 .team_detail:hover {
-  transform: scale(1.1);
+  transform: translateY(-5px);
 }
 
 /* نام تیم یا بازیکن */
@@ -339,8 +339,8 @@ hr{
   transition: ease 0.3s;
 }
 .team_empty:hover {
-  background-color: var(--color-primary);
-  color: var(--background-color);
+  border: 1px solid var(--color-primary);
+  color:var(--color-primary) ;
 }
 .team_empty img {
   width: 18px;
