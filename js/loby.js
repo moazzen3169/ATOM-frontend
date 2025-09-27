@@ -187,6 +187,19 @@ function renderTournament(tournament) {
     console.error("Element with ID 'tournament_title' not found.");
   }
 
+  // Render tournament creator information
+  if (tournament.creator) {
+    const { username, first_name, last_name, profile_picture } = tournament.creator;
+
+    const adminUsername = document.getElementById("adminUsername");
+    const adminFullName = document.getElementById("adminFullName");
+    const adminProfilePicture = document.getElementById("adminProfilePicture");
+
+    if (adminUsername) adminUsername.innerText = `نام کاربری: ${username}`;
+    if (adminFullName) adminFullName.innerText = `نام: ${first_name || "نامشخص"} ${last_name || ""}`;
+    if (adminProfilePicture) adminProfilePicture.src = profile_picture || "img/profile.jpg";
+  }
+
   renderParticipants(tournament);
 
   const lobbyPage = document.getElementById("lobby_page");
