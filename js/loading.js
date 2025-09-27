@@ -1,36 +1,65 @@
+// ---------------------- تابع مخفی کردن Preloader ----------------------
 function hidePreloader() {
   const preloader = document.getElementById('preloader');
   const content = document.querySelector('.content');
   let opacity = 1;
+
   const fadeOut = setInterval(() => {
-      if (opacity > 0) {
-          opacity -= 0.1;
-          preloader.style.opacity = opacity;
-      } else {
-          clearInterval(fadeOut);
-          preloader.style.display = 'none';
-          content.style.display = 'block';
-      }
+    if (opacity > 0) {
+      opacity -= 0.1;
+      preloader.style.opacity = opacity;
+    } else {
+      clearInterval(fadeOut);
+      preloader.style.display = 'none';
+      content.style.display = 'block';
+    }
   }, 50);
 }
 
-// نمونه با fetch
-async function loadDataAndRender() {
-  const data = await fetch("api/tournaments")
-      .then(res => res.json())
-      .catch(err => {
-          console.error(err);
-          return [];
-      });
-
-  // اینجا کارت‌ها را رندر می‌کنیم
-  data.forEach(tournament => renderTournamentCard(tournament));
-
-  // بعد از اینکه داده‌ها رندر شدند، لودینگ را مخفی می‌کنیم
-  hidePreloader();
+// ---------------------- گرفتن داده‌ها از API ----------------------
+async function fetchTournaments() {
+  const response = await fetch("api/tournaments");
+  if (!response.ok) throw new Error("خطا در دریافت داده‌ها");
+  return await response.json();
 }
 
-// شروع برنامه
-document.addEventListener('DOMContentLoaded', () => {
+// ---------------------- صبر برای لود شدن همه تصاویر ----------------------
+function waitForImages() {
+  const images = Array.from(document.images);
+  const promises = images.map(img => {
+    if (img.complete) return Promise.resolve();
+    return new Promise(resolve => {
+      img.onload = img.onerror = resolve;
+    });
+  });
+  return Promise.all(promises);
+}
+
+// ---------------------- اجرای اصلی ----------------------
+async function loadDataAndRender() {
+  try {
+    // گرفتن داده‌ها
+    const data = await fetchTournaments();
+
+    // رندر کارت‌ها
+    data.forEach(tournament => renderTournamentCard(tournament));
+
+    // صبر همزمان برای API + تصاویر
+    await Promise.all([
+      waitForImages(),
+      new Promise(resolve => window.requestAnimationFrame(resolve)) // اطمینان از رندر DOM
+    ]);
+
+    // مخفی کردن Preloader
+    hidePreloader();
+
+  } catch (err) {
+    console.error("loadDataAndRender error:", err);
+    hidePreloader(); // در صورت خطا هم لودینگ حذف میشه
+  }
+}
+
+// ---------------------- شروع برنامه ----------------------
+document.addEventListener("DOMContentLoaded", () => {
   loadDataAndRender();
 });

@@ -114,6 +114,7 @@ async function loadTournament() {
     }
 
     const tournament = await apiFetch(`https://atom-game.ir/api/tournaments/tournaments/${tournamentId}/`);
+    console.log("Tournament Data:", tournament); // Debugging log
     window.currentTournamentData = tournament;
     renderTournament(tournament);
 
@@ -170,6 +171,22 @@ function renderTournament(tournament) {
   status += " ";
   tournamentStatus.textContent = status;
 
+  const titleElement = document.getElementById("tournaments-title");
+  if (titleElement) {
+    titleElement.textContent = tournament.name || "بدون عنوان";
+    console.log("Tournament Name Set:", tournament.name); // Debugging log
+  } else {
+    console.error("Element with ID 'tournaments-title' not found.");
+  }
+
+  const tournamentTitleElement = document.getElementById("tournament_title");
+  if (tournamentTitleElement) {
+    tournamentTitleElement.textContent = tournament.name || "بدون عنوان";
+    console.log("Tournament Title Set:", tournament.name); // Debugging log
+  } else {
+    console.error("Element with ID 'tournament_title' not found.");
+  }
+
   renderParticipants(tournament);
 
   const lobbyPage = document.getElementById("lobby_page");
@@ -188,6 +205,7 @@ function renderParticipants(tournament) {
   section.innerHTML = "";
 
   const now = new Date();
+  const start = new Date(tournament.start_date);
   const end = new Date(tournament.end_date);
 
   // اگر تورنومنت پایان یافته باشد، لیدربورد نمایش داده شود
@@ -210,7 +228,13 @@ function renderParticipants(tournament) {
     return;
   }
 
-  // نمایش جایگاه‌های ثبت‌نام برای تورنومنت‌های فعال
+  // اگر تورنومنت درحال برگزاری باشد، جایگاه‌های ثبت‌نام نمایش داده نشود
+  if (now >= start && now <= end) {
+    section.innerHTML = ``;
+    return;
+  }
+
+  // نمایش جایگاه‌های ثبت‌نام برای تورنومنت‌های فعال (شروع نشده)
   if (tournament.type === "individual") {
     const container = document.createElement("div");
     container.className = "players_grid";

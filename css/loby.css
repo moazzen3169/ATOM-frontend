@@ -141,7 +141,7 @@ hr{
     grid-column: 4/13;
 }
 .loby_banner{
-    width: 1020px;
+    width: 100%;
 }
 .loby_banner img{
     width: 1020px;
@@ -170,27 +170,63 @@ hr{
     z-index: 1;
 }
 .loby_banner .contant {
-    position: absolute;
-    bottom: 20px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    z-index: 2;
-    text-align: center;
+  width: 88%;
+  position: absolute;
+  bottom: 20px;
+  color: white;
+  z-index: 2;
+  font-size: 20px;
+  font-weight: 300;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+
 }
 .contant{
-    width: 100%;
     margin: 20px 60px;
-    font-size: 25px;
     font-weight: normal;
     display: grid;
     align-items: start;
-    gap:15px;
+    gap:20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    direction: ltr;
 }
-.countdown,
-.award,
-.routnament_title {
-    text-align: end;
+.countdown{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--background-color);
+    color: var(--yellow-color);
+    border-radius: 5px;
+    border: 1px solid var(--yellow-color);
+
+}
+
+.tournament_title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--yellow-color);
+  font-weight: 300;
+  font-size: 25px;
+}
+
+#countdown_timer{
+  padding: 5px 15px 0px 15px;
+
+}
+
+.award{
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--yellow-color);
+  font-weight: bold;
+  text-shadow: 0px 0px 40px var(--yellow-color);
+  font-size: 25px;
+
 }
 
 /* ریسپانسیو */

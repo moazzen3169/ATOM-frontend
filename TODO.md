@@ -1,2 +1,0 @@
-- [x] Replace plus.svg with add-user.svg in the individual tournament empty slot button in js/loby.js
-- [x] Replace plus.svg with add-user.svg in the team tournament empty slot button in js/loby.js
