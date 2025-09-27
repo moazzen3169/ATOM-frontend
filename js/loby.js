@@ -75,25 +75,30 @@ function getAuthHeaders() {
  * API Helpers
  ***********************/
 async function apiFetch(url, options = {}) {
-  const res = await fetch(url, {
-    headers: {
-      "Content-Type": "application/json",
-      ...getAuthHeaders(),
-      ...(options.headers || {})
-    },
-    ...options
-  });
-  if (!res.ok) {
-    let errMsg = "مشکلی رخ داده است.";
-    try {
-      const data = await res.json();
-      errMsg = data.detail || JSON.stringify(data);
-    } catch {
-      errMsg = await res.text();
+  try {
+    const res = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        ...getAuthHeaders(),
+        ...(options.headers || {})
+      },
+      ...options
+    });
+    if (!res.ok) {
+      let errMsg = "مشکلی رخ داده است.";
+      try {
+        const data = await res.json();
+        errMsg = data.detail || JSON.stringify(data);
+      } catch {
+        errMsg = await res.text();
+      }
+      throw new Error(errMsg);
     }
-    throw new Error(errMsg);
+    return await res.json();
+  } catch (error) {
+    console.error("API Fetch Error:", error);
+    throw error;
   }
-  return res.json();
 }
 
 /***********************
@@ -129,18 +134,28 @@ function formatDateTime(dateStr) {
 }
 
 function renderTournament(tournament) {
-  document.getElementById("signup_time").textContent = formatDateTime(tournament.start_date);
-  document.getElementById("start_time").textContent = formatDateTime(tournament.start_date);
-  document.getElementById("end_time").textContent = formatDateTime(tournament.end_date);
-  document.getElementById("tournament_mode").textContent =
-    tournament.type === "team" ? `تیمی (هر تیم ${tournament.team_size} نفر)` : "انفرادی";
+  const signupTime = document.getElementById("signup_time");
+  const startTime = document.getElementById("start_time");
+  const endTime = document.getElementById("end_time");
+  const tournamentMode = document.getElementById("tournament_mode");
   const bannerElement = document.getElementById("tournament_banner");
-  bannerElement.src = tournament.image?.image || "/img/banner6.jpg";
-  bannerElement.alt = tournament.image?.alt || "بنر پیش‌فرض تورنومنت";
-  document.getElementById("prize_pool").textContent = `${Number(tournament.prize_pool).toLocaleString("fa-IR")} تومان`;
-  document.getElementById("tournament_title").textContent = tournament.name;
+  const prizePool = document.getElementById("prize_pool");
+  const tournamentStatus = document.getElementById("tournament_status");
 
-  // Determine status
+  if (!signupTime || !startTime || !endTime || !tournamentMode || !bannerElement || !prizePool || !tournamentStatus) {
+    console.error("Missing tournament detail elements in the DOM.");
+    return;
+  }
+
+  signupTime.textContent = formatDateTime(tournament.start_date);
+  startTime.textContent = formatDateTime(tournament.start_date);
+  endTime.textContent = formatDateTime(tournament.end_date);
+  tournamentMode.textContent =
+    tournament.type === "team" ? `تیمی (هر تیم ${tournament.team_size} نفر)` : "انفرادی";
+  bannerElement.src = tournament.image?.image || "/img/tournaments-defalt-banner.jpg";
+  bannerElement.alt = tournament.image?.alt || "بنر پیش‌فرض تورنومنت";
+  prizePool.textContent = `${Number(tournament.prize_pool).toLocaleString("fa-IR")} تومان`;
+
   let status = "";
   const now = new Date();
   const start = new Date(tournament.start_date);
@@ -152,17 +167,8 @@ function renderTournament(tournament) {
   } else {
     status = "تمام شد";
   }
-  // Assume real for now, as no is_fake field
   status += " ";
-  document.getElementById("tournament_status").textContent = status;
-
-  // Show leaderboard only if the tournament has ended
-  const leaderboard = document.querySelector(".loby_leaderboard");
-  if (status.includes("تمام شد")) {
-    leaderboard.style.display = "block";
-  } else {
-    leaderboard.style.display = "none";
-  }
+  tournamentStatus.textContent = status;
 
   renderParticipants(tournament);
 
@@ -175,8 +181,36 @@ function renderTournament(tournament) {
  *****************************/
 function renderParticipants(tournament) {
   const section = document.getElementById("participants_section");
+  if (!section) {
+    console.error("Missing participants section in the DOM.");
+    return;
+  }
   section.innerHTML = "";
 
+  const now = new Date();
+  const end = new Date(tournament.end_date);
+
+  // اگر تورنومنت پایان یافته باشد، لیدربورد نمایش داده شود
+  if (now > end) {
+    const leaderboard = document.querySelector(".loby_leaderboard");
+    if (leaderboard) {
+      leaderboard.style.display = "block";
+      leaderboard.innerHTML = `
+        <h3>لیدربورد</h3>
+        <ul>
+          ${tournament.leaderboard?.map(player => `
+            <li>
+              <span>${player.rank}. ${player.username}</span>
+              <span>${player.score} امتیاز</span>
+            </li>
+          `).join("") || "<li>اطلاعاتی برای نمایش وجود ندارد.</li>"}
+        </ul>
+      `;
+    }
+    return;
+  }
+
+  // نمایش جایگاه‌های ثبت‌نام برای تورنومنت‌های فعال
   if (tournament.type === "individual") {
     const container = document.createElement("div");
     container.className = "players_grid";
