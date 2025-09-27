@@ -16,7 +16,7 @@ async function loadTournaments(page = 1) {
         url.searchParams.set('page_size', pageSize);
         url.searchParams.set('ordering', ordering);
         if (filterType && filterType !== 'all') {
-            url.searchParams.set('status', filterType); // Server-side filter parameter
+            url.searchParams.set('status', filterType);
         }
 
         const response = await fetch(url.toString());
