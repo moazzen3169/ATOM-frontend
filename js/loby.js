@@ -121,14 +121,38 @@ async function loadTournament() {
 /****************************
  * Render Tournament Details
  ****************************/
+function formatDateTime(dateStr) {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  const options = { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' };
+  return date.toLocaleDateString('fa-IR', options);
+}
+
 function renderTournament(tournament) {
-  document.getElementById("start_time").textContent = tournament.start_date || "";
-  document.getElementById("end_time").textContent = tournament.end_date || "";
+  document.getElementById("signup_time").textContent = formatDateTime(tournament.start_date);
+  document.getElementById("start_time").textContent = formatDateTime(tournament.start_date);
+  document.getElementById("end_time").textContent = formatDateTime(tournament.end_date);
   document.getElementById("tournament_mode").textContent =
     tournament.type === "team" ? `تیمی (هر تیم ${tournament.team_size} نفر)` : "انفرادی";
   document.getElementById("tournament_banner").src = tournament.image?.image || "img/default.jpg";
   document.getElementById("prize_pool").textContent = `${Number(tournament.prize_pool).toLocaleString("fa-IR")} تومان`;
   document.getElementById("tournament_title").textContent = tournament.name;
+
+  // Determine status
+  let status = "";
+  const now = new Date();
+  const start = new Date(tournament.start_date);
+  const end = new Date(tournament.end_date);
+  if (now < start) {
+    status = "فعال (شروع نشده)";
+  } else if (now < end) {
+    status = "درحال برگزاری";
+  } else {
+    status = "تمام شد";
+  }
+  // Assume real for now, as no is_fake field
+  status += " ";
+  document.getElementById("tournament_status").textContent = status;
 
   renderParticipants(tournament);
 
