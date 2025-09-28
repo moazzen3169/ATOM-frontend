@@ -1,0 +1,2 @@
+- [x] Remove hardcoded "active" class from index.html link in user-dashboard/user-sidebar.html
+- [x] Add JavaScript logic in js/sidebar.js to dynamically set 'active' class based on current page

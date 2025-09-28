@@ -7,6 +7,16 @@ if (sidebarElement) {
     .then(data => {
       sidebarElement.innerHTML = data;
 
+      // تنظیم کلاس active برای لینک فعلی
+      const currentPage = window.location.pathname.split('/').pop();
+      const links = document.querySelectorAll('.sidebar_link');
+      links.forEach(link => {
+        const href = link.getAttribute('href');
+        if (href && href === currentPage) {
+          link.classList.add('active');
+        }
+      });
+
       // کد های سایدبار مخفی بعد از لود شدن
       function openSidebar() {
         document.getElementById("rightSidebar").classList.add("active");
