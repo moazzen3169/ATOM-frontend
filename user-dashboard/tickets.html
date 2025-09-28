@@ -8,7 +8,9 @@
     <link rel="stylesheet" href="../css/colors.css">
     <link rel="stylesheet" href="../css/user-dashboard.css">
     <link rel="stylesheet" href="../css/user-sidebar.css">
+    <link rel="stylesheet" href="../css/user-tickets.css">
     <link rel="stylesheet" href="../fonts/fonts.css">
+
 
 
 </head>
@@ -41,13 +43,65 @@
 
 
 
-
+      <!-- بخش اصلی تیکت ها -->
       <section class="tickets_container">
+        <!-- لیست همه تیکت ها -->
+        <section class="tickets_list">
 
+          <div class="tickets_list_head">
+            <div class="list_title">تیکت های شما</div>
+            <button class="creat_ticket_btn">+   ایجاد تیکت جدید</button>
+          </div>
 
-        <section class="tickets_list"></section>
+          <!-- status: new - pending - Resolved  -  Closed  -->
+          <div class="tickets_lists_container">
+            <!-- ITEM -->
+            <div class="ticket_item  open  new">
+              <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
+              <div class="ticket_status ">جدید</div>
+              <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
+              <div class="ticket_add_date">۱۴۰۲/۰۵/۲۰</div>
+          </div>
+
+                      <!-- ITEM -->
+            <div class="ticket_item  open  pending">
+              <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
+              <div class="ticket_status ">درحال انتظار</div>
+              <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
+              <div class="ticket_add_date">۱۴۰۲/۰۵/۲۰</div>
+          </div>
+
+                      <!-- ITEM -->
+            <div class="ticket_item  open  Resolved">
+              <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
+              <div class="ticket_status ">پاسخ داده  شده</div>
+              <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
+              <div class="ticket_add_date">۱۴۰۲/۰۵/۲۰</div>
+          </div>
+
+                      <!-- ITEM -->
+            <div class="ticket_item  open  Closed">
+              <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
+              <div class="ticket_status ">بسته شده</div>
+              <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
+              <div class="ticket_add_date">۱۴۰۲/۰۵/۲۰</div>
+          </div>
+
+                                <!-- ITEM -->
+            <div class="ticket_item  open  Closed">
+              <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
+              <div class="ticket_status ">بسته شده</div>
+              <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
+              <div class="ticket_add_date">۱۴۰۲/۰۵/۲۰</div>
+          </div>
+
+          
+
+          </div>
+        </section>
+
+        <!-- قسمت مکالکه و ارسال پیام کاربر -->
         <section class="tickets_conversation"></section>
-
 
       </section>
 

@@ -1,0 +1,137 @@
+
+*{
+    padding: 0;
+    margin: 0;
+    box-sizing: border-box;
+}
+body{
+    overflow: hidden;
+}
+
+.tickets_container{
+    grid-column: 1/10;
+    height: auto;
+    min-height: 595px;
+    display: grid;
+    grid-template-columns: repeat(12 , 1fr);
+    gap: 20px;
+
+}
+.tickets_list{
+    grid-column: 1/5;
+    border-radius: 10px;
+    background-color: var(--card-color);
+    padding: 20px;
+}
+.tickets_conversation{
+    grid-column: 5/13;
+    border-radius: 10px;
+    background-color: var(--card-color);
+    padding: 20px;
+}
+
+
+
+
+/* لسیت آیتم ها */
+
+
+.tickets_list_head{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+.list_title{
+    font-size: 16px;
+    font-weight: normal;
+    color: var(--white-color);
+}
+.creat_ticket_btn{
+    font-size: 12px;
+    font-weight: normal;
+    color: var(--dark-color);
+    background-color: var(--color-primary); 
+    width: 130px;
+    height: 30px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.tickets_lists_container{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 500px;
+    margin-top: 20px;
+    width: 100%;
+    overflow-y: scroll;
+}
+
+.ticket_item{
+    cursor: pointer;
+    background-color: var(--background-color);
+    border-right: 2px solid var(--color-primary);
+    width: 100%;
+    padding: 10px;
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: repeat(3 , 1fr);
+    row-gap: 10px;
+    height: 130px;
+    
+}
+
+.ticket_title{
+    color: var(--white-color);
+    font-size: 16px;
+    font-weight: 300;
+    grid-column: 1/3;
+    text-align: right;
+}
+.ticket_status{
+    grid-column: 3/4;
+    padding: 3px 5px;
+    font-size: 12px;
+    font-weight: 300;
+    text-align: center;
+    border-radius: 100px;
+    
+}
+.new .ticket_status{
+    background-color: var(--color-primary);
+ }
+
+ .pending .ticket_status{
+    background-color: var(--yellow-color);
+ }
+
+ .Resolved .ticket_status{
+    background-color: var(--card-color);
+    color: var(--white-color);
+ }
+
+ .Closed .ticket_status{
+    background-color: var(--red-color);
+ }
+
+.ticket_last_message{
+    grid-column: 1/4;
+    text-align: right;
+    color: var(--white-color);
+    opacity: 50%;
+    font-weight: 300;
+    font-size: 14px;
+    
+}
+.ticket_add_date{
+    grid-column: 1/4;
+    text-align: right;
+    color: var(--white-color);
+    opacity: 50%;
+    font-weight: 300;
+    font-size: 14px;
+    
+}
+
+
