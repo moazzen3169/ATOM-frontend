@@ -31,12 +31,12 @@
             color: #0c5460; 
             border: 1px solid #bee5eb; 
         }
+        .hidden { display: none; }
         .loading { 
             opacity: 0.7; 
             pointer-events: none; 
         }
         
-        /* استایل‌های جدید برای ورود هوشمند شماره تلفن */
         .phone-input-container {
             position: relative;
             margin-bottom: 15px;
@@ -68,16 +68,60 @@
             text-align: right;
         }
         
-        .phone-example {
-            font-size: 11px;
-            color: #28a745;
-            margin-top: 3px;
-        }
-        
-
         .input-error {
             border-color: #dc3545 !important;
             box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1) !important;
+        }
+
+        .otp-info {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .otp-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .otp-input {
+            width: 50px;
+            height: 50px;
+            text-align: center;
+            font-size: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+        
+        .otp-input:focus {
+            border-color: #00F5FF;
+            outline: none;
+        }
+
+        .resend-otp {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .resend-otp .timer {
+            color: rgba(255, 255, 255, 0.6);
+            margin-bottom: 10px;
+        }
+
+        .debug-info {
+            background: #f8f9fa;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #666;
         }
     </style>
 </head>
@@ -87,36 +131,63 @@
     <div class="register_bacground">
         <div class="register_container">
             <div class="login_title">
-                <span>فرم ثبت نام</span>
+                <span id="page-title">فرم ثبت نام</span>
             </div>
-            <div class="signup_form">
-                <form id="signupForm">
-                    <input type="text" name="username" id="username" placeholder="نام کاربری" required>
-                    
-                    <input type="email" name="email" id="email" placeholder="ایمیل" required>
-                    
-                    <!-- ورود هوشمند شماره تلفن -->
-                    <div class="phone-input-container">
-                        <input type="tel" name="phone_number" id="phone_number" class="phone-input" 
-                               placeholder="۹۱۲۳۴۵۶۷۸۹"
-                               inputmode="numeric" maxlength="10"> <!-- حذف pattern و maxlength=10 -->
-                        <div class="phone-prefix">+98</div>
-                    </div>
-                    <div class="phone-format-hint">
-                        شماره تلفن خود را بدون صفر ابتدا وارد کنید
-                        <div class="phone-example">مثال: 9123456789 → +989123456789</div>
-                    </div>
-                    
 
-                    
-                    <input type="password" name="password" id="password" placeholder="رمز عبور (حداقل ۸ کاراکتر)" required>
-                    
-                    <input type="password" name="confirm_password" id="confirm_password" placeholder="تکرار رمز عبور" required>
-                    
-                    <input type="submit" value="ثبت نام" id="submitBtn">
-                </form>
-                <div id="message" class="message"></div>
+            <!-- مرحله ۱: ثبت اطلاعات -->
+            <div id="signup-step">
+                <div class="signup_form">
+                    <form id="signupForm">
+                        <input type="text" name="username" id="username" placeholder="نام کاربری" required>
+                        
+                        <input type="email" name="email" id="email" placeholder="ایمیل" required>
+                        
+                        <div class="phone-input-container">
+                            <input type="tel" name="phone_number" id="phone_number" class="phone-input" 
+                                   placeholder="شماره تلفن (مثال: 09123456789)"
+                                   inputmode="numeric" maxlength="11">
+                            <div class="phone-prefix">+98</div>
+                        </div>
+                        <div class="phone-format-hint">
+                            شماره خود را با 09 وارد کنید
+                        </div>
+                        
+                        <input type="password" name="password" id="password" placeholder="رمز عبور (حداقل ۸ کاراکتر)" required>
+                        
+                        <input type="password" name="confirm_password" id="confirm_password" placeholder="تکرار رمز عبور" required>
+                        
+                        <input type="submit" value="ثبت نام و دریافت کد تایید" id="submitBtn">
+                    </form>
+                </div>
             </div>
+
+            <!-- مرحله ۲: تایید OTP -->
+            <div id="verify-otp-step" class="hidden">
+                <div class="otp-info">
+                    کد تایید ۶ رقمی به <b id="user-email"></b> ارسال شد
+                </div>
+                
+                <form id="verifyOtpForm">
+                    <div class="otp-inputs">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="1">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="2">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="3">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="4">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="5">
+                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="6">
+                    </div>
+                    
+                    <input type="submit" value="تایید و فعال سازی حساب" id="verifyOtpBtn">
+                </form>
+                
+                <div class="resend-otp">
+                    <div class="timer" id="timer">ارسال مجدد کد تا: <span id="countdown">120</span> ثانیه</div>
+                    <a href="#" id="resend-otp-link" class="hidden">ارسال مجدد کد تایید</a>
+                </div>
+            </div>
+
+            <div id="message" class="message"></div>
+
             <div class="login_bottom_links">
                 <a href="forget-password.html">رمز عبوری خود را فراموش کرده اید؟ <div class="blue">بازیابی رمز عبور</div> </a>
                 <a href="/index.html">اگر حساب کاربری موجود دارید <div class="blue">ورود کنید</div> </a>
@@ -144,34 +215,95 @@
             showDots: true
         });
 
-        const API_URL = 'https://atom-game.ir/api/users/users/';
+        const API_BASE_URL = 'https://atom-game.ir';
+        const SIGNUP_URL = `${API_BASE_URL}/api/users/users/`;
+        const SEND_OTP_URL = `${API_BASE_URL}/api/users/users/send_otp/`;
+        const VERIFY_OTP_URL = `${API_BASE_URL}/api/users/users/verify_otp/`;
 
-        // تبدیل شماره ایرانی به فرمت بین‌المللی
-        function convertToInternationalFormat(iranianNumber) {
-            let cleaned = iranianNumber.replace(/\D/g, '');
+        const signupForm = document.getElementById('signupForm');
+        const verifyOtpForm = document.getElementById('verifyOtpForm');
+        const signupStep = document.getElementById('signup-step');
+        const verifyOtpStep = document.getElementById('verify-otp-step');
+        const messageDiv = document.getElementById('message');
+        const userEmailSpan = document.getElementById('user-email');
+        const resendOtpLink = document.getElementById('resend-otp-link');
+        const pageTitle = document.getElementById('page-title');
 
-            if (cleaned.startsWith('09')) {
-                cleaned = cleaned.substring(1); // حذف صفر
+        let currentUserEmail = '';
+        let userData = {};
+        let countdown;
+        let countdownTime = 120;
+
+        // تبدیل به فرمت صحیح (+98)
+        function convertToCorrectFormat(phoneNumber) {
+            let cleaned = phoneNumber.replace(/\D/g, '');
+            
+            if (cleaned.startsWith('0')) {
+                cleaned = cleaned.substring(1);
             }
-
-            if (cleaned.startsWith('9') && cleaned.length === 10) {
+            
+            if (cleaned.length === 10 && cleaned.startsWith('9')) {
                 return '+98' + cleaned;
             }
-
-            if (cleaned.startsWith('98') && cleaned.length === 11) {
+            
+            if (cleaned.length === 11 && cleaned.startsWith('98')) {
                 return '+' + cleaned;
             }
-
+            
             return '+98' + cleaned;
         }
 
         // اعتبارسنجی شماره تلفن
         function isValidIranianPhone(number) {
             const cleaned = number.replace(/\D/g, '');
-            return /^9\d{9}$/.test(cleaned) || /^09\d{9}$/.test(cleaned) || /^98\d{10}$/.test(cleaned);
+            return /^(09|\+?989?)\d{9}$/.test(number) || /^9\d{9}$/.test(cleaned);
         }
 
-        document.getElementById('signupForm').addEventListener('submit', async function(e) {
+        // ارسال OTP
+        async function sendOtp(email) {
+            try {
+                const response = await fetch(SEND_OTP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: email })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    return { success: true, message: 'کد تایید ارسال شد' };
+                } else {
+                    return { success: false, message: data.error || 'خطا در ارسال کد' };
+                }
+            } catch (error) {
+                return { success: false, message: 'خطا در ارتباط با سرور' };
+            }
+        }
+
+        // شروع تایمر
+        function startCountdown() {
+            clearInterval(countdown);
+            countdownTime = 120;
+            updateCountdown();
+            
+            countdown = setInterval(() => {
+                countdownTime--;
+                updateCountdown();
+                
+                if (countdownTime <= 0) {
+                    clearInterval(countdown);
+                    document.getElementById('timer').classList.add('hidden');
+                    resendOtpLink.classList.remove('hidden');
+                }
+            }, 1000);
+        }
+
+        function updateCountdown() {
+            document.getElementById('countdown').textContent = countdownTime;
+        }
+
+        // مرحله ۱: ثبت نام
+        signupForm.addEventListener('submit', async function(e) {
             e.preventDefault();
             
             const submitBtn = document.getElementById('submitBtn');
@@ -180,167 +312,217 @@
             submitBtn.value = 'در حال ثبت نام...';
             submitBtn.classList.add('loading');
             
-            // تبدیل شماره به فرمت بین‌المللی
             const rawPhoneNumber = document.getElementById('phone_number').value.trim();
-            const internationalPhone = convertToInternationalFormat(rawPhoneNumber);
+            const username = document.getElementById('username').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const password = document.getElementById('password').value;
+
+            // تبدیل به فرمت صحیح
+            const correctPhoneNumber = convertToCorrectFormat(rawPhoneNumber);
             
-            const formData = {
-                username: document.getElementById('username').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                phone_number: internationalPhone,
-                password: document.getElementById('password').value
-            };
-
-            console.log('📞 شماره ورودی:', rawPhoneNumber);
-            console.log('🌍 شماره تبدیل شده:', internationalPhone);
-
-            // اعتبارسنجی‌های اولیه
-            const validationResult = validateForm(formData, rawPhoneNumber);
-            if (!validationResult.isValid) {
-                showMessage(validationResult.message, 'error');
+            // اعتبارسنجی اولیه
+            if (!isValidIranianPhone(rawPhoneNumber)) {
+                showMessage('شماره تلفن معتبر نیست. لطفا شماره را با 09 وارد کنید', 'error');
                 resetButton(submitBtn, originalText);
                 return;
             }
 
-            try {
-                console.log('🚀 ارسال درخواست به:', API_URL);
-                console.log('📦 داده‌های نهایی:', { 
-                    ...formData, 
-                    password: '***',
-                    phone_number: formData.phone_number 
-                });
+            const confirmPassword = document.getElementById('confirm_password').value;
+            if (password !== confirmPassword) {
+                showMessage('رمز عبور و تکرار آن مطابقت ندارند', 'error');
+                resetButton(submitBtn, originalText);
+                return;
+            }
 
-                const response = await fetch(API_URL, {
+            if (password.length < 8) {
+                showMessage('رمز عبور باید حداقل ۸ کاراکتر باشد', 'error');
+                resetButton(submitBtn, originalText);
+                return;
+            }
+
+            userData = {
+                username: username,
+                email: email,
+                phone_number: correctPhoneNumber,
+                password: password
+            };
+
+            try {
+                const response = await fetch(SIGNUP_URL, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(formData)
+                    body: JSON.stringify(userData)
                 });
 
                 const data = await response.json();
-                console.log('📨 پاسخ سرور:', {
-                    status: response.status,
-                    data: data
-                });
-
+                
                 if (response.status === 201) {
-                    showMessage('✅ ثبت نام موفقیت‌آمیز بود! لطفا وارد حساب کاربری خود شوید.', 'success');
+                    showMessage('✅ ثبت نام موفقیت‌آمیز بود! در حال ارسال کد تایید...', 'success');
                     
-                    // پاک کردن فرم
-                    document.getElementById('signupForm').reset();
+                    // ارسال OTP به ایمیل کاربر
+                    currentUserEmail = email;
+                    const otpResult = await sendOtp(currentUserEmail);
                     
-                    setTimeout(() => {
-                        window.location.href = 'login.html';
-                    }, 3000);
+                    if (otpResult.success) {
+                        showMessage('✅ کد تایید به ایمیل شما ارسال شد.', 'success');
+                        userEmailSpan.textContent = currentUserEmail;
+                        
+                        // تغییر به مرحله OTP
+                        signupStep.classList.add('hidden');
+                        verifyOtpStep.classList.remove('hidden');
+                        pageTitle.textContent = 'تایید حساب کاربری';
+                        
+                        // شروع تایمر
+                        startCountdown();
+                        
+                    } else {
+                        showMessage(`❌ ${otpResult.message}`, 'error');
+                    }
                     
+                } else if (response.status === 400) {
+                    if (data.phone_number && data.phone_number[0].includes('already exists')) {
+                        showMessage('❌ این شماره تلفن قبلاً ثبت شده است. اگر مالک این شماره هستید، از قسمت "ورود" استفاده کنید.', 'error');
+                    } else if (data.username) {
+                        showMessage(`نام کاربری: ${data.username[0]}`, 'error');
+                    } else if (data.email) {
+                        showMessage(`ایمیل: ${data.email[0]}`, 'error');
+                    } else if (data.phone_number) {
+                        showMessage(`شماره تلفن: ${data.phone_number[0]}`, 'error');
+                    } else if (data.password) {
+                        showMessage(`رمز عبور: ${data.password[0]}`, 'error');
+                    } else {
+                        showMessage('خطا در ثبت نام. لطفا اطلاعات را بررسی کنید.', 'error');
+                    }
                 } else {
-                    // مدیریت خطاهای مختلف
-                    handleRegistrationError(response.status, data, internationalPhone);
+                    showMessage('خطا در ارتباط با سرور', 'error');
                 }
 
             } catch (error) {
                 console.error('❌ خطای شبکه:', error);
-                showMessage('خطا در ارتباط با سرور. لطفا اتصال اینترنت خود را بررسی کنید.', 'error');
+                showMessage('خطا در ارتباط با سرور', 'error');
             } finally {
                 resetButton(submitBtn, originalText);
             }
         });
 
-        // اعتبارسنجی فرم
-        function validateForm(formData, rawPhoneNumber) {
-            // بررسی شماره تلفن
-            if (!isValidIranianPhone(rawPhoneNumber)) {
-                // هایلایت کردن input مشکل‌دار
-                document.getElementById('phone_number').classList.add('input-error');
-                return {
-                    isValid: false,
-                    message: 'شماره تلفن معتبر نیست. لطفا شماره ۱۰ رقمی خود را بدون صفر وارد کنید (مثال: 9123456789)'
-                };
-            } else {
-                document.getElementById('phone_number').classList.remove('input-error');
-            }
-
-            // بررسی تطابق رمز عبور
-            const confirmPassword = document.getElementById('confirm_password').value;
-            if (formData.password !== confirmPassword) {
-                return {
-                    isValid: false,
-                    message: 'رمز عبور و تکرار آن مطابقت ندارند'
-                };
-            }
-
-            // بررسی طول رمز عبور
-            if (formData.password.length < 8) {
-                return {
-                    isValid: false,
-                    message: 'رمز عبور باید حداقل ۸ کاراکتر باشد'
-                };
-            }
-
-            // بررسی ایمیل
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(formData.email)) {
-                return {
-                    isValid: false,
-                    message: 'فرمت ایمیل نامعتبر است'
-                };
-            }
-
-            return { isValid: true };
-        }
-
-        // مدیریت خطاهای ثبت نام
-        function handleRegistrationError(status, data, phoneNumber) {
-            let errorMessage = 'خطا در ثبت نام';
-
-            if (status === 400) {
-                if (data.username) {
-                    errorMessage = `نام کاربری: ${Array.isArray(data.username) ? data.username[0] : data.username}`;
-                } else if (data.email) {
-                    errorMessage = `ایمیل: ${Array.isArray(data.email) ? data.email[0] : data.email}`;
-                } else if (data.phone_number) {
-                    errorMessage = `شماره تلفن: ${Array.isArray(data.phone_number) ? data.phone_number[0] : data.phone_number}`;
-                    errorMessage += ` (شماره ارسالی: ${phoneNumber})`;
-                } else if (data.password) {
-                    errorMessage = `رمز عبور: ${Array.isArray(data.password) ? data.password[0] : data.password}`;
-                } else if (typeof data === 'object') {
-                    const firstError = Object.values(data)[0];
-                    errorMessage = Array.isArray(firstError) ? firstError[0] : firstError;
+        // مدیریت ورود OTP
+        const otpInputs = document.querySelectorAll('.otp-input');
+        
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', function(e) {
+                // فقط اعداد قبول کن
+                this.value = this.value.replace(/[^0-9]/g, '');
+                
+                // برو به فیلد بعدی
+                if (this.value.length === 1 && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
                 }
-            } else if (status === 500) {
-                errorMessage = 'خطای سرور. لطفا稍后再试';
+            });
+            
+            input.addEventListener('keydown', function(e) {
+                // با backspace برگرد به فیلد قبلی
+                if (e.key === 'Backspace' && !this.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+        });
+
+        // مرحله ۲: تایید OTP
+        verifyOtpForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const verifyOtpBtn = document.getElementById('verifyOtpBtn');
+            const originalText = verifyOtpBtn.value;
+            
+            verifyOtpBtn.value = 'در حال تایید...';
+            verifyOtpBtn.classList.add('loading');
+            
+            // جمع‌آوری کد OTP
+            let otpCode = '';
+            otpInputs.forEach(input => {
+                otpCode += input.value;
+            });
+            
+            if (otpCode.length !== 6) {
+                showMessage('لطفا کد ۶ رقمی را کامل وارد کنید', 'error');
+                resetButton(verifyOtpBtn, originalText);
+                return;
             }
 
-            showMessage(errorMessage, 'error');
-        }
+            try {
+                const response = await fetch(VERIFY_OTP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        identifier: currentUserEmail, 
+                        code: otpCode 
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    // ذخیره توکن‌ها
+                    localStorage.setItem('access_token', data.access);
+                    localStorage.setItem('refresh_token', data.refresh);
+                    localStorage.setItem('username', userData.username);
+                    localStorage.setItem('email', userData.email);
+                    
+                    showMessage('✅ حساب کاربری شما با موفقیت فعال شد!', 'success');
+                    
+                    setTimeout(() => {
+                        window.location.href = '/index.html';
+                    }, 2000);
+                    
+                } else {
+                    throw new Error(data.error || 'کد تایید اشتباه است');
+                }
+            } catch (error) {
+                showMessage(error.message, 'error');
+            } finally {
+                verifyOtpBtn.value = originalText;
+                verifyOtpBtn.classList.remove('loading');
+            }
+        });
+
+        // ارسال مجدد OTP
+        resendOtpLink.addEventListener('click', async function(e) {
+            e.preventDefault();
+            
+            showMessage('در حال ارسال مجدد کد تایید...', 'info');
+            
+            const otpResult = await sendOtp(currentUserEmail);
+            
+            if (otpResult.success) {
+                showMessage('✅ کد تایید مجدداً ارسال شد', 'success');
+                this.classList.add('hidden');
+                document.getElementById('timer').classList.remove('hidden');
+                startCountdown();
+            } else {
+                showMessage(`❌ ${otpResult.message}`, 'error');
+            }
+        });
 
         // سیستم هوشمند ورود شماره تلفن
         document.getElementById('phone_number').addEventListener('input', function(e) {
             let value = e.target.value.replace(/\D/g, '');
             
-            // حذف تمام صفرهای ابتدایی
-            value = value.replace(/^0+/, '');
-            
-            // محدود کردن به ۱۰ رقم (بدون صفر)
-            if (value.length > 10) {
-                value = value.substring(0, 10);
+            if (value.length > 11) {
+                value = value.substring(0, 11);
             }
             
             e.target.value = value;
             
-            // اعتبارسنجی لحظه‌ای
             if (value.length > 0) {
                 if (isValidIranianPhone(value)) {
                     e.target.classList.remove('input-error');
-                    const converted = convertToInternationalFormat(value);
-                    showMessage(`شماره شما به صورت ${converted} ارسال خواهد شد`, 'info');
+                    const converted = convertToCorrectFormat(value);
                 } else {
                     e.target.classList.add('input-error');
-                    if (value.length === 10) {
-                        showMessage('شماره تلفن باید با 9 شروع شود', 'error');
-                    } else {
-                        showMessage('', ''); // پاک کردن پیام
+                    if (value.length === 11 && !value.startsWith('09')) {
+                        showMessage('شماره تلفن باید با 09 شروع شود', 'error');
                     }
                 }
             } else {
@@ -368,30 +550,29 @@
             }
         });
 
-        // پر کردن خودکار برای تست
-        document.getElementById('phone_number').addEventListener('focus', function() {
-            if (!this.value) {
-                this.value = '9123456789';
-                const event = new Event('input', { bubbles: true });
-                this.dispatchEvent(event);
-            }
-        });
-
         function showMessage(message, type) {
-            const messageDiv = document.getElementById('message');
-            if (message) {
-                messageDiv.textContent = message;
-                messageDiv.className = `message ${type}`;
-                messageDiv.style.display = 'block';
-                messageDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            } else {
-                messageDiv.style.display = 'none';
-            }
+            messageDiv.textContent = message;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
         }
 
         function resetButton(button, originalText) {
             button.value = originalText;
             button.classList.remove('loading');
+        }
+
+        // پر کردن خودکار برای تست
+        document.getElementById('phone_number').addEventListener('focus', function() {
+            if (!this.value) {
+                this.value = '09123456789';
+                const event = new Event('input', { bubbles: true });
+                this.dispatchEvent(event);
+            }
+        });
+
+        // اگر قبلا لاگین شده، مستقیماً به صفحه اصلی برود
+        if (localStorage.getItem('access_token')) {
+            window.location.href = '/index.html';
         }
 
     </script>
