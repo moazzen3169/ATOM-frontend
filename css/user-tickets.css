@@ -21,7 +21,7 @@ body{
     grid-column: 1/5;
     border-radius: 10px;
     background-color: var(--card-color);
-    padding: 20px;
+    padding: 20px 10px;
 }
 .tickets_conversation{
     grid-column: 5/13;
@@ -63,9 +63,11 @@ body{
     flex-direction: column;
     gap: 10px;
     max-height: 500px;
-    margin-top: 20px;
+    margin-top: 7px;
     width: 100%;
     overflow-y: scroll;
+    padding: 10px;
+
 }
 
 .ticket_item{
@@ -77,10 +79,22 @@ body{
     border-radius: 10px;
     display: grid;
     grid-template-columns: repeat(3 , 1fr);
-    row-gap: 10px;
+    row-gap: 5px;
     height: 130px;
-    
+    transition: 0.3s ease;
 }
+.open{
+    border: 1px solid var(--color-primary);
+}
+.Closed{
+    border-right: 2px solid var(--color-primary);
+}
+
+.ticket_item:hover{
+    width: 95%;
+}
+
+
 
 .ticket_title{
     color: var(--white-color);
@@ -88,10 +102,21 @@ body{
     font-weight: 300;
     grid-column: 1/3;
     text-align: right;
+
+        /* برای یک سطر */
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width:97%;
 }
 .ticket_status{
     grid-column: 3/4;
-    padding: 3px 5px;
+    height: 25px;
+    max-width: 100px;
+    min-width: 84px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     font-size: 12px;
     font-weight: 300;
     text-align: center;
@@ -121,7 +146,14 @@ body{
     color: var(--white-color);
     opacity: 50%;
     font-weight: 300;
-    font-size: 14px;
+    font-size: 12px;
+    
+    /* برای یک سطر */
+    white-space: nowrap; 
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width:320px;
+    
     
 }
 .ticket_add_date{
@@ -130,8 +162,172 @@ body{
     color: var(--white-color);
     opacity: 50%;
     font-weight: 300;
-    font-size: 14px;
+    font-size: 10px;
     
 }
 
 
+/* قسمت نمایش جزییات تیکت انتخاب شده */
+/* زمانی که تیکتی انتخاب نشده */
+.no-open{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    color: var(--white-color);
+
+}
+.no-open .conversation_head{
+    display: none;
+}
+.no-open .conversation_container{
+    display: none;
+}
+.no-open .show_message{
+    display: none;
+}
+.no-open .answer_form{
+    display: none;
+}
+
+/* زمانی که تیکتی انتخاب شده */
+
+.C-open{
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+
+}
+.C-open .conversation_head{
+    width: 100%;
+    text-align: right;
+    color: var(--white-color);
+    font-size: 16px;
+    height: 40px;
+}
+.C-open .conversation_container{
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    gap: 10px;
+    max-height: 100%;
+    height: 100%;
+    overflow-y: hidden;
+}
+.C-open .show_message{
+    background-color: var(--dark-color);
+    width: 100%;
+    height: 85%;
+    overflow-y: scroll;
+    display: grid;
+    align-items: start;
+    gap: 5px;
+    border-radius:10px;
+    padding: 20px;
+    border: 5px solid var(--background-color);
+    max-height: 450px;
+}
+.C-open .answer_form{
+    background-color: var(--dark-color);
+    width: 100%;
+    height: 15%;
+    border-radius:10px;
+    padding: 0px 20px;
+}
+.answer_form form{
+    display: grid;
+    width: 100%;
+    grid-template-columns: repeat(12 , 1fr);
+    justify-content: center;
+    align-items: center;
+}
+
+.answer_input{
+    grid-column: 1 / 10;
+}
+.answer_input {
+    position: relative;
+    width: 250px; /* فقط برای نمونه */
+  }
+  
+  .answer_input input {
+    width: 100%;
+    padding: 10px;
+    font-size: 14px;
+    font-weight: 300;
+    background-color: var(--card-color);
+    border: none;
+    border-radius: 5px;
+  }
+  
+  .answer_input label {
+    position: absolute;
+    top: 50%;
+    font-size: 14px;
+
+    right: 10px; /* چون متن راست به چپه */
+    transform: translateY(-50%);
+    color: #999;
+    pointer-events: none; /* تا کلیک روی لیبل به input بره */
+    transition: opacity 0.3s;
+  }
+  
+  /* وقتی روی input یا کل div فوکوس شد → لیبل مخفی بشه */
+  .answer_input:focus-within label {
+    opacity: 0;
+    visibility: hidden;
+  }
+  
+
+/* استایل های پیام ها */
+
+.message{
+    
+    padding: 10px;
+    font-size: 16px;
+    color: var(--white-color);
+    font-weight: normal;
+    display: block;
+    justify-self: flex-start;
+    
+}
+
+.user_message{
+    max-width: 90%;
+    background-color: var(--discord-bg);
+    border-radius: 5px 5px 0px 5px;
+    justify-self: flex-start;
+    
+}
+.support_message{
+    max-width: 90%;
+    background-color: var(--card-color);
+    border-radius: 5px 5px 5px 0px;
+    justify-self: flex-end;
+    
+
+}
+
+
+
+
+.creat_ticket_modal_container{
+    position: absolute;
+    top: 0%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    height: 100%;
+    background-color: var(--overlay-color);
+}
+
+.creat_ticket_modal{
+    width: 700px;
+    height: 500px;
+    background-color: var(--card-color);
+    border-radius: 10px;
+    margin: 100px auto;
+}
+.hidden{
+    display: none;
+}

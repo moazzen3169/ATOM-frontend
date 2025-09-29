@@ -56,7 +56,7 @@
           <!-- status: new - pending - Resolved  -  Closed  -->
           <div class="tickets_lists_container">
             <!-- ITEM -->
-            <div class="ticket_item  open  new">
+            <div class="ticket_item  closed  new">
               <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
               <div class="ticket_status ">جدید</div>
               <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
@@ -72,7 +72,7 @@
           </div>
 
                       <!-- ITEM -->
-            <div class="ticket_item  open  Resolved">
+            <div class="ticket_item  closed  Resolved">
               <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
               <div class="ticket_status ">پاسخ داده  شده</div>
               <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
@@ -80,7 +80,7 @@
           </div>
 
                       <!-- ITEM -->
-            <div class="ticket_item  open  Closed">
+            <div class="ticket_item  closed  Closed">
               <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
               <div class="ticket_status ">بسته شده</div>
               <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
@@ -88,7 +88,7 @@
           </div>
 
                                 <!-- ITEM -->
-            <div class="ticket_item  open  Closed">
+            <div class="ticket_item  closed  Closed">
               <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
               <div class="ticket_status ">بسته شده</div>
               <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
@@ -101,7 +101,43 @@
         </section>
 
         <!-- قسمت مکالکه و ارسال پیام کاربر -->
-        <section class="tickets_conversation"></section>
+         <!-- این بخش 2حالت داره اگه تیکتی اتخاب شده بود C-open اگه نه no-open -->
+        <section class="tickets_conversation C-open " >
+
+          <div class="conversation_head">
+            <!-- ticket title -->
+            <span>مشکل در ورود به حساب کاربری</span>
+          </div>
+          <div class="conversation_container">
+            <!-- محل نمایش پیام های دو طرف -->
+            <div class="show_message">
+              
+            <!-- پیام های کاربر -->
+            <p class="message user_message ">مشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخه</p>
+
+            <!-- پیام های پشتیبانی -->
+            <p class="message support_message">باشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیم</p>            
+
+            
+            </div>
+            <!-- فرم پاسخگویی -->
+            <div class="answer_form">
+              <form action="#">
+                <div class="answer_input">
+                  <input type="text" name="resporn" id="resporn">
+                  <label for="resporn" id="lbl_respon">متن خودرا وارد کنید</label>
+                </div>
+                <label for="file">
+                  <img src="/img/icons/file-input.svg" alt="file-input">
+                  انتخاب فایل
+                </label>
+                <input type="file" name="file" id="file" hidden>
+                <button type="submit">ارسال</button>
+              </form>
+            </div>
+          </div>
+          
+        </section>
 
       </section>
 
@@ -111,8 +147,24 @@
     </main>
   </div>
 
+
+
+
+  <div class="creat_ticket_modal_container hidden" >
+
+      <div class="creat_ticket_modal">
+        
+      </div>
+
+  </div>
+
+
+
+
+
 <script src="/js/sidebar.js"></script>
 <script src="/js/user-dashboard.js"></script>
+<script src="/js/user-ticket.js"></script>
 
 
 </body>
