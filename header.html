@@ -1,8 +1,6 @@
-
 <link rel="stylesheet" href="css/colors.css">
 <link rel="stylesheet" href="css/header.css">
 <link rel="stylesheet" href="fonts/fonts.css">
-
 
 <header>
     <div class="header_container">
@@ -27,26 +25,24 @@
                 <a href="register/login.html">ورود</a>
             </div>
             <div class="signin">
-                <a href="register/signup.html">ثبنام</a>
+                <a href="register/signup.html">ثبت نام</a> <!-- تصحیح typo -->
             </div>
         </div>
 
         <!-- بخش پایین زمانی نمایش داده میشود که کاربر وارد حساب کاربری خود شده باشه -->
         <div class="user_islogin_to_register hidden">
-
             <div class="wallet_info">
-                <span>12,000,000 تومان</span>
+                <span>در حال بارگذاری...</span>
                 <img src="img/icons/wallet.svg" alt="wallet">
             </div>
-
 
             <div class="user-menu-wrapper">
                 <button class="open_user_links" aria-haspopup="true" aria-expanded="false" aria-controls="userMenu">
                     <img src="img/icons/user-icon.svg" alt="user-icon" width="20px">
                 </button>
-                                <!-- این بخش بعد از هاور روی دکمه  کاربر نمایش داده مشود -->
-
-                <div class="user_info_links " id="userMenu" role="menu" tabindex="-1">
+                
+                <!-- این بخش بعد از هاور روی دکمه کاربر نمایش داده میشود -->
+                <div class="user_info_links" id="userMenu" role="menu" tabindex="-1">
                     <div class="link_item" role="menuitem">
                         <a href="users/index.html">
                             <img src="img/icons/user-icon.svg" alt="user-icon" width="14px">
@@ -72,7 +68,7 @@
                         </a>
                     </div>
                     <div class="link_item exit_item exit" role="menuitem">
-                        <a href="exit.html">
+                        <a href="#" id="logoutLink">
                             <img src="img/icons/exit.svg" alt="user-icon" width="14px">
                             <span>خروج</span>
                         </a>
@@ -91,43 +87,36 @@
                     </div>
                     <div class="message_notification">
                         <div class="notification_username">
-                            <span> علیزاده</span>
+                            <span>سیستم</span>
                         </div>
                         <div class="user_message">
-                            <span>حساب کاربری شما با موفقیت ...</span>
+                            <span>خوش آمدید!</span>
                         </div>
                     </div>
                     <hr>
                     <div class="sea_all_notifacation">
-                            <a href="#">مشاهده همه اعلان ها</a>
+                        <a href="#">مشاهده همه اعلان ها</a>
                     </div>
                 </div>
             </div>
-
-            </div>
         </div>
-
-
     </div>
 
     <div class="hidden_mobile_section">
-
         <div class="menu_and_register">
             <button class="hidden_menu_btn" aria-label="Open menu">
-                <img src="img/icons/menu.svg" alt="menu" width="24px" >
+                <img src="img/icons/menu.svg" alt="menu" width="24px">
             </button>
         </div>
 
        <div class="logo">
             <img src="img/logo.png" alt="logo" height="40px">
        </div>
-
     </div>
-    <!-- بخش  سایدبار و overlay -->
 
+    <!-- بخش سایدبار و overlay -->
     <div class="mobile_overlay"></div>
     <div class="mobile_sidbar">
-
         <div class="close">
             <button class="close_btn" aria-label="Close menu">
                 <img src="img/icons/close.svg" alt="close" width="18px">
@@ -135,27 +124,25 @@
         </div>
 
         <!-- این درحالتی است که کاربر وارد حساب کاربری شده باشد -->
-
         <div class="user_info_islogin hidden">
             <div class="edit">
-                <a href="#"><img src="img/icons/edit.svg" alt="edit"></a>
+                <a href="users/edit-profile.html"><img src="img/icons/edit.svg" alt="edit"></a>
             </div>
             <div class="user_name_phone">
-                <div class="user_info_name">User name</div>
-                <div class="user_info_phone">+98 6543216542</div>
+                <div class="user_info_name">در حال بارگذاری...</div>
+                <div class="user_info_phone">در حال بارگذاری...</div>
             </div>
-            <div class="user_profile"></div>
+            <div class="user_profile">
+                <img src="img/icons/user-icon.svg" alt="profile" width="40px">
+            </div>
         </div>
-
 
         <hr>
 
-
         <!-- این در حالتی است که کابر وارد حساب کاربری نشده باشد -->
-
         <div class="user_info_isnontlogin hidden">
             <div class="please_login_title">
-                <span>خوش آمدیداز این بخش وارد حساب خود بشوید</span>
+                <span>خوش آمدید! از این بخش وارد حساب خود بشوید</span>
             </div>
             <div class="login_signin_links">
                 <button class="login2_btn">ورود</button>
@@ -163,22 +150,21 @@
             </div>
         </div>
 
-
         <div class="sidebar_links">
             <div class="sidebar_links_top">
                 <ul>
-                    <li><a href="#">صفحه اصلی</a></li>
-                    <li><a href="#">تورنومنت ها</a></li>
-                    <li><a href="#">بازی ها</a></li>
-                    <li><a href="#">رتبه بندی بازی کن ها</a></li>
-                    <li><a href="#">کیف پول من</a></li>
-                    <li><a href="#">گفتگو</a></li>
+                    <li><a href="index.html">صفحه اصلی</a></li>
+                    <li><a href="tournaments.html">تورنومنت ها</a></li>
+                    <li><a href="games.html">بازی ها</a></li>
+                    <li><a href="leaderBoard.html">رتبه بندی بازی کن ها</a></li>
+                    <li><a href="wallet.html">کیف پول من</a></li>
+                    <li><a href="chat.html">گفتگو</a></li>
                 </ul>
             </div>
 
             <div class="sidebar_links_bottom">
                 <div class="exit_account hidden">
-                    <a href="#">
+                    <a href="#" id="sidebarLogoutLink">
                         <img src="img/icons/exit.svg" alt="exit" width="24px">
                         <span>خروج</span>
                     </a>
@@ -186,7 +172,10 @@
             </div>
         </div>
 
-        <div class="sidebar_logo"></div>
-
+        <div class="sidebar_logo">
+            <img src="img/logo.png" alt="logo" width="100px">
+        </div>
     </div>
 </header>
+
+<script src="js/header.js"></script>
