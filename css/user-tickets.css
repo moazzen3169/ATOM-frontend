@@ -233,6 +233,9 @@ body{
     height: 15%;
     border-radius:10px;
     padding: 0px 20px;
+    justify-content: center;
+    align-items: center;
+    display: flex;
 }
 .answer_form form{
     display: grid;
@@ -240,12 +243,13 @@ body{
     grid-template-columns: repeat(12 , 1fr);
     justify-content: center;
     align-items: center;
+    gap: 10px;
 }
 
 .answer_input{
-    grid-column: 1 / 10;
-}
-.answer_input {
+    grid-column: 1 / 11;
+    align-items: center;
+    justify-content: space-between;
     position: relative;
     width: 250px; /* فقط برای نمونه */
   }
@@ -258,26 +262,31 @@ body{
     background-color: var(--card-color);
     border: none;
     border-radius: 5px;
+    color: var(--white-color);
   }
   
-  .answer_input label {
-    position: absolute;
-    top: 50%;
-    font-size: 14px;
+  .answer_input  {
+    width: 100%;
+    display: flex;align-items: center;
+    justify-content: center;
+  }
+    #file_tag{
+        grid-column: 11 / 12;
+        display: flex;
+        align-items: center;
+        justify-content: center;
 
-    right: 10px; /* چون متن راست به چپه */
-    transform: translateY(-50%);
-    color: #999;
-    pointer-events: none; /* تا کلیک روی لیبل به input بره */
-    transition: opacity 0.3s;
+    }
+  .answer_form button[type=submit]{
+    grid-column: 12 / 13;
+cursor: pointer;
+    background-color: var(--color-primary);
+    border: none;
+    height: 40px;
+    width: 40px;
+    border-radius: 10px;
   }
-  
-  /* وقتی روی input یا کل div فوکوس شد → لیبل مخفی بشه */
-  .answer_input:focus-within label {
-    opacity: 0;
-    visibility: hidden;
-  }
-  
+
 
 /* استایل های پیام ها */
 
