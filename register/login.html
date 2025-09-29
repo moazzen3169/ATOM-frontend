@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ورود</title>
+    <title>ورود با کد یکبار مصرف</title>
     <link rel="stylesheet" href="../css/login.css">
     <link rel="stylesheet" href="../css/colors.css">
     <link rel="stylesheet" href="../fonts/fonts.css">
@@ -18,6 +18,7 @@
         }
         .message.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
         .message.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .hidden { display: none; }
         .loading { opacity: 0.7; pointer-events: none; }
     </style>
 </head>
@@ -27,19 +28,30 @@
     <div class="register_bacground">
         <div class="register_container">
             <div class="login_title">
-                <span>فرم ورود</span>
+                <span>ورود با کد تایید</span>
             </div>
-            <div class="login_form">
-                <form id="loginForm">
-                    <input type="text" name="username" id="username" placeholder="شماره موبایل / ایمیل / نام کاربری" required>
-                    <input type="password" name="password" id="password" placeholder="رمز عبور" required>
-                    <input type="submit" value="ورود" id="submitBtn">
+
+            <!-- مرحله ۱: ارسال کد -->
+            <div id="send-otp-step">
+                <form id="sendOtpForm">
+                    <input type="text" name="identifier" id="identifier" placeholder="شماره موبایل / ایمیل" required>
+                    <input type="submit" value="دریافت کد تایید" id="sendOtpBtn">
                 </form>
-                <div id="message" class="message"></div>
             </div>
+
+            <!-- مرحله ۲: تایید کد -->
+            <div id="verify-otp-step" class="hidden">
+                <form id="verifyOtpForm">
+                    <p>کد تایید به <b id="user-identifier"></b> ارسال شد.</p>
+                    <input type="text" name="code" id="code" placeholder="کد تایید را وارد کنید" required>
+                    <input type="submit" value="ورود" id="verifyOtpBtn">
+                </form>
+            </div>
+
+            <div id="message" class="message"></div>
+
             <div class="login_bottom_links">
-                <a href="forget-password.html">رمز عبوری خود را فراموش کرده اید؟ <div class="blue">بازیابی رمز عبور</div> </a>
-                <a href="signup.html">اگر حساب کاربری ندارید میتونید <div class="blue">ثبت نام کنید</div> </a>
+                <a href="signup.html">حساب کاربری ندارید؟ <div class="blue">ثبت نام کنید</div></a>
             </div>
         </div>
     </div>
@@ -64,68 +76,81 @@
             showDots: true
         });
 
-        // مدیریت فرم ورود
-        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+        const API_BASE_URL = 'https://atom-game.ir';
+        const SEND_OTP_URL = `${API_BASE_URL}/api/users/users/send_otp/`;
+        const VERIFY_OTP_URL = `${API_BASE_URL}/api/users/users/verify_otp/`; // ✅ اصلاح شد
+
+        const sendOtpForm = document.getElementById('sendOtpForm');
+        const verifyOtpForm = document.getElementById('verifyOtpForm');
+        const sendOtpStep = document.getElementById('send-otp-step');
+        const verifyOtpStep = document.getElementById('verify-otp-step');
+        const messageDiv = document.getElementById('message');
+        const userIdentifierSpan = document.getElementById('user-identifier');
+
+        let currentIdentifier = '';
+
+        sendOtpForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            
-            const submitBtn = document.getElementById('submitBtn');
-            const originalText = submitBtn.value;
-            
-            submitBtn.value = 'در حال ورود...';
-            submitBtn.classList.add('loading');
-            
-            const formData = {
-                username: document.getElementById('username').value,
-                password: document.getElementById('password').value
-            };
+            currentIdentifier = document.getElementById('identifier').value;
 
             try {
-                const response = await fetch('https://atom-game.ir/auth/jwt/create/', {
+                const response = await fetch(SEND_OTP_URL, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(formData)
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: currentIdentifier })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    // ذخیره توکن‌ها
-                    localStorage.setItem('access_token', data.access);
-                    localStorage.setItem('refresh_token', data.refresh);
-                    localStorage.setItem('username', formData.username);
-                    
-                    showMessage('ورود موفقیت‌آمیز بود!', 'success');
-                    setTimeout(() => {
-                        window.location.href = 'dashboard.html';
-                    }, 2000);
+                    showMessage('کد تایید ارسال شد.', 'success');
+                    userIdentifierSpan.textContent = currentIdentifier;
+                    sendOtpStep.classList.add('hidden');
+                    verifyOtpStep.classList.remove('hidden');
                 } else {
-                    if (response.status === 401) {
-                        showMessage('نام کاربری یا رمز عبور اشتباه است', 'error');
-                    } else {
-                        showMessage('خطا در ورود. لطفا مجدداً تلاش کنید.', 'error');
-                    }
+                    throw new Error(data.error || 'خطا در ارسال کد');
                 }
             } catch (error) {
-                showMessage('خطا در ارتباط با سرور', 'error');
-                console.error('Login error:', error);
-            } finally {
-                submitBtn.value = originalText;
-                submitBtn.classList.remove('loading');
+                showMessage(error.message, 'error');
             }
         });
 
-        function showMessage(message, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.textContent = message;
+        verifyOtpForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const code = document.getElementById('code').value;
+
+            try {
+                const response = await fetch(VERIFY_OTP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: currentIdentifier, code: code })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    localStorage.setItem('access_token', data.access);
+                    localStorage.setItem('refresh_token', data.refresh);
+                    localStorage.setItem('identifier', currentIdentifier);
+                    showMessage('ورود موفقیت‌آمیز بود!', 'success');
+                    setTimeout(() => window.location.href = '/index.html', 1500);
+                } else {
+                    throw new Error(data.error || 'کد تایید اشتباه است');
+                }
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        });
+
+        function showMessage(msg, type) {
+            messageDiv.textContent = msg;
             messageDiv.className = `message ${type}`;
             messageDiv.style.display = 'block';
         }
 
-        // اگر کاربر قبلا وارد شده، به داشبورد هدایت شود
+        // اگر قبلا لاگین شده، مستقیماً به داشبورد برود
         if (localStorage.getItem('access_token')) {
-            window.location.href = 'dashboard.html';
+            window.location.href = '/index.html';
         }
     </script>
 </body>

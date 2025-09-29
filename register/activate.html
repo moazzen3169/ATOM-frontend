@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>فعال‌سازی حساب</title>
+  <style>
+    body { font-family:tahoma; direction:rtl; }
+    .msg { display:none; padding:10px; margin:10px 0; border-radius:5px; }
+    .msg.success { background:#d4edda; color:#155724; }
+    .msg.error { background:#f8d7da; color:#721c24; }
+  </style>
+</head>
+<body>
+  <h2>فعال‌سازی حساب کاربری</h2>
+  <form id="activateForm">
+    <input type="text" id="uid" placeholder="UID از ایمیل" required /><br>
+    <input type="text" id="token" placeholder="کد فعال‌سازی" required /><br>
+    <button type="submit">تأیید</button>
+  </form>
+  <div id="msg" class="msg"></div>
+
+<script>
+const API_BASE = "https://atom-game.ir";
+const msg = document.getElementById("msg");
+
+function showMsg(type,text){
+  msg.className = "msg " + type;
+  msg.innerText = text;
+  msg.style.display = "block";
+}
+
+document.getElementById("activateForm").addEventListener("submit", async e=>{
+  e.preventDefault();
+  msg.style.display="none";
+  try{
+    const res = await fetch(`${API_BASE}/auth/users/activation/`, {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({
+        uid: uid.value.trim(),
+        token: token.value.trim()
+      })
+    });
+    if(res.ok){
+      showMsg("success","حساب با موفقیت فعال شد. حالا می‌توانید وارد شوید.");
+      setTimeout(()=>location.href="login.html",2000);
+    } else {
+      const data=await res.json();
+      showMsg("error", JSON.stringify(data));
+    }
+  }catch(err){
+    showMsg("error","خطا در اتصال به سرور");
+  }
+});
+</script>
+</body>
+</html>

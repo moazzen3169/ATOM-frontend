@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", function () {
+document.addEventListener("DOMContentLoaded", async function () {
   const headerContainer = document.getElementById("header");
 
   if (!headerContainer) {
@@ -7,27 +7,29 @@ document.addEventListener("DOMContentLoaded", function () {
     return;
   }
 
-  fetch("header.html")
-    .then(response => response.text())
-    .then(data => {
-      headerContainer.innerHTML = data;
+  try {
+    // لود همزمان هدر و اطلاعات کاربر
+    const [headerHtml] = await Promise.all([
+      fetch("header.html").then(r => r.text()).catch(() => ""),
+    ]);
 
-      // After loading header, initialize functions
-      initHeaderAndSidebar();
+    if (headerHtml) {
+      headerContainer.innerHTML = headerHtml;
+    }
 
-      // Scroll to top
-      window.scrollTo(0, 0);
-    })
-    .catch(error => console.error("Error loading header:", error));
+    // بعد از لود هدر، اینیت
+    await initHeaderAndSidebar();
+
+    // Scroll to top
+    window.scrollTo(0, 0);
+  } catch (err) {
+    console.error("Error loading header:", err);
+  }
 });
 
-const closest = (element, selector) => {
-  if (!element || typeof element.closest !== "function") {
-    return null;
-  }
-
-  return element.closest(selector);
-};
+/* ----------------- Utility ----------------- */
+const closest = (element, selector) =>
+  element?.closest ? element.closest(selector) : null;
 
 const getHeaderElements = () => ({
   userButton: document.querySelector(".open_user_links"),
@@ -38,21 +40,14 @@ const getHeaderElements = () => ({
 
 const closeMenus = () => {
   const { userMenu, notifMenu, userButton, notifButton } = getHeaderElements();
-
-  if (userMenu) userMenu.classList.remove("is-open");
-  if (notifMenu) notifMenu.classList.remove("is-open");
-  if (userButton) userButton.setAttribute("aria-expanded", "false");
-  if (notifButton) notifButton.setAttribute("aria-expanded", "false");
+  userMenu?.classList.remove("is-open");
+  notifMenu?.classList.remove("is-open");
+  userButton?.setAttribute("aria-expanded", "false");
+  notifButton?.setAttribute("aria-expanded", "false");
 };
 
 const toggleMenu = (type) => {
-  const {
-    userMenu,
-    notifMenu,
-    userButton,
-    notifButton
-  } = getHeaderElements();
-
+  const { userMenu, notifMenu, userButton, notifButton } = getHeaderElements();
   const isUser = type === "user";
   const menuToToggle = isUser ? userMenu : notifMenu;
   const otherMenu = isUser ? notifMenu : userMenu;
@@ -61,36 +56,27 @@ const toggleMenu = (type) => {
 
   if (!menuToToggle || !trigger) return;
 
-  if (otherMenu) {
-    otherMenu.classList.remove("is-open");
-  }
-
-  if (otherTrigger) {
-    otherTrigger.setAttribute("aria-expanded", "false");
-  }
+  otherMenu?.classList.remove("is-open");
+  otherTrigger?.setAttribute("aria-expanded", "false");
 
   const isOpen = menuToToggle.classList.toggle("is-open");
   trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
 };
 
 function initHeaderMenuDelegation() {
-  if (window.__headerMenuDelegationInitialized) {
-    return;
-  }
+  if (window.__headerMenuDelegationInitialized) return;
 
   document.addEventListener("click", function (event) {
     const target = event.target;
     if (!target) return;
 
-    const userToggle = closest(target, ".open_user_links");
-    if (userToggle) {
+    if (closest(target, ".open_user_links")) {
       event.preventDefault();
       toggleMenu("user");
       return;
     }
 
-    const notifToggle = closest(target, ".notification");
-    if (notifToggle) {
+    if (closest(target, ".notification")) {
       event.preventDefault();
       toggleMenu("notification");
       return;
@@ -99,9 +85,7 @@ function initHeaderMenuDelegation() {
     if (
       closest(target, ".user_info_links") ||
       closest(target, ".notification_hover")
-    ) {
-      return;
-    }
+    ) return;
 
     closeMenus();
   });
@@ -112,55 +96,200 @@ function initHeaderMenuDelegation() {
 
 function bindNamedHandler(element, handlerKey, handler) {
   if (!element) return;
-
-  if (element[handlerKey]) {
-    element.removeEventListener("click", element[handlerKey]);
-  }
-
+  if (element[handlerKey]) element.removeEventListener("click", element[handlerKey]);
   element.addEventListener("click", handler);
   element[handlerKey] = handler;
 }
 
-function initHeaderAndSidebar() {
-  const headerUserLoggedIn = document.querySelector('.user_islogin_to_register');
-  const headerRegister = document.querySelector('.register');
-  const sidebarUserLoggedIn = document.querySelector('.user_info_islogin');
-  const sidebarUserNotLoggedIn = document.querySelector('.user_info_isnontlogin');
-  const exitButton = document.querySelector('.exit_account');
-  const sidebarLoginButton = document.querySelector('.login2_btn');
+/* ----------------- Auth Manager ----------------- */
+class HeaderAuthManager {
+  static getAccessToken() { return localStorage.getItem('access_token'); }
+  static getRefreshToken() { return localStorage.getItem('refresh_token'); }
+  static isAuthenticated() { return !!this.getAccessToken(); }
 
-  const userToken = localStorage.getItem('userAuthToken');
+  static async getCurrentUser() {
+    const token = this.getAccessToken();
+    if (!token) return null;
 
-  // Show/hide based on login status
-  if (userToken) {
-    if (headerUserLoggedIn) headerUserLoggedIn.classList.remove('hidden');
-    if (headerRegister) headerRegister.classList.add('hidden');
-    if (sidebarUserLoggedIn) sidebarUserLoggedIn.classList.remove('hidden');
-    if (sidebarUserNotLoggedIn) sidebarUserNotLoggedIn.classList.add('hidden');
-    if (exitButton) exitButton.classList.remove('hidden');
-  } else {
-    if (headerUserLoggedIn) headerUserLoggedIn.classList.add('hidden');
-    if (headerRegister) headerRegister.classList.remove('hidden');
-    if (sidebarUserLoggedIn) sidebarUserLoggedIn.classList.add('hidden');
-    if (sidebarUserNotLoggedIn) sidebarUserNotLoggedIn.classList.remove('hidden');
-    if (exitButton) exitButton.classList.add('hidden');
+    try {
+      const response = await fetch('https://atom-game.ir/auth/users/me/', {
+        method: 'GET',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) return await response.json();
+      if (response.status === 401) {
+        const newToken = await this.refreshToken();
+        return newToken ? this.getCurrentUser() : null;
+      }
+      return null;
+    } catch {
+      return null;
+    }
   }
 
-  // Test login button
-  bindNamedHandler(sidebarLoginButton, "__headerLoginHandler", function (event) {
-    event.preventDefault();
-    localStorage.setItem('userAuthToken', 'DUMMY_LOGGED_IN_TOKEN_12345');
-    location.reload();
+  static async refreshToken() {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) { this.logout(); return null; }
+
+    try {
+      const response = await fetch('https://atom-game.ir/auth/jwt/refresh/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh: refreshToken })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        localStorage.setItem('access_token', data.access);
+        return data.access;
+      }
+      this.logout();
+      return null;
+    } catch {
+      this.logout();
+      return null;
+    }
+  }
+
+  static logout() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
+    localStorage.removeItem('user_data');
+    window.location.href = 'login.html';
+  }
+
+  static async getWalletBalance() {
+    const token = this.getAccessToken();
+    if (!token) return '۰ تومان';
+
+    try {
+      const response = await fetch('https://atom-game.ir/api/wallet/', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        return data.balance ? this.formatBalance(data.balance) : '۰ تومان';
+      }
+      return '۰ تومان';
+    } catch {
+      return '۰ تومان';
+    }
+  }
+
+  static formatBalance(balance) {
+    return new Intl.NumberFormat('fa-IR').format(balance) + ' تومان';
+  }
+}
+
+/* ----------------- Header UI ----------------- */
+function createUserInfoSection(userData) {
+  return `
+    <div class="user-menu-header">
+      <div class="user-menu-avatar">
+        <div class="user-menu-name">${userData.username || 'کاربر'}</div>
+      </div>
+    </div>
+    <div class="user-menu-divider"></div>
+  `;
+}
+
+async function initHeaderAndSidebar() {
+  const els = {
+    headerUserLoggedIn: document.querySelector('.user_islogin_to_register'),
+    headerRegister: document.querySelector('.register'),
+    sidebarUserLoggedIn: document.querySelector('.user_info_islogin'),
+    sidebarUserNotLoggedIn: document.querySelector('.user_info_isnontlogin'),
+    exitButton: document.querySelector('.exit_account'),
+    sidebarLoginButton: document.querySelector('.login2_btn'),
+    sidebarSigninButton: document.querySelector('.signin_btn'),
+    userName: document.querySelector('.user_info_name'),
+    userPhone: document.querySelector('.user_info_phone'),
+    walletInfo: document.querySelector('.wallet_info span'),
+    userMenu: document.querySelector('.user_info_links')
+  };
+
+  // استفاده از کش
+  const cachedUser = JSON.parse(localStorage.getItem('user_data'));
+  if (cachedUser) renderUserInfo(cachedUser);
+
+  if (HeaderAuthManager.isAuthenticated()) {
+    try {
+      const [userData, walletBalance] = await Promise.all([
+        HeaderAuthManager.getCurrentUser(),
+        HeaderAuthManager.getWalletBalance()
+      ]);
+
+      if (userData) {
+        renderUserInfo(userData);
+        localStorage.setItem('user_data', JSON.stringify(userData));
+        updateWallet(walletBalance);
+        showLoggedInState();
+      } else {
+        showLoggedOutState();
+      }
+    } catch {
+      showLoggedOutState();
+    }
+  } else {
+    showLoggedOutState();
+  }
+
+  function renderUserInfo(userData) {
+    els.userName.textContent = userData.username || 'کاربر';
+    els.userPhone.textContent = userData.phone_number || 'شماره تماس ثبت نشده';
+
+    if (els.userMenu) {
+      els.userMenu.querySelector('.user-menu-header')?.remove();
+      els.userMenu.querySelector('.user-menu-divider')?.remove();
+      els.userMenu.insertAdjacentHTML('afterbegin', createUserInfoSection(userData));
+    }
+  }
+
+  function updateWallet(balance) {
+    if (els.walletInfo) els.walletInfo.textContent = balance;
+  }
+
+  function showLoggedInState() {
+    els.headerUserLoggedIn?.classList.remove('hidden');
+    els.headerRegister?.classList.add('hidden');
+    els.sidebarUserLoggedIn?.classList.remove('hidden');
+    els.sidebarUserNotLoggedIn?.classList.add('hidden');
+    els.exitButton?.classList.remove('hidden');
+  }
+
+  function showLoggedOutState() {
+    els.headerUserLoggedIn?.classList.add('hidden');
+    els.headerRegister?.classList.remove('hidden');
+    els.sidebarUserLoggedIn?.classList.add('hidden');
+    els.sidebarUserNotLoggedIn?.classList.remove('hidden');
+    els.exitButton?.classList.add('hidden');
+
+    els.walletInfo.textContent = '۰ تومان';
+    els.userName.textContent = 'کاربر';
+    els.userPhone.textContent = 'شماره تماس';
+  }
+
+  // هندلرها
+  bindNamedHandler(els.sidebarLoginButton, "__headerLoginHandler", e => {
+    e.preventDefault(); window.location.href = 'register/login.html';
+  });
+  bindNamedHandler(els.sidebarSigninButton, "__headerSigninHandler", e => {
+    e.preventDefault(); window.location.href = 'register/signup.html';
+  });
+  bindNamedHandler(els.exitButton, "__headerLogoutHandler", e => {
+    e.preventDefault(); HeaderAuthManager.logout();
   });
 
-  // Logout button
-  bindNamedHandler(exitButton, "__headerLogoutHandler", function (event) {
-    event.preventDefault();
-    localStorage.removeItem('userAuthToken');
-    location.reload();
+  bindNamedHandler(document.querySelector('.wallet_info'), "__headerWalletHandler", e => {
+    e.preventDefault(); window.location.href = 'wallet.html';
   });
 
-  // Mobile menu control
+  document.querySelectorAll('.user_info_links a').forEach(link => {
+    bindNamedHandler(link, "__headerUserMenuHandler", () => closeMenus());
+  });
+
+  // Mobile menu
   const menuOpenButton = document.querySelector('.hidden_menu_btn');
   const menuCloseButton = document.querySelector('.close_btn');
   const overlay = document.querySelector('.mobile_overlay');
@@ -168,14 +297,13 @@ function initHeaderAndSidebar() {
   const sidebar = document.querySelector('.mobile_sidbar');
 
   const openSidebar = () => {
-    if (overlay) overlay.style.display = 'block';
-    if (sidebar) sidebar.classList.add('active');
+    overlay && (overlay.style.display = 'block');
+    sidebar && sidebar.classList.add('active');
     body.style.overflow = 'hidden';
   };
-
   const closeSidebar = () => {
-    if (overlay) overlay.style.display = 'none';
-    if (sidebar) sidebar.classList.remove('active');
+    overlay && (overlay.style.display = 'none');
+    sidebar && sidebar.classList.remove('active');
     body.style.overflow = '';
   };
 
@@ -183,7 +311,11 @@ function initHeaderAndSidebar() {
   bindNamedHandler(menuCloseButton, "__headerMenuCloseHandler", closeSidebar);
   bindNamedHandler(overlay, "__headerOverlayHandler", closeSidebar);
 
-  // Always ensure menus start in a closed state and handlers are ready
   closeMenus();
   initHeaderMenuDelegation();
 }
+
+/* ----------------- Expose ----------------- */
+function checkAuthStatus() { return HeaderAuthManager.isAuthenticated(); }
+async function getUserData() { return HeaderAuthManager.getCurrentUser(); }
+async function updateHeader() { await initHeaderAndSidebar(); }

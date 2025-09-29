@@ -172,17 +172,38 @@ header {
     z-index: 1000;
     gap: 0px;
     width: 165px;
-    height: 211px;
+    height: auto;
     background-color: var(--card-color);
     border: 1px solid var(--border-color);
     border-radius: 10px;
     padding: 5px;
+    padding-top: 10px;
     margin-top: 10px;
   }
 
   .user_info_links.is-open {
     display: flex;
     flex-direction: column;
+  }
+
+  .user-menu-avatar{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 10px;
+  }
+
+  .user-menu-name{
+    color: var(--white-color);
+    font-size: 14px;
+    font-weight: 300;
+    text-align: center;
+    direction: ltr;
+            /* برای یک سطر */
+            white-space: nowrap; 
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width:150px;
   }
   
   .link_item.exit{
