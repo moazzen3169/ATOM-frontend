@@ -39,9 +39,7 @@ body{
 }
 
 
-.send-otp-step{
-    
-}
+/* .send-otp-step{} */
 .sendOtpForm{
     display: flex;
     align-items: center;
@@ -75,9 +73,8 @@ body{
 
 
 
-.verify-otp-step{
+/* .verify-otp-step{} */
 
-}
 #verifyOtpForm p{
     color: var(--white-color);
     direction: rtl;

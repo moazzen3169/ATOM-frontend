@@ -11,11 +11,12 @@
     align-items: center;
     justify-content: space-around;
     width: 350px;
-    height: 425px;
+    height: auto;
+    min-height: 400px;
     background: linear-gradient(  var(--background-color) 0%,  var(--card-color) 100%);
     border: 1px solid var(--border-color);
     border-radius: 10px;
-    padding: 10px;
+    padding: 20px ;
 
 }
 .login_title{
@@ -25,7 +26,7 @@
     text-align: center;
 }
 .signup_form{
-    width: 300px;
+    width: 100%;
     display: grid;
 
 }
@@ -115,3 +116,170 @@ body {
 /*  */
 /*  */
 /*  */
+
+
+
+.message {
+    padding: 12px;
+    margin: 10px 0;
+    border-radius: 5px;
+    text-align: center;
+    display: none;
+    font-size: 14px;
+    max-width: 100%;
+}
+.message.success { 
+    background-color: #d4edda; 
+    color: #155724; 
+    border: 1px solid #c3e6cb; 
+}
+.message.error { 
+    background-color: #f8d7da; 
+    color: #721c24; 
+    border: 1px solid #f5c6cb; 
+}
+.message.info { 
+    background-color: #d1ecf1; 
+    color: #0c5460; 
+    border: 1px solid #bee5eb; 
+}
+.hidden { display: none; }
+.loading { 
+    opacity: 0.7; 
+    pointer-events: none; 
+}
+
+
+
+#verify-otp-step{
+    max-width: 300px;
+}
+
+
+#verifyOtpForm{
+    max-width: 300px;
+    grid-template-columns: repeat(6 , 1fr);
+
+}
+
+
+
+
+.phone-input-container {
+    position: relative;
+    margin-bottom: 15px;
+}
+
+.phone-prefix {
+    position: absolute;
+    right: 7px;
+    top: 60%;
+    transform: translateY(-50%);    
+    color: #666;
+    font-size: 14px;
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 8px;
+    border-radius: 4px;
+    pointer-events: none;
+
+}
+
+.phone-input {
+    padding-right: 60px !important;
+    text-align: right;
+    direction: ltr;
+}
+
+.phone-format-hint {
+    font-size: 12px;
+    color: #6c757d;
+    margin: 5px 0;
+    text-align: right;
+}
+
+.input-error {
+    border-color: #dc3545 !important;
+    box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.1) !important;
+}
+
+.otp-info {
+    text-align: center;
+    margin: 20px 0;
+    padding: 15px;
+    color: var(--white-color);
+        background: var(--card-color);
+        border-radius: 5px;
+    border: 1px solid var(--border-color);
+}
+
+.otp-inputs {
+    display: flex;
+    justify-content: center;
+    gap: 5px;
+    margin: 20px 0;
+    max-width: 300px;
+    /* display: grid; */
+    align-content: inherit;
+    justify-content: space-between;
+    grid-column: 1/7;
+
+
+}
+#otp-inputs {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin: 20px 0;
+    max-width: 300px;
+    display: grid;
+    align-content: inherit;
+    justify-content: space-between;
+    grid-column: 1/7;
+
+
+}
+
+
+#verifyOtpBtn{
+    width: 100%;
+    height: 40px;
+    border: none;
+    border-radius: 5px;
+    background-color: var(--color-primary);
+    cursor: pointer;
+
+}
+.otp-input {
+    min-width: 40px;
+    height: 60px;
+    text-align: center; 
+    font-size: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    background: var(--card-color);
+    color: var(--color-primary);
+}
+
+.otp-input:focus {
+    border-color: #00F5FF;
+    outline: none;
+}
+
+.resend-otp {
+    text-align: center;
+    margin: 20px 0;
+}
+
+.resend-otp .timer {
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 10px;
+}
+
+.debug-info {
+    background: #f8f9fa;
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 5px;
+    font-size: 12px;
+    color: #666;
+}
