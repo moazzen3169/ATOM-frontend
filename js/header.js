@@ -1,35 +1,37 @@
-document.addEventListener("DOMContentLoaded", async function () {
+document.addEventListener("DOMContentLoaded", async () => {
   const headerContainer = document.getElementById("header");
+  if (!headerContainer) return;
 
-  if (!headerContainer) {
-    initHeaderMenuDelegation();
-    initHeaderAndSidebar();
-    return;
+  // ---- 1. نمایش سریع هدر از کش ----
+  const cachedHeader = localStorage.getItem("header_html");
+  if (cachedHeader) {
+    headerContainer.innerHTML = cachedHeader;
+    initHeaderAndSidebar({ skipData: true }); // فقط UI init
   }
 
+  // ---- 2. گرفتن نسخه جدید در پس‌زمینه ----
   try {
-    // لود همزمان هدر و اطلاعات کاربر
-    const [headerHtml] = await Promise.all([
-      fetch("header.html").then(r => r.text()).catch(() => ""),
-    ]);
-
-    if (headerHtml) {
-      headerContainer.innerHTML = headerHtml;
+    const response = await fetch("header.html", { cache: "reload" });
+    if (response.ok) {
+      const html = await response.text();
+      if (html && html !== cachedHeader) {
+        headerContainer.innerHTML = html;
+        localStorage.setItem("header_html", html);
+      }
     }
-
-    // بعد از لود هدر، اینیت
-    await initHeaderAndSidebar();
-
-    // Scroll to top
-    window.scrollTo(0, 0);
   } catch (err) {
-    console.error("Error loading header:", err);
+    console.warn("Failed to fetch header:", err);
   }
+
+  // ---- 3. همیشه دیتا رو async لود کن ----
+  initHeaderAndSidebar({ skipData: false });
+
+  // Scroll to top
+  window.scrollTo(0, 0);
 });
 
 /* ----------------- Utility ----------------- */
-const closest = (element, selector) =>
-  element?.closest ? element.closest(selector) : null;
+const closest = (el, sel) => el?.closest ? el.closest(sel) : null;
 
 const getHeaderElements = () => ({
   userButton: document.querySelector(".open_user_links"),
@@ -66,7 +68,7 @@ const toggleMenu = (type) => {
 function initHeaderMenuDelegation() {
   if (window.__headerMenuDelegationInitialized) return;
 
-  document.addEventListener("click", function (event) {
+  document.addEventListener("click", (event) => {
     const target = event.target;
     if (!target) return;
 
@@ -75,13 +77,11 @@ function initHeaderMenuDelegation() {
       toggleMenu("user");
       return;
     }
-
     if (closest(target, ".notification")) {
       event.preventDefault();
       toggleMenu("notification");
       return;
     }
-
     if (
       closest(target, ".user_info_links") ||
       closest(target, ".notification_hover")
@@ -194,7 +194,7 @@ function createUserInfoSection(userData) {
   `;
 }
 
-async function initHeaderAndSidebar() {
+async function initHeaderAndSidebar({ skipData = false } = {}) {
   const els = {
     headerUserLoggedIn: document.querySelector('.user_islogin_to_register'),
     headerRegister: document.querySelector('.register'),
@@ -209,30 +209,74 @@ async function initHeaderAndSidebar() {
     userMenu: document.querySelector('.user_info_links')
   };
 
-  // استفاده از کش
-  const cachedUser = JSON.parse(localStorage.getItem('user_data'));
-  if (cachedUser) renderUserInfo(cachedUser);
+  // ---- UI Init سریع ----
+  bindNamedHandler(els.sidebarLoginButton, "__headerLoginHandler", e => {
+    e.preventDefault(); window.location.href = 'register/login.html';
+  });
+  bindNamedHandler(els.sidebarSigninButton, "__headerSigninHandler", e => {
+    e.preventDefault(); window.location.href = 'register/signup.html';
+  });
+  bindNamedHandler(els.exitButton, "__headerLogoutHandler", e => {
+    e.preventDefault(); HeaderAuthManager.logout();
+  });
+  bindNamedHandler(document.querySelector('.wallet_info'), "__headerWalletHandler", e => {
+    e.preventDefault(); window.location.href = 'wallet.html';
+  });
+  document.querySelectorAll('.user_info_links a').forEach(link => {
+    bindNamedHandler(link, "__headerUserMenuHandler", () => closeMenus());
+  });
 
-  if (HeaderAuthManager.isAuthenticated()) {
-    try {
-      const [userData, walletBalance] = await Promise.all([
-        HeaderAuthManager.getCurrentUser(),
-        HeaderAuthManager.getWalletBalance()
-      ]);
+  // Mobile menu
+  const menuOpenButton = document.querySelector('.hidden_menu_btn');
+  const menuCloseButton = document.querySelector('.close_btn');
+  const overlay = document.querySelector('.mobile_overlay');
+  const body = document.body;
+  const sidebar = document.querySelector('.mobile_sidbar');
 
-      if (userData) {
-        renderUserInfo(userData);
-        localStorage.setItem('user_data', JSON.stringify(userData));
-        updateWallet(walletBalance);
-        showLoggedInState();
-      } else {
+  const openSidebar = () => {
+    overlay && (overlay.style.display = 'block');
+    sidebar && sidebar.classList.add('active');
+    body.style.overflow = 'hidden';
+  };
+  const closeSidebar = () => {
+    overlay && (overlay.style.display = 'none');
+    sidebar && sidebar.classList.remove('active');
+    body.style.overflow = '';
+  };
+
+  bindNamedHandler(menuOpenButton, "__headerMenuOpenHandler", openSidebar);
+  bindNamedHandler(menuCloseButton, "__headerMenuCloseHandler", closeSidebar);
+  bindNamedHandler(overlay, "__headerOverlayHandler", closeSidebar);
+
+  closeMenus();
+  initHeaderMenuDelegation();
+
+  // ---- Data Init (async) ----
+  if (!skipData) {
+    const cachedUser = JSON.parse(localStorage.getItem('user_data'));
+    if (cachedUser) renderUserInfo(cachedUser);
+
+    if (HeaderAuthManager.isAuthenticated()) {
+      try {
+        const [userData, walletBalance] = await Promise.all([
+          HeaderAuthManager.getCurrentUser(),
+          HeaderAuthManager.getWalletBalance()
+        ]);
+
+        if (userData) {
+          renderUserInfo(userData);
+          localStorage.setItem('user_data', JSON.stringify(userData));
+          updateWallet(walletBalance);
+          showLoggedInState();
+        } else {
+          showLoggedOutState();
+        }
+      } catch {
         showLoggedOutState();
       }
-    } catch {
+    } else {
       showLoggedOutState();
     }
-  } else {
-    showLoggedOutState();
   }
 
   function renderUserInfo(userData) {
@@ -269,53 +313,28 @@ async function initHeaderAndSidebar() {
     els.userName.textContent = 'کاربر';
     els.userPhone.textContent = 'شماره تماس';
   }
-
-  // هندلرها
-  bindNamedHandler(els.sidebarLoginButton, "__headerLoginHandler", e => {
-    e.preventDefault(); window.location.href = 'register/login.html';
-  });
-  bindNamedHandler(els.sidebarSigninButton, "__headerSigninHandler", e => {
-    e.preventDefault(); window.location.href = 'register/signup.html';
-  });
-  bindNamedHandler(els.exitButton, "__headerLogoutHandler", e => {
-    e.preventDefault(); HeaderAuthManager.logout();
-  });
-
-  bindNamedHandler(document.querySelector('.wallet_info'), "__headerWalletHandler", e => {
-    e.preventDefault(); window.location.href = 'wallet.html';
-  });
-
-  document.querySelectorAll('.user_info_links a').forEach(link => {
-    bindNamedHandler(link, "__headerUserMenuHandler", () => closeMenus());
-  });
-
-  // Mobile menu
-  const menuOpenButton = document.querySelector('.hidden_menu_btn');
-  const menuCloseButton = document.querySelector('.close_btn');
-  const overlay = document.querySelector('.mobile_overlay');
-  const body = document.body;
-  const sidebar = document.querySelector('.mobile_sidbar');
-
-  const openSidebar = () => {
-    overlay && (overlay.style.display = 'block');
-    sidebar && sidebar.classList.add('active');
-    body.style.overflow = 'hidden';
-  };
-  const closeSidebar = () => {
-    overlay && (overlay.style.display = 'none');
-    sidebar && sidebar.classList.remove('active');
-    body.style.overflow = '';
-  };
-
-  bindNamedHandler(menuOpenButton, "__headerMenuOpenHandler", openSidebar);
-  bindNamedHandler(menuCloseButton, "__headerMenuCloseHandler", closeSidebar);
-  bindNamedHandler(overlay, "__headerOverlayHandler", closeSidebar);
-
-  closeMenus();
-  initHeaderMenuDelegation();
 }
 
 /* ----------------- Expose ----------------- */
 function checkAuthStatus() { return HeaderAuthManager.isAuthenticated(); }
 async function getUserData() { return HeaderAuthManager.getCurrentUser(); }
 async function updateHeader() { await initHeaderAndSidebar(); }
+
+
+
+document.addEventListener("DOMContentLoaded", () => {
+  const logoutLink = document.getElementById("logoutLink");
+  if (logoutLink) {
+    logoutLink.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      // پاک کردن توکن‌ها
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user_data");
+
+      // ریدایرکت به صفحه لاگین
+      window.location.href = "register/login.html";
+    });
+  }
+});

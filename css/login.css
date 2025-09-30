@@ -1,6 +1,6 @@
 
 body{
-    background-image: url(../img/bg.svg);
+    /* background-image: url(../img/bg.svg); */
     width: 100%;
     height: 1000px;
     background-repeat: repeat;
@@ -16,9 +16,10 @@ body{
 .register_container{
     display: grid;
     align-items: center;
-    justify-content: space-around;
+    /* justify-content: space-around; */
     width: 350px;
-    height: 300px;
+    height: auto;
+    min-height: 250px;
     background: linear-gradient(  var(--background-color) 0%,  var(--card-color) 100%);
     border: 1px solid var(--border-color);
     border-radius: 10px;
@@ -37,7 +38,17 @@ body{
 
 }
 
-.login_form input{
+
+.send-otp-step{
+    
+}
+.sendOtpForm{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+}
+#identifier{
     margin-top: 10px;
     padding: 2px 10px 2px 2px;
     text-align: right;
@@ -47,15 +58,71 @@ body{
     border-radius: 5px;
     color: var(--white-color);
     background-color: var(--card-color);
-
 }
-.login_form input[type=submit]{
+#sendOtpBtn{
     background-color: var(--color-primary);
     color: var(--background-color);
+    border: none;
     text-align: center;
     font-weight: bold;
+    border-radius: 5px;
     cursor: pointer;
+    font-weight: 300;
+    margin-top: 10px;
+    width: 100%;
+    height: 40px;
 }
+
+
+
+.verify-otp-step{
+
+}
+#verifyOtpForm p{
+    color: var(--white-color);
+    direction: rtl;
+    font-size: 12px;
+    margin: 10px;
+}
+#user-identifier{
+    margin-top: 10px;
+    padding: 2px 10px 2px 2px;
+    text-align: right;
+    width: 100%;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    color: var(--white-color);
+    background-color: var(--card-color);
+}
+#code{
+    margin-top: 10px;
+    padding: 2px 10px 2px 2px;
+    text-align: right;
+    width: 100%;
+    height: 40px;
+    border: 1px solid var(--border-color);
+    border-radius: 5px;
+    color: var(--white-color);
+    background-color: var(--card-color);
+}
+#verifyOtpBtn{
+    background-color: var(--color-primary);
+    color: var(--background-color);
+    border: none;
+    text-align: center;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+    font-weight: 300;
+    margin-top: 5px;
+    width: 100%;
+    height: 40px;
+}
+
+
+
+
 a{
     text-decoration: none;
 }
