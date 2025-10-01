@@ -27,9 +27,9 @@
                         <input type="email" name="email" id="email" placeholder="ایمیل" required>
                         
                         <div class="phone-input-container">
-                            <input type="tel" name="phone_number" id="phone_number" class="phone-input" 
-                                   placeholder="شماره خود را با 09 وارد کنید"
-                                   inputmode="numeric" maxlength="11">
+                            <input type="tel" name="phone_number" id="phone_number" class="phone-input"
+                                   placeholder="شماره موبایل (با 09 یا +98)"
+                                   inputmode="numeric" maxlength="13">
                             <div class="phone-prefix">+98</div>
                         </div>
 
@@ -49,7 +49,7 @@
 
             <div class="login_bottom_links">
                 <a href="forget-password.html">رمز عبوری خود را فراموش کرده اید؟ <div class="blue">بازیابی رمز عبور</div> </a>
-                <a href="/register/login.html">اگر حساب کاربری موجود دارید <div class="blue">ورود کنید</div> </a>
+                <a href="login.html">اگر حساب کاربری موجود دارید <div class="blue">ورود کنید</div> </a>
             </div>
         </div>
     </div>
@@ -87,26 +87,27 @@
         // تبدیل به فرمت صحیح (+98)
         function convertToCorrectFormat(phoneNumber) {
             let cleaned = phoneNumber.replace(/\D/g, '');
-            
-            if (cleaned.startsWith('0')) {
-                cleaned = cleaned.substring(1);
-            }
-            
-            if (cleaned.length === 10 && cleaned.startsWith('9')) {
-                return '+98' + cleaned;
-            }
-            
-            if (cleaned.length === 11 && cleaned.startsWith('98')) {
+
+            if (cleaned.startsWith('989') && cleaned.length === 12) {
                 return '+' + cleaned;
             }
-            
-            return '+98' + cleaned;
+
+            if (cleaned.startsWith('9') && cleaned.length === 10) {
+                return '+98' + cleaned;
+            }
+
+            if (cleaned.startsWith('09') && cleaned.length === 11) {
+                return '+98' + cleaned.substring(1);
+            }
+
+            // Default
+            return '+98' + cleaned.replace(/^0/, '');
         }
 
         // اعتبارسنجی شماره تلفن
         function isValidIranianPhone(number) {
-            const cleaned = number.replace(/\D/g, '');
-            return /^(09|\+?989?)\d{9}$/.test(number) || /^9\d{9}$/.test(cleaned);
+            const normalized = convertToCorrectFormat(number);
+            return normalized.startsWith('+98') && normalized.length === 13;
         }
 
         // ارسال OTP
@@ -249,103 +250,7 @@
             }
         });
 
-        // مدیریت ورود OTP
-        const otpInputs = document.querySelectorAll('.otp-input');
-        
-        otpInputs.forEach((input, index) => {
-            input.addEventListener('input', function(e) {
-                // فقط اعداد قبول کن
-                this.value = this.value.replace(/[^0-9]/g, '');
-                
-                // برو به فیلد بعدی
-                if (this.value.length === 1 && index < otpInputs.length - 1) {
-                    otpInputs[index + 1].focus();
-                }
-            });
-            
-            input.addEventListener('keydown', function(e) {
-                // با backspace برگرد به فیلد قبلی
-                if (e.key === 'Backspace' && !this.value && index > 0) {
-                    otpInputs[index - 1].focus();
-                }
-            });
-        });
 
-        // مرحله ۲: تایید OTP
-        verifyOtpForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            const verifyOtpBtn = document.getElementById('verifyOtpBtn');
-            const originalText = verifyOtpBtn.value;
-            
-            verifyOtpBtn.value = 'در حال تایید...';
-            verifyOtpBtn.classList.add('loading');
-            
-            // جمع‌آوری کد OTP
-            let otpCode = '';
-            otpInputs.forEach(input => {
-                otpCode += input.value;
-            });
-            
-            if (otpCode.length !== 6) {
-                showMessage('لطفا کد ۶ رقمی را کامل وارد کنید', 'error');
-                resetButton(verifyOtpBtn, originalText);
-                return;
-            }
-
-            try {
-                const response = await fetch(VERIFY_OTP_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        identifier: currentUserEmail, 
-                        code: otpCode 
-                    })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    // ذخیره توکن‌ها
-                    localStorage.setItem('access_token', data.access);
-                    localStorage.setItem('refresh_token', data.refresh);
-                    localStorage.setItem('username', userData.username);
-                    localStorage.setItem('email', userData.email);
-                    
-                    showMessage('✅ حساب کاربری شما با موفقیت فعال شد!', 'success');
-                    
-                    setTimeout(() => {
-                        window.location.href = '/index.html';
-                    }, 2000);
-                    
-                } else {
-                    throw new Error(data.error || 'کد تایید اشتباه است');
-                }
-            } catch (error) {
-                showMessage(error.message, 'error');
-            } finally {
-                verifyOtpBtn.value = originalText;
-                verifyOtpBtn.classList.remove('loading');
-            }
-        });
-
-        // ارسال مجدد OTP
-        resendOtpLink.addEventListener('click', async function(e) {
-            e.preventDefault();
-            
-            showMessage('در حال ارسال مجدد کد تایید...', 'info');
-            
-            const otpResult = await sendOtp(currentUserEmail);
-            
-            if (otpResult.success) {
-                showMessage('✅ کد تایید مجدداً ارسال شد', 'success');
-                this.classList.add('hidden');
-                document.getElementById('timer').classList.remove('hidden');
-                startCountdown();
-            } else {
-                showMessage(`❌ ${otpResult.message}`, 'error');
-            }
-        });
 
         // سیستم هوشمند ورود شماره تلفن
         document.getElementById('phone_number').addEventListener('input', function(e) {

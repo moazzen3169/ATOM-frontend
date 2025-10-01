@@ -1,14 +1,16 @@
-# Unified OTP Page Implementation
+# Auth Pages Fixes TODO
 
-## Completed Tasks
-- [x] Create register/otp.html - Unified OTP page that handles login, signup, and forgot password verification
-- [x] Modify register/login.html - Remove inline OTP, redirect to unified page after sending OTP
-- [x] Modify register/signup.html - Remove inline OTP, redirect to unified page after signup and sending OTP
-- [x] Modify register/forget-password.html - Simplify to identifier input only, redirect to unified page after sending OTP
-- [x] Update TODO.md with completion status
+## High Priority
+- [x] Fix reset_password_confirm.html: Fix undefined variables (resetForm, uid, token), add password match validation, remove sensitive tokens from URL after use
 
-## Followup Steps
-- [ ] Test the authentication flows to ensure proper redirection and functionality
-- [ ] Verify API integration works correctly for all purposes (login, signup, forgot)
-- [ ] Check for any styling or JavaScript errors
-- [ ] Ensure reset_password_confirm.html receives correct uid and token for forgot password flow
+## Medium Priority
+- [ ] Fix signup.html: Remove unused OTP handlers, fix phone validation regex and normalization, unify link paths
+- [ ] Fix login.html: Remove user identifier from URL query string, store in sessionStorage, add referrer-policy meta, remove unused constants
+- [ ] Fix otp.html: Enable paste event handler for 6-digit code, add autocomplete="one-time-code", improve resend limit UI
+- [ ] Fix forget-password.html: Use generic success/failure messages to avoid enumeration, remove unused step indicator UI
+
+## Cross-Cutting Issues
+- [ ] Security: Add Content-Security-Policy and referrer policy meta tags, remove localStorage token storage (recommend HttpOnly Secure cookies)
+- [ ] Accessibility: Add labels and aria attributes, support prefers-reduced-motion to disable Vanta background
+- [ ] UX: Standardize error messages and loading states, prevent double submissions, unify navigation paths
+- [ ] Performance: Lazy-load background animations, consolidate repeated CSS/JS into shared files

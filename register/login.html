@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="../css/login.css">
     <link rel="stylesheet" href="../css/colors.css">
     <link rel="stylesheet" href="../fonts/fonts.css">
+    <meta name="referrer" content="no-referrer" />
     <style>
         .message {
             padding: 12px;
@@ -85,9 +86,10 @@
                 const data = await response.json();
 
                 if (response.ok) {
+                    sessionStorage.setItem('identifier', identifier);
                     showMessage('کد تایید ارسال شد. در حال انتقال...', 'success');
                     setTimeout(() => {
-                        window.location.href = `otp.html?purpose=login&identifier=${encodeURIComponent(identifier)}`;
+                        window.location.href = `otp.html?purpose=login`;
                     }, 1500);
                 } else {
                     throw new Error(data.error || 'خطا در ارسال کد');
