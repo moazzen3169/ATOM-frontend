@@ -43,30 +43,7 @@
                 </div>
             </div>
 
-            <!-- مرحله ۲: تایید OTP -->
-            <div id="verify-otp-step" class="hidden">
-                <div class="otp-info">
-                    کد تایید ۶ رقمی به <b id="user-email"></b> ارسال شد
-                </div>
-                
-                <form id="verifyOtpForm">
-                    <div class="otp-inputs">
-                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="1">
-                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="2">
-                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="3">
-                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="4">
-                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="5">
-                        <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="6">
-                    </div>
-                    
-                    <input type="submit" value="تایید و فعال سازی حساب" id="verifyOtpBtn">
-                </form>
-                
-                <div class="resend-otp">
-                    <div class="timer" id="timer">ارسال مجدد کد تا: <span id="countdown">120</span> ثانیه</div>
-                    <a href="#" id="resend-otp-link" class="hidden">ارسال مجدد کد تایید</a>
-                </div>
-            </div>
+
 
             <div id="message" class="message"></div>
 
@@ -103,18 +80,9 @@
         const VERIFY_OTP_URL = `${API_BASE_URL}/api/users/users/verify_otp/`;
 
         const signupForm = document.getElementById('signupForm');
-        const verifyOtpForm = document.getElementById('verifyOtpForm');
-        const signupStep = document.getElementById('signup-step');
-        const verifyOtpStep = document.getElementById('verify-otp-step');
         const messageDiv = document.getElementById('message');
-        const userEmailSpan = document.getElementById('user-email');
-        const resendOtpLink = document.getElementById('resend-otp-link');
-        const pageTitle = document.getElementById('page-title');
 
-        let currentUserEmail = '';
         let userData = {};
-        let countdown;
-        let countdownTime = 120;
 
         // تبدیل به فرمت صحیح (+98)
         function convertToCorrectFormat(phoneNumber) {
@@ -242,27 +210,19 @@
                 
                 if (response.status === 201) {
                     showMessage('✅ ثبت نام موفقیت‌آمیز بود! در حال ارسال کد تایید...', 'success');
-                    
+
                     // ارسال OTP به ایمیل کاربر
-                    currentUserEmail = email;
-                    const otpResult = await sendOtp(currentUserEmail);
-                    
+                    const otpResult = await sendOtp(email);
+
                     if (otpResult.success) {
-                        showMessage('✅ کد تایید به ایمیل شما ارسال شد.', 'success');
-                        userEmailSpan.textContent = currentUserEmail;
-                        
-                        // تغییر به مرحله OTP
-                        signupStep.classList.add('hidden');
-                        verifyOtpStep.classList.remove('hidden');
-                        pageTitle.textContent = 'تایید حساب کاربری';
-                        
-                        // شروع تایمر
-                        startCountdown();
-                        
+                        showMessage('✅ کد تایید ارسال شد. در حال انتقال...', 'success');
+                        setTimeout(() => {
+                            window.location.href = `otp.html?purpose=signup&identifier=${encodeURIComponent(email)}`;
+                        }, 1500);
                     } else {
                         showMessage(`❌ ${otpResult.message}`, 'error');
                     }
-                    
+
                 } else if (response.status === 400) {
                     if (data.phone_number && data.phone_number[0].includes('already exists')) {
                         showMessage('❌ این شماره تلفن قبلاً ثبت شده است. اگر مالک این شماره هستید، از قسمت "ورود" استفاده کنید.', 'error');

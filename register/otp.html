@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تایید کد یکبار مصرف</title>
+    <link rel="stylesheet" href="../css/otp.css">
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+    <style>
+        .message {
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 5px;
+            text-align: center;
+            display: none;
+            font-size: 14px;
+        }
+        .message.success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .message.error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .hidden { display: none; }
+        .resend-info {
+            text-align: center;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+        .resend-link {
+            color: var(--color-primary);
+            cursor: pointer;
+            text-decoration: underline;
+        }
+        .resend-link.disabled {
+            color: #6c757d;
+            cursor: not-allowed;
+            text-decoration: none;
+        }
+        .timer {
+            color: #6c757d;
+        }
+    </style>
+</head>
+<body>
+    <div id="vanta-bg"></div>
+
+    <div class="register_bacground">
+        <div class="otp_container">
+            <div class="otp_title">
+                <span>کد تایید را وارد کنید</span>
+            </div>
+
+            <div class="otp_form">
+                <form id="otpForm">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="0">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="1">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="2">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="3">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="4">
+                    <input type="text" class="otp-input" maxlength="1" inputmode="numeric" data-index="5">
+                    <input type="submit" value="تایید کد">
+                </form>
+            </div>
+
+            <div class="resend-info">
+                کد را دریافت نکردید؟
+                <span id="resend-link" class="resend-link">ارسال مجدد</span>
+                <span id="timer" class="timer">(02:00)</span>
+            </div>
+
+            <div class="change_number">
+                <a href="#" id="change-number-link">تغییر شماره/ایمیل</a>
+            </div>
+        </div>
+    </div>
+
+    <div id="message" class="message"></div>
+
+    <script src="../js/libraries/register-bg.js"></script>
+    <script src="../js/libraries/register-bg2.js"></script>
+    <script>
+        VANTA.NET({
+            el: "#vanta-bg",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x00F5FF,
+            backgroundColor: 0x0F172A,
+            points: 15.00,
+            maxDistance: 22.00,
+            spacing: 15.00,
+            showDots: true
+        });
+
+        const API_BASE_URL = 'https://atom-game.ir';
+        const SEND_OTP_URL = `${API_BASE_URL}/api/users/users/send_otp/`;
+        const VERIFY_OTP_URL = `${API_BASE_URL}/api/users/users/verify_otp/`;
+
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const purpose = urlParams.get('purpose');
+        const identifier = urlParams.get('identifier');
+
+        if (!purpose || !identifier) {
+            showMessage('پارامترهای نامعتبر', 'error');
+        }
+
+        const otpInputs = document.querySelectorAll('.otp-input');
+        const otpForm = document.getElementById('otpForm');
+        const messageDiv = document.getElementById('message');
+        const resendLink = document.getElementById('resend-link');
+        const timerSpan = document.getElementById('timer');
+        const changeNumberLink = document.getElementById('change-number-link');
+
+        let countdown = 120;
+        let countdownInterval;
+
+        // Auto-focus and navigation
+        otpInputs.forEach((input, index) => {
+            input.addEventListener('input', function(e) {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                if (this.value.length === 1 && index < otpInputs.length - 1) {
+                    otpInputs[index + 1].focus();
+                }
+            });
+
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Backspace' && !this.value && index > 0) {
+                    otpInputs[index - 1].focus();
+                }
+            });
+        });
+
+        // Start countdown
+        startCountdown();
+
+        // Form submit
+        otpForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            let otpCode = '';
+            otpInputs.forEach(input => otpCode += input.value);
+
+            if (otpCode.length !== 6) {
+                showMessage('لطفا کد ۶ رقمی را کامل وارد کنید', 'error');
+                return;
+            }
+
+            try {
+                const response = await fetch(VERIFY_OTP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: identifier, code: otpCode })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    handleVerificationSuccess(data);
+                } else {
+                    throw new Error(data.error || 'کد تایید اشتباه است');
+                }
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        });
+
+        // Resend OTP
+        resendLink.addEventListener('click', async function() {
+            if (this.classList.contains('disabled')) return;
+
+            try {
+                const response = await fetch(SEND_OTP_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ identifier: identifier })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showMessage('کد تایید مجددا ارسال شد', 'success');
+                    startCountdown();
+                } else {
+                    throw new Error(data.error || 'خطا در ارسال کد');
+                }
+            } catch (error) {
+                showMessage(error.message, 'error');
+            }
+        });
+
+        // Change number/email
+        changeNumberLink.addEventListener('click', function(e) {
+            e.preventDefault();
+            // Redirect back to the appropriate page based on purpose
+            if (purpose === 'login') {
+                window.location.href = 'login.html';
+            } else if (purpose === 'signup') {
+                window.location.href = 'signup.html';
+            } else if (purpose === 'forgot') {
+                window.location.href = 'forget-password.html';
+            }
+        });
+
+        function handleVerificationSuccess(data) {
+            if (purpose === 'login') {
+                // Save tokens and redirect to dashboard
+                localStorage.setItem('access_token', data.access);
+                localStorage.setItem('refresh_token', data.refresh);
+                localStorage.setItem('identifier', identifier);
+                showMessage('ورود موفقیت‌آمیز!', 'success');
+                setTimeout(() => window.location.href = '../index.html', 1500);
+            } else if (purpose === 'signup') {
+                // Account activated, redirect to dashboard
+                localStorage.setItem('access_token', data.access);
+                localStorage.setItem('refresh_token', data.refresh);
+                localStorage.setItem('identifier', identifier);
+                showMessage('حساب کاربری فعال شد!', 'success');
+                setTimeout(() => window.location.href = '../index.html', 1500);
+            } else if (purpose === 'forgot') {
+                // Redirect to password reset with uid and token
+                const uid = data.uid;
+                const token = data.token;
+                window.location.href = `reset_password_confirm.html?uid=${uid}&token=${token}`;
+            }
+        }
+
+        function startCountdown() {
+            clearInterval(countdownInterval);
+            countdown = 120;
+            updateTimer();
+            resendLink.classList.add('disabled');
+
+            countdownInterval = setInterval(() => {
+                countdown--;
+                updateTimer();
+
+                if (countdown <= 0) {
+                    clearInterval(countdownInterval);
+                    resendLink.classList.remove('disabled');
+                    timerSpan.textContent = '';
+                }
+            }, 1000);
+        }
+
+        function updateTimer() {
+            const minutes = Math.floor(countdown / 60);
+            const seconds = countdown % 60;
+            timerSpan.textContent = `(${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')})`;
+        }
+
+        function showMessage(msg, type) {
+            messageDiv.textContent = msg;
+            messageDiv.className = `message ${type}`;
+            messageDiv.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

@@ -31,22 +31,10 @@
                 <span>ورود با کد تایید</span>
             </div>
 
-            <!-- مرحله ۱: ارسال کد -->
-            <div id="send-otp-step">
-                <form id="sendOtpForm">
-                    <input type="text" name="identifier" id="identifier" placeholder="شماره موبایل / ایمیل" required>
-                    <input type="submit" value="دریافت کد تایید" id="sendOtpBtn">
-                </form>
-            </div>
-
-            <!-- مرحله ۲: تایید کد -->
-            <div id="verify-otp-step" class="hidden">
-                <form id="verifyOtpForm">
-                    <p>کد تایید به <b id="user-identifier"></b> ارسال شد.</p>
-                    <input type="text" name="code" id="code" placeholder="کد تایید را وارد کنید" required>
-                    <input type="submit" value="ورود" id="verifyOtpBtn">
-                </form>
-            </div>
+            <form id="sendOtpForm">
+                <input type="text" name="identifier" id="identifier" placeholder="شماره موبایل / ایمیل" required>
+                <input type="submit" value="دریافت کد تایید" id="sendOtpBtn">
+            </form>
 
             <div id="message" class="message"></div>
 
@@ -81,61 +69,28 @@
         const VERIFY_OTP_URL = `${API_BASE_URL}/api/users/users/verify_otp/`; // ✅ اصلاح شد
 
         const sendOtpForm = document.getElementById('sendOtpForm');
-        const verifyOtpForm = document.getElementById('verifyOtpForm');
-        const sendOtpStep = document.getElementById('send-otp-step');
-        const verifyOtpStep = document.getElementById('verify-otp-step');
         const messageDiv = document.getElementById('message');
-        const userIdentifierSpan = document.getElementById('user-identifier');
-
-        let currentIdentifier = '';
 
         sendOtpForm.addEventListener('submit', async function(e) {
             e.preventDefault();
-            currentIdentifier = document.getElementById('identifier').value;
+            const identifier = document.getElementById('identifier').value;
 
             try {
                 const response = await fetch(SEND_OTP_URL, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ identifier: currentIdentifier })
+                    body: JSON.stringify({ identifier: identifier })
                 });
 
                 const data = await response.json();
 
                 if (response.ok) {
-                    showMessage('کد تایید ارسال شد.', 'success');
-                    userIdentifierSpan.textContent = currentIdentifier;
-                    sendOtpStep.classList.add('hidden');
-                    verifyOtpStep.classList.remove('hidden');
+                    showMessage('کد تایید ارسال شد. در حال انتقال...', 'success');
+                    setTimeout(() => {
+                        window.location.href = `otp.html?purpose=login&identifier=${encodeURIComponent(identifier)}`;
+                    }, 1500);
                 } else {
                     throw new Error(data.error || 'خطا در ارسال کد');
-                }
-            } catch (error) {
-                showMessage(error.message, 'error');
-            }
-        });
-
-        verifyOtpForm.addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const code = document.getElementById('code').value;
-
-            try {
-                const response = await fetch(VERIFY_OTP_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ identifier: currentIdentifier, code: code })
-                });
-
-                const data = await response.json();
-
-                if (response.ok) {
-                    localStorage.setItem('access_token', data.access);
-                    localStorage.setItem('refresh_token', data.refresh);
-                    localStorage.setItem('identifier', currentIdentifier);
-                    showMessage('ورود موفقیت‌آمیز بود!', 'success');
-                    setTimeout(() => window.location.href = '/index.html', 1500);
-                } else {
-                    throw new Error(data.error || 'کد تایید اشتباه است');
                 }
             } catch (error) {
                 showMessage(error.message, 'error');
