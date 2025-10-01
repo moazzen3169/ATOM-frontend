@@ -85,12 +85,17 @@
 
                 const data = await response.json();
 
+
+
+                
                 if (response.ok) {
-                    sessionStorage.setItem('identifier', identifier);
-                    showMessage('کد تایید ارسال شد. در حال انتقال...', 'success');
-                    setTimeout(() => {
-                        window.location.href = `otp.html?purpose=login`;
-                    }, 1500);
+    sessionStorage.setItem('identifier', identifier);
+    showMessage('کد تایید ارسال شد. در حال انتقال...', 'success');
+    setTimeout(() => {
+        window.location.href = `otp.html?purpose=login&identifier=${encodeURIComponent(identifier)}`;
+    }, 1500);
+
+
                 } else {
                     throw new Error(data.error || 'خطا در ارسال کد');
                 }

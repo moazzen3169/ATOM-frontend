@@ -28,14 +28,19 @@
 
 .otp_form form {
     display: grid;
-    grid-template-columns: repeat(5 , 1fr);
+    grid-template-columns: repeat(6 , 1fr);
     align-items: center;
     justify-content: center;
-    gap: 17px;
+    gap: 10px;
+    row-gap: 20px;
+}
+
+.otp-inputs{
+    grid-column: 1/7;
 }
 
 .otp_form input[type="submit"] {
-    grid-column: 1 / 6;
+    grid-column: 1 / 7;
     background-color: var(--color-primary);
     color: var(--background-color);
     text-align: center;
@@ -98,7 +103,14 @@ a {
     font-weight: 300;
 }
 
-
+.resend-info{
+    color: var(--white-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    direction: rtl;
+    gap: 5px;
+}
 
 /*  */
 /*  */
