@@ -46,7 +46,7 @@ async function loadLeaderboard() {
   container.innerHTML = ''; // پاک‌سازی قبلی
 
   try {
-      const response = await fetch('https://atom-game.ir/api/users/top-players-by-rank/');
+      const response = await fetch('/api/users/top-players-by-rank/');
       if (!response.ok) throw new Error('خطا در دریافت داده از API');
 
       const players = await response.json();
@@ -95,7 +95,7 @@ async function loadHomeTournaments() {
 
   try {
       const response = await fetch(
-          `https://atom-game.ir/api/tournaments/tournaments/?page=1&page_size=6&ordering=start_date
+          `/api/tournaments/tournaments/?page=1&page_size=6&ordering=start_date
 `
       );
 

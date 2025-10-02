@@ -1,6 +1,6 @@
 async function loadGames() {
     try {
-        const response = await fetch("https://atom-game.ir/api/tournaments/games/");
+        const response = await fetch("/api/tournaments/games/");
         const games = await response.json();
 
         const container = document.getElementById("games_container");

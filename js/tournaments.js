@@ -11,15 +11,15 @@ async function loadTournaments(page = 1) {
 
     try {
         // Build URL with page, page_size, ordering, and status filter
-        const url = new URL('https://atom-game.ir/api/tournaments/tournaments/');
-        url.searchParams.set('page', page);
-        url.searchParams.set('page_size', pageSize);
-        url.searchParams.set('ordering', ordering);
+        const params = new URLSearchParams();
+        params.set('page', page);
+        params.set('page_size', pageSize);
+        params.set('ordering', ordering);
         if (filterType && filterType !== 'all') {
-            url.searchParams.set('status', filterType);
+            params.set('status', filterType);
         }
 
-        const response = await fetch(url.toString());
+        const response = await fetch(`/api/tournaments/tournaments/?${params.toString()}`);
         if (!response.ok) {
             throw new Error("خطا در دریافت اطلاعات تورنمنت‌ها");
         }

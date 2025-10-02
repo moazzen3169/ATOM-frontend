@@ -5,7 +5,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   
     try {
       // درخواست مستقیم به ولت با آیدی 5
-      const wallet = await fetchData("https://atom-game.ir/api/wallet/wallets/9/");
+      const wallet = await fetchData("/api/wallet/wallets/9/");
   
       if (!wallet || !wallet.id) {
         walletContainer.innerHTML = `<p>خطا در دریافت اطلاعات کیف پول</p>`;
@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   
       // گرفتن 5 تراکنش اخیر برای همین ولت
       const transactions = await fetchData(
-        `https://atom-game.ir/api/wallet/transactions/5/?limit=5`
+        `/api/wallet/transactions/5/?limit=5`
       );
   
       if (transactions && Array.isArray(transactions)) {

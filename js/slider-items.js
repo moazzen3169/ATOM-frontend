@@ -1,7 +1,7 @@
 (async function () {
   try {
     // دریافت لیست بازی‌ها
-    const gamesRes = await fetch("https://atom-game.ir/api/tournaments/games/");
+    const gamesRes = await fetch("/api/tournaments/games/");
     let games = await gamesRes.json();
     if (!Array.isArray(games) || games.length === 0) return;
 

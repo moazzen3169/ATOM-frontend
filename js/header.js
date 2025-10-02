@@ -112,7 +112,7 @@ class HeaderAuthManager {
     if (!token) return null;
 
     try {
-      const response = await fetch('https://atom-game.ir/auth/users/me/', {
+      const response = await fetch('/auth/users/me/', {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -133,7 +133,7 @@ class HeaderAuthManager {
     if (!refreshToken) { this.logout(); return null; }
 
     try {
-      const response = await fetch('https://atom-game.ir/auth/jwt/refresh/', {
+      const response = await fetch('/auth/jwt/refresh/', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh: refreshToken })
@@ -164,7 +164,7 @@ class HeaderAuthManager {
     if (!token) return '۰ تومان';
 
     try {
-      const response = await fetch('https://atom-game.ir/api/wallet/', {
+      const response = await fetch('/api/wallet/', {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
