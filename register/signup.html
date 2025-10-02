@@ -28,9 +28,9 @@
                         
                         <div class="phone-input-container">
                             <input type="tel" name="phone_number" id="phone_number" class="phone-input"
-                                   placeholder="شماره موبایل (با 09 یا +98)"
-                                   inputmode="numeric" maxlength="13">
-                            <div class="phone-prefix">+98</div>
+                                   placeholder="09123456789"
+                                   inputmode="numeric" maxlength="11">
+                            <!-- <div class="phone-prefix">+98</div> -->
                         </div>
 
                         
@@ -311,7 +311,7 @@
         // پر کردن خودکار برای تست
         document.getElementById('phone_number').addEventListener('focus', function() {
             if (!this.value) {
-                this.value = '09123456789';
+                this.value = '';
                 const event = new Event('input', { bubbles: true });
                 this.dispatchEvent(event);
             }
