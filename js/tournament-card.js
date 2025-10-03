@@ -68,7 +68,7 @@ function renderTournamentCard(tournament, containerId = "grid-container-tourname
     } else {
         joinBtn.textContent = "اضافه شو!";
         joinBtn.addEventListener("click", () => {
-            window.location.href = `game-loby.html?id=${tournament.id}`;
+            window.location.href = `/game-loby.html?id=${tournament.id}`;
         });
     }
 }

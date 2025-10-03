@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "/js/config.js";
+
 /**************************
  * Utils: Alert/Toast UI  *
  **************************/
@@ -113,7 +115,7 @@ async function loadTournament() {
       return;
     }
 
-    const tournament = await apiFetch(`https://atom-game.ir/api/tournaments/tournaments/${tournamentId}/`);
+    const tournament = await apiFetch(`${API_BASE_URL}/api/tournaments/tournaments/${tournamentId}/`);
     console.log("Tournament Data:", tournament); // Debugging log
     window.currentTournamentData = tournament;
     renderTournament(tournament);
@@ -322,7 +324,7 @@ async function joinTournament(extraData = {}) {
     const tournament = window.currentTournamentData;
     if (!tournament) return;
 
-    await apiFetch(`https://atom-game.ir/api/tournaments/tournaments/${tournament.id}/join/`, {
+    await apiFetch(`${API_BASE_URL}/api/tournaments/tournaments/${tournament.id}/join/`, {
       method: "POST",
       body: JSON.stringify(extraData)
     });

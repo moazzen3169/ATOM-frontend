@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "/js/config.js";
+
 // ---------------------- 1. گرفتن gameId از URL ----------------------
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get("id");
@@ -74,11 +76,11 @@ async function loadGameTournaments() {
 
   try {
     const [gameRes, tournamentsRes] = await Promise.all([
-      fetch(`https://atom-game.ir/api/tournaments/games/${gameId}/`, {
+      fetch(`${API_BASE_URL}/api/tournaments/games/${gameId}/`, {
         headers: getAuthHeaders(),
         signal: controller.signal
       }),
-      fetch(`https://atom-game.ir/api/tournaments/tournaments/?game=${gameId}`, {
+      fetch(`${API_BASE_URL}/api/tournaments/tournaments/?game=${gameId}`, {
         headers: getAuthHeaders(),
         signal: controller.signal
       })

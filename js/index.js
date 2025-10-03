@@ -1,35 +1,37 @@
 
 
-  const goTOp = document.querySelector(".go-top");
 
-  goTOp.addEventListener("click", function() {
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth" // اسکرول نرم
+import { API_BASE_URL } from "/js/config.js";
+
+const goTOp = document.querySelector(".go-top");
+
+goTOp.addEventListener("click", function() {
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth" // اسکرول نرم
+  });
+});
+
+// بخش مربوط به اسلایدر بازی ها
+document.addEventListener("DOMContentLoaded", function () {
+  const gameSection = document.querySelector(".game_section");
+  const card = document.querySelector(".game_item"); // یک کارت نمونه
+  card.style.width="240";
+  const cardWidth = card.offsetWidth + parseInt(getComputedStyle(card).marginRight); // عرض کارت + فاصله
+
+  document.querySelector(".game_arrowkey.right").addEventListener("click", function () {
+    gameSection.scrollBy({
+      left: cardWidth, // به سمت راست
+      behavior: "smooth"
     });
   });
-  
 
-  // بخش مربوط به اسلایدر بازی ها
-document.addEventListener("DOMContentLoaded", function () {
-    const gameSection = document.querySelector(".game_section");
-    const card = document.querySelector(".game_item"); // یک کارت نمونه
-    card.style.width="240";
-    const cardWidth = card.offsetWidth + parseInt(getComputedStyle(card).marginRight); // عرض کارت + فاصله
-
-    document.querySelector(".game_arrowkey.right").addEventListener("click", function () {
-        gameSection.scrollBy({
-            left: cardWidth, // به سمت راست
-            behavior: "smooth"
-        });
+  document.querySelector(".game_arrowkey.left").addEventListener("click", function () {
+    gameSection.scrollBy({
+      left: -cardWidth, // به سمت چپ
+      behavior: "smooth"
     });
-
-    document.querySelector(".game_arrowkey.left").addEventListener("click", function () {
-        gameSection.scrollBy({
-            left: -cardWidth, // به سمت چپ
-            behavior: "smooth"
-        });
-    });
+  });
 });
 
 
@@ -46,7 +48,7 @@ async function loadLeaderboard() {
   container.innerHTML = ''; // پاک‌سازی قبلی
 
   try {
-      const response = await fetch('https://atom-game.ir/api/users/top-players-by-rank/');
+      const response = await fetch(`${API_BASE_URL}/api/users/top-players-by-rank/`);
       if (!response.ok) throw new Error('خطا در دریافت داده از API');
 
       const players = await response.json();
@@ -95,7 +97,7 @@ async function loadHomeTournaments() {
 
   try {
       const response = await fetch(
-          `https://atom-game.ir/api/tournaments/tournaments/?page=1&page_size=6&ordering=start_date
+          `${API_BASE_URL}/api/tournaments/tournaments/?page=1&page_size=6&ordering=start_date
 `
       );
 

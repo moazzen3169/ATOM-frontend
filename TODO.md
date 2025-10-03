@@ -14,3 +14,20 @@
 - [ ] Accessibility: Add labels and aria attributes, support prefers-reduced-motion to disable Vanta background
 - [ ] UX: Standardize error messages and loading states, prevent double submissions, unify navigation paths
 - [ ] Performance: Lazy-load background animations, consolidate repeated CSS/JS into shared files
+
+## API URL Refactoring
+- [x] Modify js/config.js to export API_BASE_URL
+- [x] Refactor js/auth.js: add import, remove const, update URLs
+- [x] Refactor js/slider-items.js: add import, update fetch URLs
+- [x] Refactor js/wallet.js: add import, update fetch URLs
+- [x] Refactor js/tournaments.js: add import, update new URL
+- [x] Refactor js/loby.js: add import, update apiFetch URLs
+- [x] Refactor js/index.js: add import, update fetch URLs
+- [x] Refactor js/header.js: add import, update fetch URLs
+- [x] Refactor js/games.js: add import, update fetch URLs
+- [x] Refactor js/game-touranments.js: add import, update fetch URLs
+- [x] Refactor register/signup.html: add type="module", import, remove const, update URLs
+- [x] Refactor register/reset_password_confirm.html: add type="module", import, remove const, update URLs
+- [x] Refactor register/otp.html: add type="module", import, remove const, update URLs
+- [x] Refactor register/login.html: add type="module", import, remove const, update URLs
+- [x] Refactor register/forget-password.html: add type="module", import, remove const, update URLs

@@ -1,3 +1,5 @@
+import { API_BASE_URL } from "/js/config.js";
+
 document.addEventListener("DOMContentLoaded", async () => {
   const headerContainer = document.getElementById("header");
   if (!headerContainer) return;
@@ -112,7 +114,7 @@ class HeaderAuthManager {
     if (!token) return null;
 
     try {
-      const response = await fetch('https://atom-game.ir/auth/users/me/', {
+      const response = await fetch(`${API_BASE_URL}/auth/users/me/`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
       });
@@ -133,7 +135,7 @@ class HeaderAuthManager {
     if (!refreshToken) { this.logout(); return null; }
 
     try {
-      const response = await fetch('https://atom-game.ir/auth/jwt/refresh/', {
+      const response = await fetch(`${API_BASE_URL}/auth/jwt/refresh/`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ refresh: refreshToken })
@@ -156,7 +158,7 @@ class HeaderAuthManager {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     localStorage.removeItem('user_data');
-    window.location.href = 'login.html';
+    window.location.href = '/register/login.html';
   }
 
   static async getWalletBalance() {
@@ -164,7 +166,7 @@ class HeaderAuthManager {
     if (!token) return '۰ تومان';
 
     try {
-      const response = await fetch('https://atom-game.ir/api/wallet/', {
+      const response = await fetch(`${API_BASE_URL}/api/wallet/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
@@ -211,16 +213,16 @@ async function initHeaderAndSidebar({ skipData = false } = {}) {
 
   // ---- UI Init سریع ----
   bindNamedHandler(els.sidebarLoginButton, "__headerLoginHandler", e => {
-    e.preventDefault(); window.location.href = 'register/login.html';
+    e.preventDefault(); window.location.href = '/register/login.html';
   });
   bindNamedHandler(els.sidebarSigninButton, "__headerSigninHandler", e => {
-    e.preventDefault(); window.location.href = 'register/signup.html';
+    e.preventDefault(); window.location.href = '/register/signup.html';
   });
   bindNamedHandler(els.exitButton, "__headerLogoutHandler", e => {
     e.preventDefault(); HeaderAuthManager.logout();
   });
   bindNamedHandler(document.querySelector('.wallet_info'), "__headerWalletHandler", e => {
-    e.preventDefault(); window.location.href = 'wallet.html';
+    e.preventDefault(); window.location.href = '/wallet.html';
   });
   document.querySelectorAll('.user_info_links a').forEach(link => {
     bindNamedHandler(link, "__headerUserMenuHandler", () => closeMenus());
@@ -334,7 +336,7 @@ document.addEventListener("DOMContentLoaded", () => {
       localStorage.removeItem("user_data");
 
       // ریدایرکت به صفحه لاگین
-      window.location.href = "register/login.html";
+      window.location.href = "/register/login.html";
     });
   }
 });

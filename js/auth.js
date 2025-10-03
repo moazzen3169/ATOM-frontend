@@ -1,5 +1,5 @@
 // auth.js - مدیریت احراز هویت
-const API_BASE_URL = 'https://atom-game.ir';
+import { API_BASE_URL } from "/js/config.js";
 
 // ذخیره توکن‌ها
 function setTokens(accessToken, refreshToken) {

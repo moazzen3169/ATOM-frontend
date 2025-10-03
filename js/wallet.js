@@ -1,23 +1,24 @@
 // wallet.js
+import { API_BASE_URL } from "/js/config.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     const walletContainer = document.querySelector(".wallet_container");
   
     try {
       // درخواست مستقیم به ولت با آیدی 5
-      const wallet = await fetchData("https://atom-game.ir/api/wallet/wallets/9/");
-  
+      const wallet = await fetchData(`${API_BASE_URL}/api/wallet/wallets/9/`);
+
       if (!wallet || !wallet.id) {
         walletContainer.innerHTML = `<p>خطا در دریافت اطلاعات کیف پول</p>`;
         return;
       }
-  
+
       // جایگذاری اطلاعات کیف پول
       updateWalletInfo(wallet);
-  
+
       // گرفتن 5 تراکنش اخیر برای همین ولت
       const transactions = await fetchData(
-        `https://atom-game.ir/api/wallet/transactions/5/?limit=5`
+        `${API_BASE_URL}/api/wallet/transactions/5/?limit=5`
       );
   
       if (transactions && Array.isArray(transactions)) {

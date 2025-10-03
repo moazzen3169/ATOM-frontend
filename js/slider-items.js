@@ -1,7 +1,9 @@
+import { API_BASE_URL } from "/js/config.js";
+
 (async function () {
   try {
     // دریافت لیست بازی‌ها
-    const gamesRes = await fetch("https://atom-game.ir/api/tournaments/games/");
+    const gamesRes = await fetch(`${API_BASE_URL}/api/tournaments/games/`);
     let games = await gamesRes.json();
     if (!Array.isArray(games) || games.length === 0) return;
 
@@ -119,7 +121,7 @@
     } else {
       watchBtn.textContent = "مشاهده تورنومنت";
       watchBtn.classList.remove("disabled_btn");
-      watchBtn.onclick = () => window.location.href = `game-touranments.html?id=${game.id}`;
+      watchBtn.onclick = () => window.location.href = `/game-touranments.html?id=${game.id}`;
     }
   }
 }
@@ -259,9 +261,9 @@
             joinBtn.classList.add("disabled_btn"); // دکمه غیرفعال
             joinBtn.onclick = null;
           } else {
-            joinBtn.addEventListener("click", (e) => {
+              joinBtn.addEventListener("click", (e) => {
               e.stopPropagation();
-              window.location.href = `game-touranments.html?id=${game.id}`;
+              window.location.href = `/game-touranments.html?id=${game.id}`;
             });
           }
         }

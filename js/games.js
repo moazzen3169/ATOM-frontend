@@ -1,6 +1,8 @@
+import { API_BASE_URL } from "/js/config.js";
+
 async function loadGames() {
     try {
-        const response = await fetch("https://atom-game.ir/api/tournaments/games/");
+        const response = await fetch(`${API_BASE_URL}/api/tournaments/games/`);
         const games = await response.json();
 
         const container = document.getElementById("games_container");
