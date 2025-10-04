@@ -1,338 +1,123 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>داشبورد-حساب کاربری</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>داشبورد کاربری</title>
 
-    <link rel="stylesheet" href="../css/colors.css">
-    <link rel="stylesheet" href="../css/user-dashboard.css">
-    <link rel="stylesheet" href="../css/user-sidebar.css">
-    <link rel="stylesheet" href="../fonts/fonts.css">
-
-
+  <link rel="stylesheet" href="../css/colors.css">
+  <link rel="stylesheet" href="../css/user-dashboard.css">
+  <link rel="stylesheet" href="../css/user-sidebar.css">
+  <link rel="stylesheet" href="../fonts/fonts.css">
 </head>
 <body>
-    
-
-
-    
 
 <div class="body_container">
-    <!-- سایدبار -->
-    <aside id="sidebar" class="sidebar"></aside>
-  
-    <!-- محتوای اصلی -->
-    <main class="main_content">
-      
-      <!-- هدر -->
-      <header class="dashboard_header">
-        <div class="page_title">
-            <button class="hidden_menu_sidebar_btn"><img src="/img/icons/menu.svg" alt=""></button>
-          <span>داشبورد</span>
+  <!-- سایدبار -->
+  <aside id="sidebar" class="sidebar"></aside>
+
+  <!-- محتوای اصلی -->
+  <main class="main_content">
+    
+    <!-- هدر -->
+    <header class="dashboard_header">
+      <div class="page_title">
+        <button class="hidden_menu_sidebar_btn">
+          <img src="../img/icons/menu.svg" alt="">
+        </button>
+        <span>داشبورد</span>
+      </div>
+
+      <div class="head_user_id">
+        <img class="head_user_profile" src="../img/profile.jpg" alt="profile" id="header_user_avatar">
+        <span id="header_user_name">کاربر</span>
+      </div>
+    </header>
+
+    <!-- پروفایل کاربر -->
+    <section class="user_info_edit">
+      <div class="user_info_edit">
+        <div class="user_edit_title">
+          <span>پروفایل</span>
+          <button class="edit_user_btn">
+            ✏️
+          </button>
         </div>
-  
-        <div class="head_user_id">
-          <img class="head_user_profile" src="/img/profile.jpg" alt="profile">
-          <span>user name</span>
+
+        <!-- اطلاعات پروفایل -->
+        <div class="user_info_profile">
+          <div class="profile">
+            <img src="../img/profile.jpg" alt="profile" id="user_avatar">
+          </div>
+          <div class="user_name"><span id="user_name">-</span></div>
+          <div class="user_email"><span id="user_email">-</span></div>
+          <div class="user_rank"><span id="user_rank">-</span></div>
         </div>
-      </header>
-  
-      <!-- پروفایل کاربر -->
-      <section class="user_info_edit">
-        <div class="user_info_edit">
-            <div class="user_edit_title">
-                <span>پروفایل</span>
-                <button class="edit_user_btn">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="#000000"><g fill="none" stroke="var(--color-primary)" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1l1-4l9.5-9.5z"/></g></svg>
-                </button>
-            </div>
-            <!-- قسمت مربوط به عکس پروفایل و اطلاعات کاربر -->
-            <div class="user_info_profile">
-                <div class="profile">
-                    <img src="/img/profile.jpg" alt="profile">
-                </div>
-                <div class="user_name">
-                    <span>user name</span>
-                </div>
-                <div class="user_email">
-                    <span>user@gmail.com</span>
-                </div>
-                <div class="user_rank">
-                    <span>برنز</span>
-                </div>
-            </div>
-            <div class="user_info_bottom">
-                <p class="page_data">امتیاز شما :</p>
-                <p class="user_data user_score">2,550</p>
 
+        <div class="user_info_bottom">
+          <p class="page_data">امتیاز شما :</p>
+          <p class="user_data user_score" id="user_score">0</p>
 
-                <p class="page_data">تورنومنت  ها :</p>
-                <p class="user_data user_tournaments_played">12</p>
+          <p class="page_data">تورنومنت‌ها :</p>
+          <p class="user_data user_tournaments_played" id="user_tournaments_played">0</p>
 
+          <p class="page_data">تعداد تیم‌ها :</p>
+          <p class="user_data user_teams" id="user_teams">0</p>
 
-                <p class="page_data">تعداد تیم ها :</p>
-                <p class="user_data user_teams">3</p>
-
-                <p class="page_data">تاریخ عضویت :</p>
-                <p class="user_data user_add_date">1404/6/30</p>
-
-            </div>
-
-
-            <!-- قسمت زیر فقط زمانی نمایش داده میشه که کاربر بخاد اطلااعاتش رو تغییر بده -->
-
-            <div class="user_info_edit_form hidden " >
-
-                <div class="user_edit_title">
-                    <span>پروفایل</span>
-                    <button class="close_user_btn">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 1024 1024" fill="#000000"><path fill="#fff" d="M512 0C229.232 0 0 229.232 0 512c0 282.784 229.232 512 512 512c282.784 0 512-229.216 512-512C1024 229.232 794.784 0 512 0zm0 961.008c-247.024 0-448-201.984-448-449.01c0-247.024 200.976-448 448-448s448 200.977 448 448s-200.976 449.01-448 449.01zm181.008-630.016c-12.496-12.496-32.752-12.496-45.248 0L512 466.752l-135.76-135.76c-12.496-12.496-32.752-12.496-45.264 0c-12.496 12.496-12.496 32.752 0 45.248L466.736 512l-135.76 135.76c-12.496 12.48-12.496 32.769 0 45.249c12.496 12.496 32.752 12.496 45.264 0L512 557.249l135.76 135.76c12.496 12.496 32.752 12.496 45.248 0c12.496-12.48 12.496-32.769 0-45.249L557.248 512l135.76-135.76c12.512-12.512 12.512-32.768 0-45.248z"/></svg>
-                    </button>
-                </div>
-
-                <form action="#" method="post">
-
-                    <label for="profile"> 
-                        <img class="profile" src="/img/profile.jpg" alt="profile">
-                        <h2>change</h2>
-                    </label>
-                    <input type="file" name="profile" id="profile">
-
-                    <input type="text" name="user_name" id="username" placeholder="نام کاربری..">
-
-                    <input type="email" name="user_email" id="email" placeholder="ایمیل..">
-
-                    <button type="submit"> زخیره اطلاعات</button>
-
-                </form>
-                
-            </div>
+          <p class="page_data">تاریخ عضویت :</p>
+          <p class="user_data user_add_date" id="user_add_date">-</p>
         </div>
-    </section>
-  
-      <!-- تیم‌ها -->
-      <section class="user_teams_creat">
-        <div class="user_teams_creat">
-
-
-            <div class="team_title">
-                <span>تیم های شما</span>
-                <a href="#" class="creat_team_link">ایجاد تیم      +</a>
-            </div>
-
-            <div class="teams_container">
-
-                <div class="team_item">
-                    <div class="team_buttons">
-                        <!-- این دکمه ها فقط زمانی نمایش داده میشوند که کاربر مورد نظر کاپیتان تیم باشد -->
-                        <button id="delete_btn"    class="team_btn "><img src="/img/icons/delete.svg" alt=""></button>
-                        <button id="edit_btn"      class="team_btn "><img src="/img/icons/edit2.svg" alt=""></button>
-                        <button id="add_user_btn"  class="team_btn "><img src="/img/icons/add-user.svg" alt=""></button>
-                        <!-- دکمه خروج از تیم زمانی نمایش داد میشود که کاربر وارد یک تیم شده باشد نه زمانی که کاپیتان تیم هست -->
-                        <!-- <button id="exit_team_btn" class="team_btn">خروج از تیم</button> -->
-                    </div>
-                    <div class="team_info">
-                        <div class="team_picturse">
-                            <img src="/img/profile.jpg" alt="team profile">
-                        </div>
-                        <div class="team_detail">
-                            <div class="team_name">
-                                <span>wolfs</span>
-                            </div>
-                            <div class="team_member_count">
-                                <span> : تعداد اعضا</span><span> 4 عضو</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="team_item">
-                    <div class="team_buttons">
-
-                        <!-- دکمه خروج از تیم زمانی نمایش داد میشود که کاربر وارد یک تیم شده باشد نه زمانی که کاپیتان تیم هست -->
-                        <button id="exit_team_btn" class="team_btn"><img src="/img/icons/exit2.svg" alt=""></button>
-                    </div>
-                    <div class="team_info">
-                        <div class="team_picturse">
-                            <img src="/img/profile.jpg" alt="team profile">
-                        </div>
-                        <div class="team_detail">
-                            <div class="team_name">
-                                <span>wolfs</span>
-                            </div>
-                            <div class="team_member_count">
-                                <span> : تعداد اعضا</span><span> 4 عضو</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="team_item">
-                    <div class="team_buttons">
-
-                        <!-- دکمه خروج از تیم زمانی نمایش داد میشود که کاربر وارد یک تیم شده باشد نه زمانی که کاپیتان تیم هست -->
-                        <button id="exit_team_btn" class="team_btn"><img src="/img/icons/exit2.svg" alt=""></button>
-                    </div>
-                    <div class="team_info">
-                        <div class="team_picturse">
-                            <img src="/img/profile.jpg" alt="team profile">
-                        </div>
-                        <div class="team_detail">
-                            <div class="team_name">
-                                <span>wolfs</span>
-                            </div>
-                            <div class="team_member_count">
-                                <span> : تعداد اعضا</span><span> 4 عضو</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                
-                <div class="team_item">
-                    <div class="team_buttons">
-
-                        <!-- دکمه خروج از تیم زمانی نمایش داد میشود که کاربر وارد یک تیم شده باشد نه زمانی که کاپیتان تیم هست -->
-                        <button id="exit_team_btn" class="team_btn"><img src="/img/icons/exit2.svg" alt=""></button>
-                    </div>
-                    <div class="team_info">
-                        <div class="team_picturse">
-                            <img src="/img/profile.jpg" alt="team profile">
-                        </div>
-                        <div class="team_detail">
-                            <div class="team_name">
-                                <span>wolfs</span>
-                            </div>
-                            <div class="team_member_count">
-                                <span> : تعداد اعضا</span><span> 4 عضو</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-
-                
-                <div class="team_item">
-                    <div class="team_buttons">
-
-                        <!-- دکمه خروج از تیم زمانی نمایش داد میشود که کاربر وارد یک تیم شده باشد نه زمانی که کاپیتان تیم هست -->
-                        <button id="exit_team_btn" class="team_btn"><img src="/img/icons/exit2.svg" alt=""></button>
-                    </div>
-                    <div class="team_info">
-                        <div class="team_picturse">
-                            <img src="/img/profile.jpg" alt="team profile">
-                        </div>
-                        <div class="team_detail">
-                            <div class="team_name">
-                                <span>wolfs</span>
-                            </div>
-                            <div class="team_member_count">
-                                <span> : تعداد اعضا</span><span> 4 عضو</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      </div>
     </section>
 
-
-  
-      <!-- تاریخچه تورنومنت -->
-      <section class="user_tournaments_history">
-        <div class="user_tournaments_history">
-            <div class="user_history_title">
-                <span>تاریخچه تورنومنت ها</span>
-                <div class="user_history_filter">
-                    <button class="filter">فیلتر</button>
-                    <button class="sort"  >مرتب سازی</button>
-                </div>
-            </div>
-            <div class="user_tournaments_history_table">
-            <table>
-                <thead>
-                  <tr>
-                    <th>امتیاز</th>
-                    <th>رتبه</th>
-                    <th>تاریخ</th>
-                    <th>تیم</th>
-                    <th>بازی</th>
-                    <th>تورنومنت</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td class="score">3</td>
-                    <td>1</td>
-                    <td>1404/06/20</td>
-                    <td>تیم آ</td>
-                    <td>بازی اول</td>
-                    <td>جام حذفی</td>
-                  </tr>
-                  <tr>
-                    <td class="score">1</td>
-                    <td>2</td>
-                    <td>1404/06/21</td>
-                    <td>تیم ب</td>
-                    <td>بازی دوم</td>
-                    <td>لیگ برتر</td>
-                  </tr>
-                  <tr>
-                    <td class="score">1</td>
-                    <td>2</td>
-                    <td>1404/06/21</td>
-                    <td>تیم ب</td>
-                    <td>بازی دوم</td>
-                    <td>لیگ برتر</td>
-                  </tr>
-                  <tr>
-                    <td class="score">1</td>
-                    <td>2</td>
-                    <td>1404/06/21</td>
-                    <td>تیم ب</td>
-                    <td>بازی دوم</td>
-                    <td>لیگ برتر</td>
-                  </tr>
-                  <tr>
-                    <td class="score">1</td>
-                    <td>2</td>
-                    <td>1404/06/21</td>
-                    <td>تیم ب</td>
-                    <td>بازی دوم</td>
-                    <td>لیگ برتر</td>
-                  </tr>
-                  <tr>
-                    <td class="score">1</td>
-                    <td>2</td>
-                    <td>1404/06/21</td>
-                    <td>تیم ب</td>
-                    <td>بازی دوم</td>
-                    <td>لیگ برتر</td>
-                  </tr>
-                  <tr>
-                    <td class="score">1</td>
-                    <td>2</td>
-                    <td>1404/06/21</td>
-                    <td>تیم ب</td>
-                    <td>بازی دوم</td>
-                    <td>لیگ برتر</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
+    <!-- تیم‌ها -->
+    <section class="user_teams_creat">
+      <div class="user_teams_creat">
+        <div class="team_title">
+          <span>تیم‌های شما</span>
+          <a href="#" class="creat_team_link">ایجاد تیم +</a>
         </div>
+        <div class="teams_container" id="teams_container">
+          <!-- تیم‌ها اینجا با JS پر می‌شوند -->
+        </div>
+      </div>
     </section>
-        
-    </main>
-  </div>
 
-<script src="/js/sidebar.js"></script>
-<script src="/js/user-dashboard.js"></script>
+    <!-- تاریخچه تورنومنت -->
+    <section class="user_tournaments_history">
+      <div class="user_tournaments_history">
+        <div class="user_history_title">
+          <span>تاریخچه تورنومنت‌ها</span>
+          <div class="user_history_filter">
+            <button class="filter">فیلتر</button>
+            <button class="sort">مرتب‌سازی</button>
+          </div>
+        </div>
+        <div class="user_tournaments_history_table">
+          <table>
+            <thead>
+              <tr>
+                <th>امتیاز</th>
+                <th>رتبه</th>
+                <th>تاریخ</th>
+                <th>تیم</th>
+                <th>بازی</th>
+                <th>تورنومنت</th>
+              </tr>
+            </thead>
+            <tbody id="tournaments_history_body">
+              <!-- تاریخچه تورنومنت‌ها اینجا با JS پر می‌شوند -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
 
+  </main>
+</div>
+
+<script src="../js/sidebar.js"></script>
+<script type="module" src="../js/user-dashboard.js"></script>
 
 </body>
 </html>
-
-
-

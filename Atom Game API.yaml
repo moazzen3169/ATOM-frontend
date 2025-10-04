@@ -1,0 +1,7029 @@
+openapi: 3.0.3
+info:
+  title: Atom Game API
+  version: 1.0.0
+  description: API for managing tournaments, users, wallets, and more.
+paths:
+  /api/atomgamebot/status/:
+    get:
+      operationId: atomgamebot_status_retrieve
+      description: |-
+        API view to retrieve and update the AtomGameBot settings.
+        Allows GET to view the current settings and PUT/PATCH to update them.
+        Only admin users have permission to modify the settings.
+      tags:
+      - atomgamebot
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotSettings'
+          description: ''
+    put:
+      operationId: atomgamebot_status_update
+      description: |-
+        API view to retrieve and update the AtomGameBot settings.
+        Allows GET to view the current settings and PUT/PATCH to update them.
+        Only admin users have permission to modify the settings.
+      tags:
+      - atomgamebot
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BotSettings'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BotSettings'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BotSettings'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotSettings'
+          description: ''
+    patch:
+      operationId: atomgamebot_status_partial_update
+      description: |-
+        API view to retrieve and update the AtomGameBot settings.
+        Allows GET to view the current settings and PUT/PATCH to update them.
+        Only admin users have permission to modify the settings.
+      tags:
+      - atomgamebot
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedBotSettings'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBotSettings'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBotSettings'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BotSettings'
+          description: ''
+  /api/categories/:
+    get:
+      operationId: categories_list
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+          description: ''
+  /api/categories/{slug}/:
+    get:
+      operationId: categories_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - categories
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+          description: ''
+  /api/chat/conversations/:
+    get:
+      operationId: chat_conversations_list
+      description: ViewSet for managing conversations.
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Conversation'
+          description: ''
+    post:
+      operationId: chat_conversations_create
+      description: ViewSet for managing conversations.
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConversationCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ConversationCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationCreate'
+          description: ''
+  /api/chat/conversations/{conversation_pk}/messages/:
+    get:
+      operationId: chat_conversations_messages_list
+      description: ViewSet for managing messages.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Message'
+          description: ''
+    post:
+      operationId: chat_conversations_messages_create
+      description: ViewSet for managing messages.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MessageCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MessageCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageCreate'
+          description: ''
+  /api/chat/conversations/{conversation_pk}/messages/{message_pk}/attachments/:
+    get:
+      operationId: chat_conversations_messages_attachments_list
+      description: ViewSet for managing attachments.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: message_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Attachment'
+          description: ''
+    post:
+      operationId: chat_conversations_messages_attachments_create
+      description: ViewSet for managing attachments.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: message_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttachmentCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AttachmentCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AttachmentCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AttachmentCreate'
+          description: ''
+  /api/chat/conversations/{conversation_pk}/messages/{message_pk}/attachments/{id}/:
+    get:
+      operationId: chat_conversations_messages_attachments_retrieve
+      description: ViewSet for managing attachments.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this attachment.
+        required: true
+      - in: path
+        name: message_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attachment'
+          description: ''
+    put:
+      operationId: chat_conversations_messages_attachments_update
+      description: ViewSet for managing attachments.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this attachment.
+        required: true
+      - in: path
+        name: message_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Attachment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Attachment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Attachment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attachment'
+          description: ''
+    patch:
+      operationId: chat_conversations_messages_attachments_partial_update
+      description: ViewSet for managing attachments.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this attachment.
+        required: true
+      - in: path
+        name: message_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAttachment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAttachment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAttachment'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attachment'
+          description: ''
+    delete:
+      operationId: chat_conversations_messages_attachments_destroy
+      description: ViewSet for managing attachments.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this attachment.
+        required: true
+      - in: path
+        name: message_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/chat/conversations/{conversation_pk}/messages/{id}/:
+    get:
+      operationId: chat_conversations_messages_retrieve
+      description: ViewSet for managing messages.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this message.
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+    put:
+      operationId: chat_conversations_messages_update
+      description: ViewSet for managing messages.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this message.
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Message'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Message'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Message'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+    patch:
+      operationId: chat_conversations_messages_partial_update
+      description: ViewSet for managing messages.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this message.
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMessage'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Message'
+          description: ''
+    delete:
+      operationId: chat_conversations_messages_destroy
+      description: ViewSet for managing messages.
+      parameters:
+      - in: path
+        name: conversation_pk
+        schema:
+          type: integer
+        required: true
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this message.
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/chat/conversations/{id}/:
+    get:
+      operationId: chat_conversations_retrieve
+      description: ViewSet for managing conversations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this conversation.
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+          description: ''
+    put:
+      operationId: chat_conversations_update
+      description: ViewSet for managing conversations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this conversation.
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Conversation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Conversation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Conversation'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+          description: ''
+    patch:
+      operationId: chat_conversations_partial_update
+      description: ViewSet for managing conversations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this conversation.
+        required: true
+      tags:
+      - chat
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedConversation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedConversation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedConversation'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+          description: ''
+    delete:
+      operationId: chat_conversations_destroy
+      description: ViewSet for managing conversations.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this conversation.
+        required: true
+      tags:
+      - chat
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/notifications/notifications/:
+    get:
+      operationId: notifications_notifications_list
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/notifications/{id}/:
+    get:
+      operationId: notifications_notifications_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this notification.
+        required: true
+      tags:
+      - notifications
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/notifications/{id}/mark_as_read/:
+    post:
+      operationId: notifications_notifications_mark_as_read_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this notification.
+        required: true
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Notification'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/notifications/notifications/mark_all_as_read/:
+    post:
+      operationId: notifications_notifications_mark_all_as_read_create
+      tags:
+      - notifications
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Notification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Notification'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Notification'
+          description: ''
+  /api/posts/:
+    get:
+      operationId: posts_list
+      tags:
+      - posts
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PostList'
+          description: ''
+    post:
+      operationId: posts_create
+      tags:
+      - posts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PostDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PostDetail'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDetail'
+          description: ''
+  /api/posts/{post_slug}/comments/:
+    get:
+      operationId: posts_comments_list
+      parameters:
+      - name: ordering
+        required: false
+        in: query
+        description: Which field to use when ordering the results.
+        schema:
+          type: string
+      - in: query
+        name: parent
+        schema:
+          type: integer
+      - in: path
+        name: post_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Comment'
+          description: ''
+    post:
+      operationId: posts_comments_create
+      parameters:
+      - in: path
+        name: post_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Comment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+  /api/posts/{post_slug}/comments/{id}/:
+    get:
+      operationId: posts_comments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Comment.
+        required: true
+      - in: path
+        name: post_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+    put:
+      operationId: posts_comments_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Comment.
+        required: true
+      - in: path
+        name: post_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Comment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+    patch:
+      operationId: posts_comments_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Comment.
+        required: true
+      - in: path
+        name: post_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedComment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedComment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedComment'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+    delete:
+      operationId: posts_comments_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Comment.
+        required: true
+      - in: path
+        name: post_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/posts/{post_slug}/comments/{id}/react/:
+    post:
+      operationId: posts_comments_react_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Comment.
+        required: true
+      - in: path
+        name: post_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Comment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Comment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+          description: ''
+  /api/posts/{post_slug}/comments/{id}/report/:
+    post:
+      operationId: posts_comments_report_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this Comment.
+        required: true
+      - in: path
+        name: post_slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CommentReport'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CommentReport'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommentReport'
+          description: ''
+  /api/posts/{slug}/:
+    get:
+      operationId: posts_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDetail'
+          description: ''
+    put:
+      operationId: posts_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PostDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PostDetail'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDetail'
+          description: ''
+    patch:
+      operationId: posts_partial_update
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPostDetail'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPostDetail'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostDetail'
+          description: ''
+    delete:
+      operationId: posts_destroy
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - posts
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/reporting/financial/:
+    get:
+      operationId: reporting_financial_retrieve
+      description: API endpoint for the Financial Report.
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - csv
+          - json
+      tags:
+      - reporting
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reporting/marketing/:
+    get:
+      operationId: reporting_marketing_retrieve
+      description: API endpoint for the Marketing Report.
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - csv
+          - json
+      tags:
+      - reporting
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reporting/players/:
+    get:
+      operationId: reporting_players_retrieve
+      description: API endpoint for the Players Report.
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - csv
+          - json
+      tags:
+      - reporting
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reporting/revenue/:
+    get:
+      operationId: reporting_revenue_retrieve
+      description: API endpoint for the Revenue Report.
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - csv
+          - json
+      tags:
+      - reporting
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/reporting/tournaments/:
+    get:
+      operationId: reporting_tournaments_retrieve
+      description: API endpoint for the Tournament Report.
+      parameters:
+      - in: query
+        name: format
+        schema:
+          type: string
+          enum:
+          - csv
+          - json
+      tags:
+      - reporting
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/rewards/spins/:
+    get:
+      operationId: rewards_spins_list
+      tags:
+      - rewards
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Spin'
+          description: ''
+  /api/rewards/spins/{id}/:
+    get:
+      operationId: rewards_spins_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this spin.
+        required: true
+      tags:
+      - rewards
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Spin'
+          description: ''
+  /api/rewards/wheels/:
+    get:
+      operationId: rewards_wheels_list
+      tags:
+      - rewards
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Wheel'
+          description: ''
+  /api/rewards/wheels/{id}/:
+    get:
+      operationId: rewards_wheels_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this wheel.
+        required: true
+      tags:
+      - rewards
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wheel'
+          description: ''
+  /api/rewards/wheels/{id}/spin/:
+    post:
+      operationId: rewards_wheels_spin_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this wheel.
+        required: true
+      tags:
+      - rewards
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Wheel'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Wheel'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Wheel'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wheel'
+          description: ''
+  /api/support/support-assignments/:
+    get:
+      operationId: support_support_assignments_list
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/SupportAssignment'
+          description: ''
+    post:
+      operationId: support_support_assignments_create
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportAssignment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupportAssignment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupportAssignment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAssignment'
+          description: ''
+  /api/support/support-assignments/{id}/:
+    get:
+      operationId: support_support_assignments_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this support assignment.
+        required: true
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAssignment'
+          description: ''
+    put:
+      operationId: support_support_assignments_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this support assignment.
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SupportAssignment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SupportAssignment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SupportAssignment'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAssignment'
+          description: ''
+    patch:
+      operationId: support_support_assignments_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this support assignment.
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedSupportAssignment'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedSupportAssignment'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedSupportAssignment'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SupportAssignment'
+          description: ''
+    delete:
+      operationId: support_support_assignments_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this support assignment.
+        required: true
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/support/tickets/:
+    get:
+      operationId: support_tickets_list
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Ticket'
+          description: ''
+    post:
+      operationId: support_tickets_create
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+          description: ''
+  /api/support/tickets/{id}/:
+    get:
+      operationId: support_tickets_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+          description: ''
+    put:
+      operationId: support_tickets_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Ticket'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+          description: ''
+    patch:
+      operationId: support_tickets_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTicket'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTicket'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTicket'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Ticket'
+          description: ''
+    delete:
+      operationId: support_tickets_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket.
+        required: true
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/support/tickets/{ticket_pk}/messages/:
+    get:
+      operationId: support_tickets_messages_list
+      parameters:
+      - in: path
+        name: ticket_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TicketMessage'
+          description: ''
+    post:
+      operationId: support_tickets_messages_create
+      parameters:
+      - in: path
+        name: ticket_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TicketMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketMessage'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketMessage'
+          description: ''
+  /api/support/tickets/{ticket_pk}/messages/{id}/:
+    get:
+      operationId: support_tickets_messages_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket message.
+        required: true
+      - in: path
+        name: ticket_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketMessage'
+          description: ''
+    put:
+      operationId: support_tickets_messages_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket message.
+        required: true
+      - in: path
+        name: ticket_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TicketMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TicketMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TicketMessage'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketMessage'
+          description: ''
+    patch:
+      operationId: support_tickets_messages_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket message.
+        required: true
+      - in: path
+        name: ticket_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTicketMessage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTicketMessage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTicketMessage'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TicketMessage'
+          description: ''
+    delete:
+      operationId: support_tickets_messages_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this ticket message.
+        required: true
+      - in: path
+        name: ticket_pk
+        schema:
+          type: integer
+        required: true
+      tags:
+      - support
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/tags/:
+    get:
+      operationId: tags_list
+      tags:
+      - tags
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+          description: ''
+  /api/tags/{slug}/:
+    get:
+      operationId: tags_retrieve
+      parameters:
+      - in: path
+        name: slug
+        schema:
+          type: string
+        required: true
+      tags:
+      - tags
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Tag'
+          description: ''
+  /api/tournaments/admin/reports/:
+    get:
+      operationId: tournaments_admin_reports_list
+      description: API view for admin to see all reports.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+          description: ''
+  /api/tournaments/admin/winner-submissions/:
+    get:
+      operationId: tournaments_admin_winner_submissions_list
+      description: API view for admin to see all winner submissions.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WinnerSubmission'
+          description: ''
+  /api/tournaments/games/:
+    get:
+      operationId: tournaments_games_list
+      description: ViewSet for managing games.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GameReadOnly'
+          description: ''
+    post:
+      operationId: tournaments_games_create
+      description: ViewSet for managing games.
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GameCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GameCreateUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCreateUpdate'
+          description: ''
+  /api/tournaments/games/{id}/:
+    get:
+      operationId: tournaments_games_retrieve
+      description: ViewSet for managing games.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this game.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameReadOnly'
+          description: ''
+    put:
+      operationId: tournaments_games_update
+      description: ViewSet for managing games.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this game.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GameCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/GameCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/GameCreateUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCreateUpdate'
+          description: ''
+    patch:
+      operationId: tournaments_games_partial_update
+      description: ViewSet for managing games.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this game.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedGameCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedGameCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedGameCreateUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GameCreateUpdate'
+          description: ''
+    delete:
+      operationId: tournaments_games_destroy
+      description: ViewSet for managing games.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this game.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/tournaments/matches/:
+    get:
+      operationId: tournaments_matches_list
+      description: ViewSet for managing matches.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchReadOnly'
+          description: ''
+    post:
+      operationId: tournaments_matches_create
+      description: ViewSet for managing matches.
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MatchCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MatchCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchCreate'
+          description: ''
+  /api/tournaments/matches/{id}/:
+    get:
+      operationId: tournaments_matches_retrieve
+      description: ViewSet for managing matches.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this match.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchReadOnly'
+          description: ''
+    put:
+      operationId: tournaments_matches_update
+      description: ViewSet for managing matches.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this match.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MatchUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MatchUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchUpdate'
+          description: ''
+    patch:
+      operationId: tournaments_matches_partial_update
+      description: ViewSet for managing matches.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this match.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedMatchUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedMatchUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedMatchUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchUpdate'
+          description: ''
+    delete:
+      operationId: tournaments_matches_destroy
+      description: ViewSet for managing matches.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this match.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/tournaments/matches/{id}/confirm_result/:
+    post:
+      operationId: tournaments_matches_confirm_result_create
+      description: Confirm the result of a match.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this match.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchReadOnly'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MatchReadOnly'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MatchReadOnly'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchReadOnly'
+          description: ''
+  /api/tournaments/matches/{id}/dispute_result/:
+    post:
+      operationId: tournaments_matches_dispute_result_create
+      description: Dispute the result of a match.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this match.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MatchReadOnly'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/MatchReadOnly'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/MatchReadOnly'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchReadOnly'
+          description: ''
+  /api/tournaments/my-tournaments/:
+    get:
+      operationId: tournaments_my_tournaments_list
+      description: API view to list tournaments a user has participated in.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TournamentList'
+          description: ''
+  /api/tournaments/reports/:
+    get:
+      operationId: tournaments_reports_list
+      description: ViewSet for managing reports.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+          description: ''
+    post:
+      operationId: tournaments_reports_create
+      description: ViewSet for managing reports.
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Report'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Report'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+  /api/tournaments/reports/{id}/:
+    get:
+      operationId: tournaments_reports_retrieve
+      description: ViewSet for managing reports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+    put:
+      operationId: tournaments_reports_update
+      description: ViewSet for managing reports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Report'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Report'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+    patch:
+      operationId: tournaments_reports_partial_update
+      description: ViewSet for managing reports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedReport'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedReport'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+    delete:
+      operationId: tournaments_reports_destroy
+      description: ViewSet for managing reports.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/tournaments/reports/{id}/reject/:
+    post:
+      operationId: tournaments_reports_reject_create
+      description: Reject a report.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Report'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Report'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+  /api/tournaments/reports/{id}/resolve/:
+    post:
+      operationId: tournaments_reports_resolve_create
+      description: Resolve a report and ban the reported user if necessary.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this report.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Report'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Report'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Report'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+          description: ''
+  /api/tournaments/top-tournaments/:
+    get:
+      operationId: tournaments_top_tournaments_retrieve
+      description: API view for getting top tournaments by prize pool.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/tournaments/total-prize-money/:
+    get:
+      operationId: tournaments_total_prize_money_retrieve
+      description: API view for getting the total prize money paid out.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/tournaments/total-tournaments/:
+    get:
+      operationId: tournaments_total_tournaments_retrieve
+      description: API view for getting the total number of tournaments held.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/tournaments/tournament-colors/:
+    get:
+      operationId: tournaments_tournament_colors_list
+      description: ViewSet for managing tournament colors.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TournamentColor'
+          description: ''
+    post:
+      operationId: tournaments_tournament_colors_create
+      description: ViewSet for managing tournament colors.
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentColor'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TournamentColor'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TournamentColor'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentColor'
+          description: ''
+  /api/tournaments/tournament-colors/{id}/:
+    get:
+      operationId: tournaments_tournament_colors_retrieve
+      description: ViewSet for managing tournament colors.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament color.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentColor'
+          description: ''
+    put:
+      operationId: tournaments_tournament_colors_update
+      description: ViewSet for managing tournament colors.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament color.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentColor'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TournamentColor'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TournamentColor'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentColor'
+          description: ''
+    patch:
+      operationId: tournaments_tournament_colors_partial_update
+      description: ViewSet for managing tournament colors.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament color.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTournamentColor'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTournamentColor'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTournamentColor'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentColor'
+          description: ''
+    delete:
+      operationId: tournaments_tournament_colors_destroy
+      description: ViewSet for managing tournament colors.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament color.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/tournaments/tournament-images/:
+    get:
+      operationId: tournaments_tournament_images_list
+      description: ViewSet for managing tournament images.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TournamentImage'
+          description: ''
+    post:
+      operationId: tournaments_tournament_images_create
+      description: ViewSet for managing tournament images.
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentImage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TournamentImage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TournamentImage'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentImage'
+          description: ''
+  /api/tournaments/tournament-images/{id}/:
+    get:
+      operationId: tournaments_tournament_images_retrieve
+      description: ViewSet for managing tournament images.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament image.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentImage'
+          description: ''
+    put:
+      operationId: tournaments_tournament_images_update
+      description: ViewSet for managing tournament images.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament image.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentImage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TournamentImage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TournamentImage'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentImage'
+          description: ''
+    patch:
+      operationId: tournaments_tournament_images_partial_update
+      description: ViewSet for managing tournament images.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament image.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTournamentImage'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTournamentImage'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTournamentImage'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentImage'
+          description: ''
+    delete:
+      operationId: tournaments_tournament_images_destroy
+      description: ViewSet for managing tournament images.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament image.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/tournaments/tournaments/:
+    get:
+      operationId: tournaments_tournaments_list
+      description: ViewSet for managing tournaments.
+      parameters:
+      - in: query
+        name: game
+        schema:
+          type: integer
+      - in: query
+        name: is_free
+        schema:
+          type: boolean
+      - in: query
+        name: name
+        schema:
+          type: string
+      - in: query
+        name: ordering
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - -entry_fee
+            - -name
+            - -start_date
+            - entry_fee
+            - name
+            - start_date
+        description: |-
+          Ordering
+
+          * `name` - Name
+          * `-name` - Name (descending)
+          * `start_date` - Start date
+          * `-start_date` - Start date (descending)
+          * `entry_fee` - Entry fee
+          * `-entry_fee` - Entry fee (descending)
+        explode: false
+        style: form
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      - in: query
+        name: start_date__gte
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: start_date__lte
+        schema:
+          type: string
+          format: date-time
+      - in: query
+        name: status
+        schema:
+          type: string
+          enum:
+          - finished
+          - ongoing
+          - upcoming
+        description: |-
+          * `upcoming` - Upcoming
+          * `ongoing` - Ongoing
+          * `finished` - Finished
+      - in: query
+        name: type
+        schema:
+          type: string
+          enum:
+          - individual
+          - team
+        description: |-
+          * `individual` - Individual
+          * `team` - Team
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedTournamentListList'
+          description: ''
+    post:
+      operationId: tournaments_tournaments_create
+      description: ViewSet for managing tournaments.
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TournamentCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TournamentCreateUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentCreateUpdate'
+          description: ''
+  /api/tournaments/tournaments/{id}/:
+    get:
+      operationId: tournaments_tournaments_retrieve
+      description: ViewSet for managing tournaments.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentReadOnly'
+          description: ''
+    put:
+      operationId: tournaments_tournaments_update
+      description: ViewSet for managing tournaments.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TournamentCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TournamentCreateUpdate'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentCreateUpdate'
+          description: ''
+    patch:
+      operationId: tournaments_tournaments_partial_update
+      description: ViewSet for managing tournaments.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTournamentCreateUpdate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTournamentCreateUpdate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTournamentCreateUpdate'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentCreateUpdate'
+          description: ''
+    delete:
+      operationId: tournaments_tournaments_destroy
+      description: ViewSet for managing tournaments.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/tournaments/tournaments/{id}/generate_matches/:
+    post:
+      operationId: tournaments_tournaments_generate_matches_create
+      description: Generate matches for a tournament.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentReadOnly'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TournamentReadOnly'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TournamentReadOnly'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentReadOnly'
+          description: ''
+  /api/tournaments/tournaments/{id}/join/:
+    post:
+      operationId: tournaments_tournaments_join_create
+      description: Join a tournament.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentReadOnly'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TournamentReadOnly'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TournamentReadOnly'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentReadOnly'
+          description: ''
+  /api/tournaments/tournaments/{id}/start_countdown/:
+    post:
+      operationId: tournaments_tournaments_start_countdown_create
+      description: Start the countdown for a tournament.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this tournament.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TournamentReadOnly'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TournamentReadOnly'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TournamentReadOnly'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TournamentReadOnly'
+          description: ''
+  /api/tournaments/winner-submissions/:
+    get:
+      operationId: tournaments_winner_submissions_list
+      description: ViewSet for managing winner submissions.
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WinnerSubmission'
+          description: ''
+    post:
+      operationId: tournaments_winner_submissions_create
+      description: ViewSet for managing winner submissions.
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WinnerSubmission'
+          description: ''
+  /api/tournaments/winner-submissions/{id}/:
+    get:
+      operationId: tournaments_winner_submissions_retrieve
+      description: ViewSet for managing winner submissions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this winner submission.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WinnerSubmission'
+          description: ''
+    put:
+      operationId: tournaments_winner_submissions_update
+      description: ViewSet for managing winner submissions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this winner submission.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WinnerSubmission'
+          description: ''
+    patch:
+      operationId: tournaments_winner_submissions_partial_update
+      description: ViewSet for managing winner submissions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this winner submission.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedWinnerSubmission'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedWinnerSubmission'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedWinnerSubmission'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WinnerSubmission'
+          description: ''
+    delete:
+      operationId: tournaments_winner_submissions_destroy
+      description: ViewSet for managing winner submissions.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this winner submission.
+        required: true
+      tags:
+      - tournaments
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/tournaments/winner-submissions/{id}/approve/:
+    post:
+      operationId: tournaments_winner_submissions_approve_create
+      description: Approve a winner submission and pay the prize.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this winner submission.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WinnerSubmission'
+          description: ''
+  /api/tournaments/winner-submissions/{id}/reject/:
+    post:
+      operationId: tournaments_winner_submissions_reject_create
+      description: Reject a winner submission.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this winner submission.
+        required: true
+      tags:
+      - tournaments
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WinnerSubmission'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WinnerSubmission'
+          description: ''
+  /api/users/auth/admin-login/:
+    post:
+      operationId: users_auth_admin_login_create
+      description: API view for admin login.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminLogin'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminLogin'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminLogin'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminLogin'
+          description: ''
+  /api/users/dashboard/:
+    get:
+      operationId: users_dashboard_retrieve
+      description: |-
+        API view for user dashboard.
+        Provides all necessary data for the main dashboard UI.
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+  /api/users/roles/:
+    get:
+      operationId: users_roles_list
+      description: ViewSet for managing roles.
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+          description: ''
+    post:
+      operationId: users_roles_create
+      description: ViewSet for managing roles.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Role'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Role'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+  /api/users/roles/{id}/:
+    get:
+      operationId: users_roles_retrieve
+      description: ViewSet for managing roles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+    put:
+      operationId: users_roles_update
+      description: ViewSet for managing roles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Role'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Role'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Role'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+    patch:
+      operationId: users_roles_partial_update
+      description: ViewSet for managing roles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedRole'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedRole'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedRole'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Role'
+          description: ''
+    delete:
+      operationId: users_roles_destroy
+      description: ViewSet for managing roles.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this role.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/users/teams/:
+    get:
+      operationId: users_teams_list
+      description: ViewSet for managing teams.
+      parameters:
+      - in: query
+        name: captain
+        schema:
+          type: integer
+      - in: query
+        name: name
+        schema:
+          type: string
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Team'
+          description: ''
+    post:
+      operationId: users_teams_create
+      description: ViewSet for managing teams.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Team'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Team'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+  /api/users/teams/{id}/:
+    get:
+      operationId: users_teams_retrieve
+      description: ViewSet for managing teams.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this team.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+    put:
+      operationId: users_teams_update
+      description: ViewSet for managing teams.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this team.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Team'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Team'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+    patch:
+      operationId: users_teams_partial_update
+      description: ViewSet for managing teams.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this team.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedTeam'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedTeam'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedTeam'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+    delete:
+      operationId: users_teams_destroy
+      description: ViewSet for managing teams.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this team.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/users/teams/{id}/add-member/:
+    post:
+      operationId: users_teams_add_member_create
+      description: Invite a member to a team.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this team.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Team'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Team'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+  /api/users/teams/{id}/leave_team/:
+    post:
+      operationId: users_teams_leave_team_create
+      description: Leave a team.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this team.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Team'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Team'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+  /api/users/teams/{id}/match-history/:
+    get:
+      operationId: users_teams_match_history_list
+      description: API view to list match history for a specific team.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchReadOnly'
+          description: ''
+  /api/users/teams/{id}/remove_member/:
+    post:
+      operationId: users_teams_remove_member_create
+      description: Remove a member from a team.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this team.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Team'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Team'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+  /api/users/teams/respond-invitation/:
+    post:
+      operationId: users_teams_respond_invitation_create
+      description: Respond to a team invitation.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Team'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Team'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Team'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Team'
+          description: ''
+  /api/users/top-players/:
+    get:
+      operationId: users_top_players_retrieve
+      description: API view for getting top players by prize money.
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/users/top-players-by-rank/:
+    get:
+      operationId: users_top_players_by_rank_retrieve
+      description: API view for getting top players by rank.
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/users/top-teams/:
+    get:
+      operationId: users_top_teams_retrieve
+      description: API view for getting top teams by prize money.
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/users/total-players/:
+    get:
+      operationId: users_total_players_retrieve
+      description: API view for getting the total number of players.
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/users/users/:
+    get:
+      operationId: users_users_list
+      description: ViewSet for managing users.
+      parameters:
+      - in: query
+        name: email
+        schema:
+          type: string
+      - in: query
+        name: username
+        schema:
+          type: string
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserReadOnly'
+          description: ''
+    post:
+      operationId: users_users_create
+      description: ViewSet for managing users.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreate'
+          description: ''
+  /api/users/users/{id}/:
+    get:
+      operationId: users_users_retrieve
+      description: ViewSet for managing users.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserReadOnly'
+          description: ''
+    put:
+      operationId: users_users_update
+      description: ViewSet for managing users.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: users_users_partial_update
+      description: ViewSet for managing users.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: users_users_destroy
+      description: ViewSet for managing users.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/users/users/{id}/match-history/:
+    get:
+      operationId: users_users_match_history_list
+      description: API view to list match history for a specific user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchReadOnly'
+          description: ''
+  /api/users/users/{id}/tournaments/:
+    get:
+      operationId: users_users_tournaments_retrieve
+      description: ViewSet for managing users.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/users/send_otp/:
+    post:
+      operationId: users_users_send_otp_create
+      description: Send OTP to user based on email or phone number.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/users/users/verify_otp/:
+    post:
+      operationId: users_users_verify_otp_create
+      description: Verify OTP and login user.
+      tags:
+      - users
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/verification/{id}/approve/:
+    post:
+      operationId: verification_approve_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - verification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Verification'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Verification'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Verification'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Verification'
+          description: ''
+  /api/verification/list_all/:
+    get:
+      operationId: verification_list_all_retrieve
+      tags:
+      - verification
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Verification'
+          description: ''
+  /api/verification/status/:
+    get:
+      operationId: verification_status_retrieve
+      tags:
+      - verification
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Verification'
+          description: ''
+  /api/verification/submit_level2/:
+    post:
+      operationId: verification_submit_level2_create
+      tags:
+      - verification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationLevel2'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerificationLevel2'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerificationLevel2'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationLevel2'
+          description: ''
+  /api/verification/submit_level3/:
+    post:
+      operationId: verification_submit_level3_create
+      tags:
+      - verification
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/VerificationLevel3'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/VerificationLevel3'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/VerificationLevel3'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VerificationLevel3'
+          description: ''
+  /api/wallet/transactions/:
+    get:
+      operationId: wallet_transactions_list
+      description: A viewset for viewing transactions for the user's wallet.
+      tags:
+      - wallet
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Transaction'
+          description: ''
+  /api/wallet/transactions/{id}/:
+    get:
+      operationId: wallet_transactions_retrieve
+      description: A viewset for viewing transactions for the user's wallet.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this transaction.
+        required: true
+      tags:
+      - wallet
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Transaction'
+          description: ''
+  /api/wallet/wallets/:
+    get:
+      operationId: wallet_wallets_list
+      description: |-
+        A viewset for viewing a user's wallet.
+        The queryset is filtered to only return the wallet for the currently authenticated user.
+      tags:
+      - wallet
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Wallet'
+          description: ''
+  /api/wallet/wallets/{id}/:
+    get:
+      operationId: wallet_wallets_retrieve
+      description: |-
+        A viewset for viewing a user's wallet.
+        The queryset is filtered to only return the wallet for the currently authenticated user.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this wallet.
+        required: true
+      tags:
+      - wallet
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Wallet'
+          description: ''
+  /auth/jwt/create/:
+    post:
+      operationId: auth_jwt_create_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenObtainPair'
+          description: ''
+  /auth/jwt/refresh/:
+    post:
+      operationId: auth_jwt_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /auth/jwt/verify/:
+    post:
+      operationId: auth_jwt_verify_create
+      description: |-
+        Takes a token and indicates if it is valid.  This view provides no
+        information about a token's fitness for a particular use.
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenVerify'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenVerify'
+          description: ''
+  /auth/users/:
+    get:
+      operationId: auth_users_list
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+          description: ''
+    post:
+      operationId: auth_users_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserCreatePasswordRetype'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UserCreatePasswordRetype'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UserCreatePasswordRetype'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserCreatePasswordRetype'
+          description: ''
+  /auth/users/{id}/:
+    get:
+      operationId: auth_users_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_users_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_users_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: auth_users_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this user.
+        required: true
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /auth/users/activation/:
+    post:
+      operationId: auth_users_activation_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Activation'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Activation'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Activation'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Activation'
+          description: ''
+  /auth/users/me/:
+    get:
+      operationId: auth_users_me_retrieve
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    put:
+      operationId: auth_users_me_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/User'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/User'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    patch:
+      operationId: auth_users_me_partial_update
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedUser'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+    delete:
+      operationId: auth_users_me_destroy
+      tags:
+      - auth
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
+  /auth/users/resend_activation/:
+    post:
+      operationId: auth_users_resend_activation_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /auth/users/reset_password/:
+    post:
+      operationId: auth_users_reset_password_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /auth/users/reset_password_confirm/:
+    post:
+      operationId: auth_users_reset_password_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRetype'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRetype'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PasswordResetConfirmRetype'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PasswordResetConfirmRetype'
+          description: ''
+  /auth/users/reset_username/:
+    post:
+      operationId: auth_users_reset_username_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SendEmailReset'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendEmailReset'
+          description: ''
+  /auth/users/reset_username_confirm/:
+    post:
+      operationId: auth_users_reset_username_confirm_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/UsernameResetConfirm'
+        required: true
+      security:
+      - jwtAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UsernameResetConfirm'
+          description: ''
+  /auth/users/set_password/:
+    post:
+      operationId: auth_users_set_password_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRetype'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRetype'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetPasswordRetype'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetPasswordRetype'
+          description: ''
+  /auth/users/set_username/:
+    post:
+      operationId: auth_users_set_username_create
+      tags:
+      - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetUsernameRetype'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/SetUsernameRetype'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/SetUsernameRetype'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SetUsernameRetype'
+          description: ''
+  /private-media/{path}:
+    get:
+      operationId: private_media_retrieve
+      description: |-
+        This view serves private media files. It requires authentication and
+        checks if the user is a participant in the match to which the file
+        belongs.
+      parameters:
+      - in: path
+        name: path
+        schema:
+          type: string
+          pattern: ^.*$
+        required: true
+      tags:
+      - private-media
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          description: No response body
+components:
+  schemas:
+    Activation:
+      type: object
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+      required:
+      - token
+      - uid
+    AdminLogin:
+      type: object
+      description: Serializer for admin login.
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
+    Attachment:
+      type: object
+      description: Serializer for the Attachment model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        message:
+          type: integer
+        file:
+          type: string
+          format: uri
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - file
+      - id
+      - message
+      - uploaded_at
+    AttachmentCreate:
+      type: object
+      description: Serializer for creating a new attachment.
+      properties:
+        file:
+          type: string
+          format: uri
+      required:
+      - file
+    BotSettings:
+      type: object
+      description: |-
+        Serializer for the BotSettings model.
+        The 'is_active' field is the only writable field.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          description: Activate the bot to start its tasks. Deactivate to stop.
+        author:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: The user account that will be the author of posts created by
+            the bot.
+      required:
+      - author
+      - id
+      - name
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        slug:
+          type: string
+          maxLength: 100
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+    Comment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        post:
+          type: integer
+          readOnly: true
+        author:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        parent:
+          type: integer
+          nullable: true
+        replies:
+          type: string
+          readOnly: true
+        reactions:
+          type: string
+          readOnly: true
+        user_reaction:
+          type: string
+          readOnly: true
+      required:
+      - author
+      - content
+      - created_at
+      - id
+      - post
+      - reactions
+      - replies
+      - user_reaction
+    CommentReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        reason:
+          type: string
+        comment:
+          type: integer
+          readOnly: true
+        reporter:
+          type: integer
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/CommentReportStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - comment
+      - created_at
+      - id
+      - reason
+      - reporter
+      - status
+    CommentReportStatusEnum:
+      enum:
+      - pending
+      - resolved
+      - dismissed
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `resolved` - Resolved
+        * `dismissed` - Dismissed
+    Conversation:
+      type: object
+      description: Serializer for the Conversation model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserReadOnly'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_message:
+          type: string
+          readOnly: true
+        support_ticket:
+          type: integer
+          nullable: true
+      required:
+      - created_at
+      - id
+      - last_message
+      - participants
+    ConversationCreate:
+      type: object
+      description: Serializer for creating a new conversation.
+      properties:
+        participants:
+          type: array
+          items:
+            type: integer
+      required:
+      - participants
+    GameCreateUpdate:
+      type: object
+      description: Serializer for creating and updating games.
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/StatusE7cEnum'
+      required:
+      - description
+      - name
+    GameImage:
+      type: object
+      description: Serializer for the GameImage model.
+      properties:
+        game:
+          type: integer
+        image_type:
+          $ref: '#/components/schemas/ImageTypeEnum'
+        image:
+          type: string
+          format: uri
+      required:
+      - game
+      - image
+      - image_type
+    GameReadOnly:
+      type: object
+      description: Serializer for the Game model (read-only).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        images:
+          type: array
+          items:
+            $ref: '#/components/schemas/GameImage'
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/StatusE7cEnum'
+          readOnly: true
+        tournaments_count:
+          type: string
+          readOnly: true
+      required:
+      - description
+      - id
+      - images
+      - name
+      - status
+      - tournaments_count
+    ImageTypeEnum:
+      enum:
+      - hero_banner
+      - cta_banner
+      - game_image
+      - thumbnail
+      - icon
+      - slider
+      - illustration
+      - promotional_banner
+      type: string
+      description: |-
+        * `hero_banner` - Hero Banner
+        * `cta_banner` - CTA Banner
+        * `game_image` - Game Image
+        * `thumbnail` - Thumbnail
+        * `icon` - Icon
+        * `slider` - Slider
+        * `illustration` - Illustration
+        * `promotional_banner` - Promotional Banner
+    InGameID:
+      type: object
+      description: Serializer for the InGameID model.
+      properties:
+        game:
+          type: integer
+        player_id:
+          type: string
+          maxLength: 100
+      required:
+      - game
+      - player_id
+    LevelEnum:
+      enum:
+      - 1
+      - 2
+      - 3
+      type: integer
+      description: |-
+        * `1` - Level 1
+        * `2` - Level 2
+        * `3` - Level 3
+    MatchCreate:
+      type: object
+      description: Serializer for creating matches (admin only).
+      properties:
+        tournament:
+          type: integer
+        round:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        match_type:
+          $ref: '#/components/schemas/MatchTypeEnum'
+        participant1_user:
+          type: integer
+          nullable: true
+        participant2_user:
+          type: integer
+          nullable: true
+        participant1_team:
+          type: integer
+          nullable: true
+        participant2_team:
+          type: integer
+          nullable: true
+        room_id:
+          type: string
+          maxLength: 100
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 100
+      required:
+      - round
+      - tournament
+    MatchReadOnly:
+      type: object
+      description: Serializer for reading match data.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        tournament:
+          type: integer
+          readOnly: true
+        round:
+          type: integer
+          readOnly: true
+        match_type:
+          allOf:
+          - $ref: '#/components/schemas/MatchTypeEnum'
+          readOnly: true
+        participant1_user:
+          allOf:
+          - $ref: '#/components/schemas/UserReadOnly'
+          readOnly: true
+        participant2_user:
+          allOf:
+          - $ref: '#/components/schemas/UserReadOnly'
+          readOnly: true
+        participant1_team:
+          allOf:
+          - $ref: '#/components/schemas/Team'
+          readOnly: true
+        participant2_team:
+          allOf:
+          - $ref: '#/components/schemas/Team'
+          readOnly: true
+        winner_user:
+          allOf:
+          - $ref: '#/components/schemas/UserReadOnly'
+          readOnly: true
+        winner_team:
+          allOf:
+          - $ref: '#/components/schemas/Team'
+          readOnly: true
+        result_proof:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        is_confirmed:
+          type: boolean
+          readOnly: true
+        is_disputed:
+          type: boolean
+          readOnly: true
+        dispute_reason:
+          type: string
+          readOnly: true
+        room_id:
+          type: string
+          readOnly: true
+      required:
+      - dispute_reason
+      - id
+      - is_confirmed
+      - is_disputed
+      - match_type
+      - participant1_team
+      - participant1_user
+      - participant2_team
+      - participant2_user
+      - result_proof
+      - room_id
+      - round
+      - tournament
+      - winner_team
+      - winner_user
+    MatchTypeEnum:
+      enum:
+      - individual
+      - team
+      type: string
+      description: |-
+        * `individual` - Individual
+        * `team` - Team
+    MatchUpdate:
+      type: object
+      description: Serializer for updating a match with a result proof.
+      properties:
+        result_proof:
+          type: string
+          format: uri
+      required:
+      - result_proof
+    Message:
+      type: object
+      description: Serializer for the Message model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        conversation:
+          type: integer
+        sender:
+          allOf:
+          - $ref: '#/components/schemas/UserReadOnly'
+          readOnly: true
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        is_read:
+          type: boolean
+        is_edited:
+          type: boolean
+        is_deleted:
+          type: boolean
+      required:
+      - content
+      - conversation
+      - id
+      - sender
+      - timestamp
+    MessageCreate:
+      type: object
+      description: Serializer for creating a new message.
+      properties:
+        content:
+          type: string
+      required:
+      - content
+    ModeEnum:
+      enum:
+      - team_deathmatch
+      - battle_royale
+      type: string
+      description: |-
+        * `team_deathmatch` - Team Deathmatch
+        * `battle_royale` - Battle Royale
+    Notification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+        message:
+          type: string
+          maxLength: 255
+        notification_type:
+          $ref: '#/components/schemas/NotificationTypeEnum'
+        is_read:
+          type: boolean
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - message
+      - timestamp
+      - user
+    NotificationTypeEnum:
+      enum:
+      - report_new
+      - report_status_change
+      - winner_submission_required
+      - winner_submission_status_change
+      type: string
+      description: |-
+        * `report_new` - New Report
+        * `report_status_change` - Report Status Change
+        * `winner_submission_required` - Winner Submission Required
+        * `winner_submission_status_change` - Winner Submission Status Change
+    PaginatedTournamentListList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/TournamentList'
+    PasswordResetConfirmRetype:
+      type: object
+      properties:
+        uid:
+          type: string
+        token:
+          type: string
+        new_password:
+          type: string
+        re_new_password:
+          type: string
+      required:
+      - new_password
+      - re_new_password
+      - token
+      - uid
+    PatchedAttachment:
+      type: object
+      description: Serializer for the Attachment model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        message:
+          type: integer
+        file:
+          type: string
+          format: uri
+        uploaded_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedBotSettings:
+      type: object
+      description: |-
+        Serializer for the BotSettings model.
+        The 'is_active' field is the only writable field.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        is_active:
+          type: boolean
+          description: Activate the bot to start its tasks. Deactivate to stop.
+        author:
+          type: integer
+          readOnly: true
+          nullable: true
+          description: The user account that will be the author of posts created by
+            the bot.
+    PatchedComment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        post:
+          type: integer
+          readOnly: true
+        author:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        content:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        parent:
+          type: integer
+          nullable: true
+        replies:
+          type: string
+          readOnly: true
+        reactions:
+          type: string
+          readOnly: true
+        user_reaction:
+          type: string
+          readOnly: true
+    PatchedConversation:
+      type: object
+      description: Serializer for the Conversation model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserReadOnly'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        last_message:
+          type: string
+          readOnly: true
+        support_ticket:
+          type: integer
+          nullable: true
+    PatchedGameCreateUpdate:
+      type: object
+      description: Serializer for creating and updating games.
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        status:
+          $ref: '#/components/schemas/StatusE7cEnum'
+    PatchedMatchUpdate:
+      type: object
+      description: Serializer for updating a match with a result proof.
+      properties:
+        result_proof:
+          type: string
+          format: uri
+    PatchedMessage:
+      type: object
+      description: Serializer for the Message model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        conversation:
+          type: integer
+        sender:
+          allOf:
+          - $ref: '#/components/schemas/UserReadOnly'
+          readOnly: true
+        content:
+          type: string
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        is_read:
+          type: boolean
+        is_edited:
+          type: boolean
+        is_deleted:
+          type: boolean
+    PatchedPostDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        author:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        content:
+          type: string
+        featured_image:
+          type: string
+          format: uri
+          nullable: true
+        status:
+          $ref: '#/components/schemas/Status68aEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        category:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: integer
+        comments:
+          type: string
+          readOnly: true
+        related_posts:
+          type: string
+          readOnly: true
+    PatchedReport:
+      type: object
+      description: Serializer for the Report model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        reporter:
+          type: integer
+          readOnly: true
+        reported_user:
+          type: integer
+        match:
+          type: integer
+        description:
+          type: string
+        evidence:
+          type: string
+          format: uri
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReportStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedRole:
+      type: object
+      description: Serializer for the Role model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        is_default:
+          type: boolean
+    PatchedSupportAssignment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        support_person:
+          type: integer
+        game:
+          type: integer
+        head_support:
+          type: boolean
+    PatchedTeam:
+      type: object
+      description: Serializer for the Team model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        captain:
+          type: integer
+          readOnly: true
+        members:
+          type: array
+          items:
+            type: integer
+          readOnly: true
+        team_picture:
+          type: string
+          format: uri
+          nullable: true
+    PatchedTicket:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        status:
+          allOf:
+          - $ref: '#/components/schemas/TicketStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketMessage'
+          readOnly: true
+    PatchedTicketMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ticket:
+          type: integer
+        user:
+          type: integer
+          readOnly: true
+        message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedTournamentColor:
+      type: object
+      description: Serializer for the TournamentColor model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        rgb_code:
+          type: string
+          maxLength: 11
+    PatchedTournamentCreateUpdate:
+      type: object
+      description: Serializer for creating and updating tournaments.
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        image:
+          type: integer
+          nullable: true
+        color:
+          type: integer
+          nullable: true
+        game:
+          type: integer
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        is_free:
+          type: boolean
+        entry_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        prize_pool:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Total prize pool in Rial.
+        rules:
+          type: string
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        required_verification_level:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        min_rank:
+          type: integer
+          nullable: true
+        max_rank:
+          type: integer
+          nullable: true
+        max_participants:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        team_size:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        mode:
+          $ref: '#/components/schemas/ModeEnum'
+    PatchedTournamentImage:
+      type: object
+      description: Serializer for the TournamentImage model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        image:
+          type: string
+          format: uri
+    PatchedUser:
+      type: object
+      description: Serializer for the User model (full view for owner).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        phone_number:
+          type: string
+          maxLength: 128
+        profile_picture:
+          type: string
+          format: uri
+          nullable: true
+        score:
+          type: integer
+          readOnly: true
+        rank:
+          type: integer
+          readOnly: true
+          nullable: true
+        role:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        in_game_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/InGameID'
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+        verification:
+          allOf:
+          - $ref: '#/components/schemas/Verification'
+          readOnly: true
+    PatchedWinnerSubmission:
+      type: object
+      description: Serializer for the WinnerSubmission model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        winner:
+          type: integer
+          readOnly: true
+        tournament:
+          type: integer
+        video:
+          type: string
+          format: uri
+        status:
+          allOf:
+          - $ref: '#/components/schemas/WinnerSubmissionStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PostDetail:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        author:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        content:
+          type: string
+        featured_image:
+          type: string
+          format: uri
+          nullable: true
+        status:
+          $ref: '#/components/schemas/Status68aEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        category:
+          type: integer
+        tags:
+          type: array
+          items:
+            type: integer
+        comments:
+          type: string
+          readOnly: true
+        related_posts:
+          type: string
+          readOnly: true
+      required:
+      - author
+      - comments
+      - content
+      - created_at
+      - id
+      - related_posts
+      - title
+      - updated_at
+    PostList:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 200
+        slug:
+          type: string
+          maxLength: 200
+          pattern: ^[-a-zA-Z0-9_]+$
+        author:
+          allOf:
+          - $ref: '#/components/schemas/User'
+          readOnly: true
+        content:
+          type: string
+        featured_image:
+          type: string
+          format: uri
+          nullable: true
+        status:
+          $ref: '#/components/schemas/Status68aEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        category:
+          allOf:
+          - $ref: '#/components/schemas/Category'
+          readOnly: true
+        tags:
+          type: array
+          items:
+            $ref: '#/components/schemas/Tag'
+          readOnly: true
+      required:
+      - author
+      - category
+      - content
+      - created_at
+      - id
+      - tags
+      - title
+      - updated_at
+    Prize:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        wheel:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        image:
+          type: string
+          format: uri
+          readOnly: true
+        chance:
+          type: number
+          format: double
+          readOnly: true
+      required:
+      - chance
+      - id
+      - image
+      - name
+      - wheel
+    Report:
+      type: object
+      description: Serializer for the Report model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        reporter:
+          type: integer
+          readOnly: true
+        reported_user:
+          type: integer
+        match:
+          type: integer
+        description:
+          type: string
+        evidence:
+          type: string
+          format: uri
+          nullable: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/ReportStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - id
+      - match
+      - reported_user
+      - reporter
+      - status
+    ReportStatusEnum:
+      enum:
+      - pending
+      - resolved
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `resolved` - Resolved
+        * `rejected` - Rejected
+    Role:
+      type: object
+      description: Serializer for the Role model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+        description:
+          type: string
+        is_default:
+          type: boolean
+      required:
+      - id
+      - name
+    SendEmailReset:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+      required:
+      - email
+    SetPasswordRetype:
+      type: object
+      properties:
+        new_password:
+          type: string
+        re_new_password:
+          type: string
+        current_password:
+          type: string
+      required:
+      - current_password
+      - new_password
+      - re_new_password
+    SetUsernameRetype:
+      type: object
+      properties:
+        current_password:
+          type: string
+        new_username:
+          type: string
+          title: Username
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        re_new_username:
+          type: string
+      required:
+      - current_password
+      - new_username
+      - re_new_username
+    Spin:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        wheel:
+          type: integer
+          readOnly: true
+        prize:
+          type: integer
+          readOnly: true
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - id
+      - prize
+      - timestamp
+      - user
+      - wheel
+    Status68aEnum:
+      enum:
+      - draft
+      - published
+      type: string
+      description: |-
+        * `draft` - Draft
+        * `published` - Published
+    StatusE7cEnum:
+      enum:
+      - active
+      - inactive
+      - coming_soon
+      type: string
+      description: |-
+        * `active` - Active
+        * `inactive` - Inactive
+        * `coming_soon` - Coming Soon
+    SupportAssignment:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        support_person:
+          type: integer
+        game:
+          type: integer
+        head_support:
+          type: boolean
+      required:
+      - game
+      - id
+      - support_person
+    Tag:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 50
+        slug:
+          type: string
+          maxLength: 50
+          pattern: ^[-a-zA-Z0-9_]+$
+      required:
+      - id
+      - name
+    Team:
+      type: object
+      description: Serializer for the Team model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        captain:
+          type: integer
+          readOnly: true
+        members:
+          type: array
+          items:
+            type: integer
+          readOnly: true
+        team_picture:
+          type: string
+          format: uri
+          nullable: true
+      required:
+      - captain
+      - id
+      - members
+      - name
+    Ticket:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        status:
+          allOf:
+          - $ref: '#/components/schemas/TicketStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/TicketMessage'
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - messages
+      - status
+      - title
+      - user
+    TicketMessage:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        ticket:
+          type: integer
+        user:
+          type: integer
+          readOnly: true
+        message:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - message
+      - ticket
+      - user
+    TicketStatusEnum:
+      enum:
+      - open
+      - closed
+      type: string
+      description: |-
+        * `open` - Open
+        * `closed` - Closed
+    TokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          readOnly: true
+      required:
+      - access
+      - password
+      - refresh
+      - username
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+          writeOnly: true
+      required:
+      - access
+      - refresh
+    TokenVerify:
+      type: object
+      properties:
+        token:
+          type: string
+          writeOnly: true
+      required:
+      - token
+    TournamentColor:
+      type: object
+      description: Serializer for the TournamentColor model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        rgb_code:
+          type: string
+          maxLength: 11
+      required:
+      - id
+      - name
+      - rgb_code
+    TournamentCreateUpdate:
+      type: object
+      description: Serializer for creating and updating tournaments.
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+        image:
+          type: integer
+          nullable: true
+        color:
+          type: integer
+          nullable: true
+        game:
+          type: integer
+        start_date:
+          type: string
+          format: date-time
+        end_date:
+          type: string
+          format: date-time
+        is_free:
+          type: boolean
+        entry_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+        prize_pool:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          nullable: true
+          description: Total prize pool in Rial.
+        rules:
+          type: string
+        type:
+          $ref: '#/components/schemas/TypeEnum'
+        required_verification_level:
+          type: integer
+          maximum: 2147483647
+          minimum: -2147483648
+        min_rank:
+          type: integer
+          nullable: true
+        max_rank:
+          type: integer
+          nullable: true
+        max_participants:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        team_size:
+          type: integer
+          maximum: 2147483647
+          minimum: 0
+        mode:
+          $ref: '#/components/schemas/ModeEnum'
+      required:
+      - end_date
+      - game
+      - name
+      - start_date
+    TournamentImage:
+      type: object
+      description: Serializer for the TournamentImage model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 100
+        image:
+          type: string
+          format: uri
+      required:
+      - id
+      - image
+      - name
+    TournamentList:
+      type: object
+      description: A lightweight serializer for listing tournaments, showing only
+        essential fields.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        image:
+          allOf:
+          - $ref: '#/components/schemas/TournamentImage'
+          readOnly: true
+        game:
+          allOf:
+          - $ref: '#/components/schemas/GameReadOnly'
+          readOnly: true
+        start_date:
+          type: string
+          format: date-time
+          readOnly: true
+        end_date:
+          type: string
+          format: date-time
+          readOnly: true
+        start_countdown:
+          type: string
+          format: date-time
+          readOnly: true
+        is_free:
+          type: boolean
+          readOnly: true
+        entry_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        prize_pool:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+          description: Total prize pool in Rial.
+        type:
+          allOf:
+          - $ref: '#/components/schemas/TypeEnum'
+          readOnly: true
+        spots_left:
+          type: string
+          readOnly: true
+      required:
+      - description
+      - end_date
+      - entry_fee
+      - game
+      - id
+      - image
+      - is_free
+      - name
+      - prize_pool
+      - spots_left
+      - start_countdown
+      - start_date
+      - type
+    TournamentReadOnly:
+      type: object
+      description: Serializer for reading tournament data.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+        image:
+          allOf:
+          - $ref: '#/components/schemas/TournamentImage'
+          readOnly: true
+        color:
+          allOf:
+          - $ref: '#/components/schemas/TournamentColor'
+          readOnly: true
+        game:
+          allOf:
+          - $ref: '#/components/schemas/GameReadOnly'
+          readOnly: true
+        start_date:
+          type: string
+          format: date-time
+          readOnly: true
+        end_date:
+          type: string
+          format: date-time
+          readOnly: true
+        is_free:
+          type: boolean
+          readOnly: true
+        entry_fee:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+        prize_pool:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+          nullable: true
+          description: Total prize pool in Rial.
+        rules:
+          type: string
+          readOnly: true
+        type:
+          allOf:
+          - $ref: '#/components/schemas/TypeEnum'
+          readOnly: true
+        participants:
+          type: array
+          items:
+            $ref: '#/components/schemas/UserReadOnly'
+          readOnly: true
+        teams:
+          type: array
+          items:
+            $ref: '#/components/schemas/Team'
+          readOnly: true
+        creator:
+          allOf:
+          - $ref: '#/components/schemas/UserReadOnly'
+          readOnly: true
+        final_rank:
+          type: string
+          readOnly: true
+        prize_won:
+          type: string
+          readOnly: true
+        countdown_start_time:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        required_verification_level:
+          type: integer
+          readOnly: true
+        min_rank:
+          type: integer
+          readOnly: true
+          nullable: true
+        max_rank:
+          type: integer
+          readOnly: true
+          nullable: true
+        top_players:
+          type: array
+          items:
+            type: integer
+          readOnly: true
+        top_teams:
+          type: array
+          items:
+            type: integer
+          readOnly: true
+        max_participants:
+          type: integer
+          readOnly: true
+        team_size:
+          type: integer
+          readOnly: true
+        mode:
+          allOf:
+          - $ref: '#/components/schemas/ModeEnum'
+          readOnly: true
+        spots_left:
+          type: string
+          readOnly: true
+      required:
+      - color
+      - countdown_start_time
+      - creator
+      - description
+      - end_date
+      - entry_fee
+      - final_rank
+      - game
+      - id
+      - image
+      - is_free
+      - max_participants
+      - max_rank
+      - min_rank
+      - mode
+      - name
+      - participants
+      - prize_pool
+      - prize_won
+      - required_verification_level
+      - rules
+      - spots_left
+      - start_date
+      - team_size
+      - teams
+      - top_players
+      - top_teams
+      - type
+    Transaction:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        wallet:
+          type: integer
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        transaction_type:
+          allOf:
+          - $ref: '#/components/schemas/TransactionTypeEnum'
+          readOnly: true
+        timestamp:
+          type: string
+          format: date-time
+          readOnly: true
+        description:
+          type: string
+          readOnly: true
+      required:
+      - amount
+      - description
+      - id
+      - timestamp
+      - transaction_type
+      - wallet
+    TransactionTypeEnum:
+      enum:
+      - deposit
+      - withdrawal
+      - entry_fee
+      - prize
+      type: string
+      description: |-
+        * `deposit` - Deposit
+        * `withdrawal` - Withdrawal
+        * `entry_fee` - Entry Fee
+        * `prize` - Prize
+    TypeEnum:
+      enum:
+      - individual
+      - team
+      type: string
+      description: |-
+        * `individual` - Individual
+        * `team` - Team
+    User:
+      type: object
+      description: Serializer for the User model (full view for owner).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        phone_number:
+          type: string
+          maxLength: 128
+        profile_picture:
+          type: string
+          format: uri
+          nullable: true
+        score:
+          type: integer
+          readOnly: true
+        rank:
+          type: integer
+          readOnly: true
+          nullable: true
+        role:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        in_game_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/InGameID'
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+        verification:
+          allOf:
+          - $ref: '#/components/schemas/Verification'
+          readOnly: true
+      required:
+      - id
+      - phone_number
+      - rank
+      - role
+      - score
+      - username
+      - verification
+    UserCreate:
+      type: object
+      description: Serializer for creating a new User.
+      properties:
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+        phone_number:
+          type: string
+          maxLength: 128
+        password:
+          type: string
+          writeOnly: true
+          maxLength: 128
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        referral_code:
+          type: string
+          writeOnly: true
+      required:
+      - email
+      - password
+      - phone_number
+      - username
+    UserCreatePasswordRetype:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        id:
+          type: integer
+          readOnly: true
+        password:
+          type: string
+          writeOnly: true
+        re_password:
+          type: string
+      required:
+      - id
+      - password
+      - re_password
+      - username
+    UserReadOnly:
+      type: object
+      description: Serializer for public User profiles (read-only).
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+        first_name:
+          type: string
+          readOnly: true
+        last_name:
+          type: string
+          readOnly: true
+        profile_picture:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        score:
+          type: integer
+          readOnly: true
+        rank:
+          type: integer
+          readOnly: true
+          nullable: true
+        role:
+          type: string
+          readOnly: true
+        in_game_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/InGameID'
+          readOnly: true
+      required:
+      - first_name
+      - id
+      - in_game_ids
+      - last_name
+      - profile_picture
+      - rank
+      - role
+      - score
+      - username
+    UsernameResetConfirm:
+      type: object
+      properties:
+        new_username:
+          type: string
+          title: Username
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+      required:
+      - new_username
+    Verification:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        level:
+          allOf:
+          - $ref: '#/components/schemas/LevelEnum'
+          readOnly: true
+        id_card_image:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        selfie_image:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        video:
+          type: string
+          format: uri
+          readOnly: true
+          nullable: true
+        is_verified:
+          type: boolean
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - id_card_image
+      - is_verified
+      - level
+      - selfie_image
+      - updated_at
+      - user
+      - video
+    VerificationLevel2:
+      type: object
+      properties:
+        id_card_image:
+          type: string
+          format: uri
+        selfie_image:
+          type: string
+          format: uri
+      required:
+      - id_card_image
+      - selfie_image
+    VerificationLevel3:
+      type: object
+      properties:
+        video:
+          type: string
+          format: uri
+      required:
+      - video
+    Wallet:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        total_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        withdrawable_balance:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+          readOnly: true
+        transactions:
+          type: array
+          items:
+            $ref: '#/components/schemas/Transaction'
+          readOnly: true
+      required:
+      - id
+      - total_balance
+      - transactions
+      - user
+      - withdrawable_balance
+    Wheel:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        required_rank:
+          type: integer
+          readOnly: true
+        prizes:
+          type: array
+          items:
+            $ref: '#/components/schemas/Prize'
+          readOnly: true
+      required:
+      - id
+      - name
+      - prizes
+      - required_rank
+    WinnerSubmission:
+      type: object
+      description: Serializer for the WinnerSubmission model.
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        winner:
+          type: integer
+          readOnly: true
+        tournament:
+          type: integer
+        video:
+          type: string
+          format: uri
+        status:
+          allOf:
+          - $ref: '#/components/schemas/WinnerSubmissionStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - status
+      - tournament
+      - video
+      - winner
+    WinnerSubmissionStatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `pending` - Pending
+        * `approved` - Approved
+        * `rejected` - Rejected
+  securitySchemes:
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
