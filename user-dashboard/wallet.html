@@ -1,28 +1,58 @@
+
+
+
+
+
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>کیف پول من</title>
+    <title>داشبورد-حساب کاربری</title>
 
-    <link rel="stylesheet" href="css/colors.css">
-    <link rel="stylesheet" href="fonts/fonts.css">
-    <link rel="stylesheet" href="css/wallet.css">
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../css/user-dashboard.css">
+    <link rel="stylesheet" href="../css/user-sidebar.css">
+    <link rel="stylesheet" href="../css/wallet.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+
 
 
 </head>
 <body>
     
 
+
+    
+
+<div class="body_container">
+    <!-- سایدبار -->
+    <aside id="sidebar" class="sidebar"></aside>
+  
+    <!-- محتوای اصلی -->
+    <main class="main_content">
+      
+    <!-- هدر -->
+    <header class="dashboard_header" id="dashboard_header">
+      <script>
+        // بارگذاری محتوای هدر
+        fetch('dashboard-header.html')
+          .then(response => response.text())
+          .then(html => {
+            document.getElementById('dashboard_header').innerHTML = html;
+          });
+      </script>
+    </header>
+
+
+
+
+     
+<!--  -->
 <div class="wallet_container">
 
-    <div class="wallet_head">
-        <span>کیف پول من</span>
-        <a href="index.html" class="back_link">
-            بازگشت
-            <img src="img/icons/back.svg" alt="">
-            </a>
-    </div>
 
     <div class="wallet_info_and_management">
         <div class="wallet_info">
@@ -67,7 +97,7 @@
 
         <div class="Transaction_filters_ordering">
             <div class="Transaction_filters">
-                <button id="all" class="filter_item  active">همه تراکنش ها</button>
+                <button id="all" class="filter_item  active_sort">همه تراکنش ها</button>
                 <button id="Withdraw" class="filter_item  none_active">برداشت ها</button>
                 <button id="Deposit" class="filter_item  none_active "> واریز ها</button>
             </div>
@@ -143,13 +173,52 @@
 
 
 </div>
+<!--  -->
+
+    
+ 
+</main>
+</div>
 
 
 
+
+
+
+
+
+<script src="/js/sidebar.js"></script>
+<script src="/js/user-dashboard.js"></script>
+<script src="/js/user-ticket.js"></script>
 
 
 </body>
-
-<div id="footer"></div>
-<script src="/js/footer.js"></script>
 </html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
