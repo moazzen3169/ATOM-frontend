@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد-حساب کاربری</title>
+
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../css/user-dashboard.css">
+    <link rel="stylesheet" href="../css/user-sidebar.css">
+    <link rel="stylesheet" href="../css/user-teams.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+
+
+
+</head>
+<body>
+    
+
+
+    
+
+<div class="body_container">
+    <!-- سایدبار -->
+    <aside id="sidebar" class="sidebar"></aside>
+  
+    <!-- محتوای اصلی -->
+    <main class="main_content">
+      
+    <!-- هدر -->
+    <header class="dashboard_header" id="dashboard_header">
+      <script>
+        // بارگذاری محتوای هدر
+        fetch('dashboard-header.html')
+          .then(response => response.text())
+          .then(html => {
+            document.getElementById('dashboard_header').innerHTML = html;
+          });
+      </script>
+    </header>
+
+
+
+    <!-- تیم‌ها -->
+    <section class="user_teams_creat">
+      <div class="user_teams_creat">
+        <div class="team_title">
+          <span>تیم‌های شما</span>
+          <a href="#" class="creat_team_link">ایجاد تیم +</a>
+        </div>
+        <div class="teams_container" id="teams_container">
+          <!-- تیم‌ها اینجا با JS پر می‌شوند -->
+        </div>
+      </div>
+    </section>
+
+
+    
+ 
+</main>
+</div>
+
+
+
+
+
+
+
+
+<script src="/js/sidebar.js"></script>
+<script src="/js/user-dashboard.js"></script>
+<script src="/js/user-ticket.js"></script>
+
+
+</body>
+</html>
+
+
+

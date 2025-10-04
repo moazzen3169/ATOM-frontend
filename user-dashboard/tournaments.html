@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد-حساب کاربری</title>
+
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../css/user-dashboard.css">
+    <link rel="stylesheet" href="../css/user-sidebar.css">
+    <link rel="stylesheet" href="../css/user-tickets.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+
+
+
+</head>
+<body>
+    
+
+
+    
+
+<div class="body_container">
+    <!-- سایدبار -->
+    <aside id="sidebar" class="sidebar"></aside>
+  
+    <!-- محتوای اصلی -->
+    <main class="main_content">
+      
+    <!-- هدر -->
+    <header class="dashboard_header" id="dashboard_header">
+      <script>
+        // بارگذاری محتوای هدر
+        fetch('dashboard-header.html')
+          .then(response => response.text())
+          .then(html => {
+            document.getElementById('dashboard_header').innerHTML = html;
+          });
+      </script>
+    </header>
+
+
+        <!-- تاریخچه تورنومنت -->
+        <section class="user_tournaments_history">
+          <div class="user_tournaments_history">
+            <div class="user_history_title">
+              <span>تاریخچه تورنومنت‌ها</span>
+              <div class="user_history_filter">
+                <button class="filter">فیلتر</button>
+                <button class="sort">مرتب‌سازی</button>
+              </div>
+            </div>
+            <div class="user_tournaments_history_table">
+              <table>
+                <thead>
+                  <tr>
+                    <th>امتیاز</th>
+                    <th>رتبه</th>
+                    <th>تاریخ</th>
+                    <th>تیم</th>
+                    <th>بازی</th>
+                    <th>تورنومنت</th>
+                  </tr>
+                </thead>
+                <tbody id="tournaments_history_body">
+                  <!-- تاریخچه تورنومنت‌ها اینجا با JS پر می‌شوند -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+
+
+    
+ 
+</main>
+</div>
+
+
+
+
+
+
+
+
+<script src="/js/sidebar.js"></script>
+<script src="/js/user-dashboard.js"></script>
+<script src="/js/user-ticket.js"></script>
+
+
+</body>
+</html>
+
+
+

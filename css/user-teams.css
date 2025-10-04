@@ -1,0 +1,7 @@
+.user_teams_creat {
+    grid-column: 1/10 !important;
+
+    background: var(--card-color);
+    border-radius: 10px;
+    padding: 20px;
+  }
