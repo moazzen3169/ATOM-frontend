@@ -1,6 +1,14 @@
-- [x] Analyze the current code in js/user-dashboard.js and identify bugs preventing correct display of information.
-- [x] Update the fetch calls to use correct API endpoints: /api/auth/users/me/ for user data, /api/users/teams/ for teams, /api/tournaments/my-tournaments/ for tournament history.
-- [x] Adjust field accesses to match API schemas: change team.is_captain to team.captain === user.id, calculate counts from arrays.
-- [x] Update the tournament history table to display available fields from TournamentList schema.
-- [x] Add error handling and default values for missing data.
-- [x] Test the updated code to ensure correct information display.
+# TODO: Implement User Dashboard Teams and Tournament History
+
+## Tasks
+- [x] Add fetchUserTeams function to fetch user's teams from /api/users/teams/
+- [x] Add displayUserTeams function to populate #teams_container with team cards
+- [x] Add fetchTournamentHistory function to fetch user's match history from /api/users/users/{user.id}/match-history/
+- [x] Add displayTournamentHistory function to populate #tournaments_history_body with match rows
+- [x] Ensure all functions have proper error handling and use the token for auth
+- [ ] Test the implementation by running the dashboard page
+
+## Notes
+- Assume API returns sufficient data for display (e.g., match includes tournament name, game name, score, rank, etc.)
+- Use existing token and user object from the code
+- Follow the existing code style and error handling pattern
