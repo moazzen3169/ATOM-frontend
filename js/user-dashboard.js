@@ -126,7 +126,7 @@ function setPageTitle() {
 }
 
 // تابع برای نمایش اطلاعات کاربر
-function displayUserProfile(data) {
+function displayUserProfile(data, teamsCount, tournamentsCount) {
     console.log('نمایش داده‌ها:', data);
 
     // اطلاعات اصلی کاربر
@@ -147,18 +147,17 @@ function displayUserProfile(data) {
         document.getElementById("user_score").textContent = data.score || "0";
     }
 
-    // اطلاعات آماری - با توجه به ساختار API ممکن است متفاوت باشد
+    // اطلاعات آماری - از پارامترهای ورودی استفاده می‌کنیم
     if (document.getElementById("user_tournaments_played")) {
-        document.getElementById("user_tournaments_played").textContent = data.tournaments_count || data.tournaments_played || "0";
+        document.getElementById("user_tournaments_played").textContent = tournamentsCount || "0";
     }
     if (document.getElementById("user_teams")) {
-        document.getElementById("user_teams").textContent = data.teams_count || data.teams || "0";
+        document.getElementById("user_teams").textContent = teamsCount || "0";
     }
 
-    // تاریخ عضویت
-    const joinDate = data.date_joined || data.join_date || "-";
+    // تاریخ عضویت - در API موجود نیست
     if (document.getElementById("user_add_date")) {
-        document.getElementById("user_add_date").textContent = formatDate(joinDate);
+        document.getElementById("user_add_date").textContent = "-";
     }
 
     // آواتار کاربر
@@ -169,39 +168,18 @@ function displayUserProfile(data) {
         if (document.getElementById("user_avatar")) {
             document.getElementById("user_avatar").src = data.profile_picture;
         }
-    } else if (data.avatar) {
+    } else {
+        // اگر profile_picture null است، از تصویر پیش‌فرض استفاده کنیم
         if (document.getElementById("header_user_avatar")) {
-            document.getElementById("header_user_avatar").src = data.avatar;
+            document.getElementById("header_user_avatar").src = "../img/default-avatar.png";
         }
         if (document.getElementById("user_avatar")) {
-            document.getElementById("user_avatar").src = data.avatar;
+            document.getElementById("user_avatar").src = "../img/default-avatar.png";
         }
     }
 }
 
-// تابع برای دریافت اطلاعات کاربر از auth endpoint اگر dashboard کار نکرد
-async function fetchUserFromAuth(token) {
-    try {
-        const response = await fetch(`${API_BASE_URL}/auth/users/me/`, {
-            method: 'GET',
-            headers: { 
-                "Authorization": "Bearer " + token,
-                "Content-Type": "application/json"
-            }
-        });
 
-        if (!response.ok) {
-            throw new Error(`خطای HTTP: ${response.status}`);
-        }
-
-        const data = await response.json();
-        console.log('داده‌های از auth/me:', data);
-        return data;
-    } catch (error) {
-        console.error("خطا در دریافت اطلاعات از auth:", error);
-        throw error;
-    }
-}
 
 // تابع اصلی برای لود کردن اطلاعات
 async function loadDashboardData() {
@@ -214,49 +192,22 @@ async function loadDashboardData() {
         // تنظیم عنوان صفحه
         setPageTitle();
 
-        // دریافت اطلاعات پروفایل کاربر از auth/me برای اطمینان از دریافت profile_picture
-        const userProfile = await fetchUserFromAuth(token);
-        displayUserProfile(userProfile);
+        // دریافت تمام اطلاعات داشبورد از API واحد
+        const dashboardData = await fetchDashboardData(token);
 
-        // دریافت اطلاعات آماری اضافی از داشبورد اگر موجود باشد
-        try {
-            const dashboardData = await fetchDashboardData(token);
-            // بروزرسانی اطلاعات آماری از داشبورد
-            if (document.getElementById("user_rank")) {
-                document.getElementById("user_rank").textContent = dashboardData.rank || userProfile.rank || "-";
-            }
-            if (document.getElementById("user_score")) {
-                document.getElementById("user_score").textContent = dashboardData.score || userProfile.score || "0";
-            }
-            if (document.getElementById("user_tournaments_played")) {
-                document.getElementById("user_tournaments_played").textContent = dashboardData.tournaments_count || dashboardData.tournaments_played || userProfile.tournaments_played || "0";
-            }
-            if (document.getElementById("user_teams")) {
-                document.getElementById("user_teams").textContent = dashboardData.teams_count || dashboardData.teams || userProfile.teams || "0";
-            }
-        } catch (error) {
-            console.error('خطا در دریافت داده‌های آماری داشبورد:', error);
-            // اگر داشبورد شکست خورد، از داده‌های پروفایل استفاده می‌کنیم
+        // نمایش اطلاعات پروفایل کاربر
+        if (dashboardData.user_profile) {
+            displayUserProfile(dashboardData.user_profile, dashboardData.teams.length, dashboardData.tournament_history.length);
         }
 
-        // دریافت تیم‌ها
-        try {
-            const userTeams = await fetchUserTeams(token);
-            if (document.getElementById('teams_container')) {
-                displayUserTeams(userTeams);
-            }
-        } catch (error) {
-            console.error('خطا در دریافت تیم‌ها:', error);
+        // نمایش تیم‌ها
+        if (dashboardData.teams && document.getElementById('teams_container')) {
+            displayUserTeams(dashboardData.teams);
         }
 
-        // دریافت تاریخچه تورنومنت‌ها
-        try {
-            const tournamentHistory = await fetchTournamentHistory(userProfile.id, token);
-            if (document.getElementById('tournaments_history_body')) {
-                displayTournamentHistory(tournamentHistory);
-            }
-        } catch (error) {
-            console.error('خطا در دریافت تاریخچه تورنومنت‌ها:', error);
+        // نمایش تاریخچه تورنومنت‌ها
+        if (dashboardData.tournament_history && document.getElementById('tournaments_history_body')) {
+            displayTournamentHistory(dashboardData.tournament_history);
         }
 
     } catch (error) {
@@ -282,28 +233,7 @@ async function loadDashboardData() {
     }
 }
 
-// سایر توابع (fetchUserTeams, displayUserTeams, etc.) مانند قبل باقی می‌مانند
-// فقط مطمئن شوید که مدیریت خطا دارند
 
-async function fetchUserTeams(token) {
-    try {
-        const response = await fetch('/api/users/teams/', {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const teams = await response.json();
-        return teams;
-    } catch (error) {
-        console.error('Error fetching user teams:', error);
-        return [];
-    }
-}
 
 function displayUserTeams(teams) {
     const container = document.getElementById('teams_container');
@@ -321,31 +251,13 @@ function displayUserTeams(teams) {
             <img src="${team.team_picture || '../img/default-team.png'}" alt="${team.name}" class="team_image">
             <h3>${team.name}</h3>
             <p>کاپیتان: ${team.captain_username || 'نامشخص'}</p>
-            <p>اعضا: ${team.members.length}</p>
+            <p>اعضا: ${team.members ? team.members.length : 0}</p>
         `;
         container.appendChild(teamCard);
     });
 }
 
-async function fetchTournamentHistory(userId, token) {
-    try {
-        const response = await fetch(`/api/users/users/${userId}/match-history/`, {
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            }
-        });
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const matches = await response.json();
-        return matches;
-    } catch (error) {
-        console.error('Error fetching tournament history:', error);
-        return [];
-    }
-}
+
 
 function displayTournamentHistory(matches) {
     const tbody = document.getElementById('tournaments_history_body');
@@ -370,8 +282,18 @@ function displayTournamentHistory(matches) {
     });
 }
 
-// وقتی DOM کاملا لود شد
+
 document.addEventListener("DOMContentLoaded", () => {
     console.log('DOM loaded, starting dashboard...');
     loadDashboardData();
+
+    // تغییر دکمه ایجاد تیم به لینک صفحه تیم‌ها
+    const createTeamLink = document.querySelector('.creat_team_link');
+    if (createTeamLink) {
+        createTeamLink.addEventListener('click', (e) => {
+            e.preventDefault();
+            // هدایت به صفحه تیم‌ها
+            window.location.href = "../teams/index.html"; // فرض بر این است که صفحه تیم‌ها در این مسیر است
+        });
+    }
 });

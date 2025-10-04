@@ -1,14 +1,22 @@
-# TODO: Implement User Dashboard Teams and Tournament History
+# TODO: Update user-dashboard.js with new APIs
 
-## Tasks
-- [x] Add fetchUserTeams function to fetch user's teams from /api/users/teams/
-- [x] Add displayUserTeams function to populate #teams_container with team cards
-- [x] Add fetchTournamentHistory function to fetch user's match history from /api/users/users/{user.id}/match-history/
-- [x] Add displayTournamentHistory function to populate #tournaments_history_body with match rows
-- [x] Ensure all functions have proper error handling and use the token for auth
-- [ ] Test the implementation by running the dashboard page
+## Completed Tasks
+- [x] Analyze current user-dashboard.js code
+- [x] Read user-dashboard/index.html structure
+- [x] Create comprehensive plan for updates
 
-## Notes
-- Assume API returns sufficient data for display (e.g., match includes tournament name, game name, score, rank, etc.)
-- Use existing token and user object from the code
-- Follow the existing code style and error handling pattern
+## Pending Tasks
+- [x] Refactor loadDashboardData() to use single GET /api/users/dashboard/ API
+- [x] Update display functions to work with unified API response structure
+- [x] Add createTeam() function for POST /api/users/teams/
+- [x] Add editTeam() function for PUT /api/users/teams/{id_team}/
+- [x] Add deleteTeam() function for DELETE /api/users/teams/{id_team}/
+- [x] Add addTeamMember() function for POST /api/users/teams/{id_team}/add-member/
+- [x] Add removeTeamMember() function for POST /api/users/teams/{id_team}/remove-member/
+- [x] Add logoutUser() function for frontend logout (clear tokens)
+- [x] Add event listeners for team management actions
+- [x] Update displayUserTeams() to include edit/delete buttons
+- [x] Remove unused functions (fetchUserTeams, fetchTournamentHistory, fetchUserFromAuth)
+- [x] Update displayUserProfile() to match API response structure (user_profile, teams.length, tournament_history.length)
+- [ ] Test all functions with proper error handling
+- [ ] Ensure token refresh works for all API calls

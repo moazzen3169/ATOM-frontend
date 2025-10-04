@@ -240,6 +240,8 @@
     font-size: 14px;
   }
   
+
+  
   .teams_container {
     margin-top: 20px;
     display: grid;
@@ -247,6 +249,17 @@
     max-height: 320px;
     overflow-y: auto;
   }
+
+  .teams_container p{
+    color: var(--white-color);
+    text-align: center;
+    margin-top: 120px;
+    font-size: 14px;
+    font-weight: 300;
+
+  }
+
+
   
   .team_item {
     display: flex;
