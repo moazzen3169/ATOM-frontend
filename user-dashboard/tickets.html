@@ -27,18 +27,18 @@
     <!-- محتوای اصلی -->
     <main class="main_content">
       
-      <!-- هدر -->
-      <header class="dashboard_header">
-        <div class="page_title">
-            <button class="hidden_menu_sidebar_btn"><img src="/img/icons/menu.svg" alt=""></button>
-          <span>تیکت ها</span>
-        </div>
-  
-        <div class="head_user_id">
-          <img class="head_user_profile" src="/img/profile.jpg" alt="profile">
-          <span>user name</span>
-        </div>
-      </header>
+    <!-- هدر -->
+    <header class="dashboard_header" id="dashboard_header">
+      <script>
+        // بارگذاری محتوای هدر
+        fetch('dashboard-header.html')
+          .then(response => response.text())
+          .then(html => {
+            document.getElementById('dashboard_header').innerHTML = html;
+          });
+      </script>
+    </header>
+
 
 
 

@@ -207,6 +207,7 @@ async function initHeaderAndSidebar({ skipData = false } = {}) {
     sidebarSigninButton: document.querySelector('.signin_btn'),
     userName: document.querySelector('.user_info_name'),
     userPhone: document.querySelector('.user_info_phone'),
+    userDisplayName: document.querySelector('.user_display_name'),
     walletInfo: document.querySelector('.wallet_info span'),
     userMenu: document.querySelector('.user_info_links')
   };
@@ -284,6 +285,9 @@ async function initHeaderAndSidebar({ skipData = false } = {}) {
   function renderUserInfo(userData) {
     els.userName.textContent = userData.username || 'کاربر';
     els.userPhone.textContent = userData.phone_number || 'شماره تماس ثبت نشده';
+    if (els.userDisplayName) {
+      els.userDisplayName.textContent = userData.username || 'کاربر';
+    }
 
     if (els.userMenu) {
       els.userMenu.querySelector('.user-menu-header')?.remove();
@@ -314,6 +318,9 @@ async function initHeaderAndSidebar({ skipData = false } = {}) {
     els.walletInfo.textContent = '۰ تومان';
     els.userName.textContent = 'کاربر';
     els.userPhone.textContent = 'شماره تماس';
+    if (els.userDisplayName) {
+      els.userDisplayName.textContent = 'کاربر';
+    }
   }
 }
 
