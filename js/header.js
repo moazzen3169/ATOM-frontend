@@ -114,7 +114,7 @@ class HeaderAuthManager {
     if (!token) return null;
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/users/`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/users/me`, {
         method: 'GET',
         headers: { 'Authorization': `Bearer ${token}` }
       });
