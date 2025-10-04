@@ -38,5 +38,19 @@ if (sidebarElement) {
 
       // باز کردن سایدبار از طریق دکمه در HTML
       window.openSidebar = openSidebar;
+
+      // اضافه کردن event listener برای خروج از حساب
+      const exitLink = document.querySelector('.sidebar_link.exit');
+      if (exitLink) {
+        exitLink.addEventListener('click', (e) => {
+          e.preventDefault();
+          // پاک کردن توکن‌ها از localStorage
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('user_data');
+          // ریدایرکت به صفحه لاگین
+          window.location.href = '/register/login.html';
+        });
+      }
     });
 }

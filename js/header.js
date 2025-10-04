@@ -223,7 +223,7 @@ async function initHeaderAndSidebar({ skipData = false } = {}) {
     e.preventDefault(); HeaderAuthManager.logout();
   });
   bindNamedHandler(document.querySelector('.wallet_info'), "__headerWalletHandler", e => {
-    e.preventDefault(); window.location.href = '/wallet.html';
+    e.preventDefault(); window.location.href = '/user-dashboard/wallet.html';
   });
   document.querySelectorAll('.user_info_links a').forEach(link => {
     bindNamedHandler(link, "__headerUserMenuHandler", () => closeMenus());
