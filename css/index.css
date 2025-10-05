@@ -246,11 +246,11 @@ body{
 
 }
 .web_info_item_data{
-    font-size: 30px;
-    font-weight: bold;
+    font-size: 40px;
+    font-weight: bolder;
 }
 .web_info_item_titr{
-    font-size: 30px;
+    font-size: 16px;
     font-weight: 300;
 }
 
