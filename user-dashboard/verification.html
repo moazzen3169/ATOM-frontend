@@ -1,0 +1,127 @@
+
+
+
+
+
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>داشبورد-حساب کاربری</title>
+
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../css/user-dashboard.css">
+    <link rel="stylesheet" href="../css/user-sidebar.css">
+    <link rel="stylesheet" href="../css/verification.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+
+
+
+</head>
+<body>
+    
+
+
+    
+
+<div class="body_container">
+    <!-- سایدبار -->
+    <aside id="sidebar" class="sidebar"></aside>
+  
+    <!-- محتوای اصلی -->
+    <main class="main_content">
+      
+    <!-- هدر -->
+    <header class="dashboard_header" id="dashboard_header">
+      <script>
+        // بارگذاری محتوای هدر
+        fetch('dashboard-header.html')
+          .then(response => response.text())
+          .then(html => {
+            document.getElementById('dashboard_header').innerHTML = html;
+          });
+      </script>
+    </header>
+
+    <!-- verification -->
+
+    <section class="verification">
+
+        <div class="your_level">
+            <div class="level_title">
+                <span>سطح شما :</span>
+                <span>سطح 1</span>
+            </div>  
+            <div class="compated_icon">
+                <img src="/img/icons/check.svg" alt="check">
+                <h3>تکمیل شده</h3>
+            </div>
+            <div class="level_Property">
+                <span>مزایا :</span>
+                <span>دسترسی به امکانات عمومی</span>
+            </div>
+        </div>
+
+        <div class="verification_level_2">
+            <div class="level">
+                <span>سطح 2</span>
+            </div>
+            <!-- pending - accepted - not_accepted -->
+            <div class="level_status not_accepted"> 
+                <span>تکمیل نشد</span>
+            </div>
+            <div class="Property">
+                <ul>
+                    <li>افزایش سقف برداشت روزانه</li>
+                    <li>افزایش سقف برداشت روزانه</li>
+                </ul>
+            </div>
+            <button class="verificatin_btn" id="level-2-btn">تکمیل کردن اطلاعات</button>
+
+        </div>
+
+        <div class="verification_level_3">
+            <div class="level">
+                <span>سطح 2</span>
+            </div>
+            <!-- pending - accepted - not_accepted -->
+            <div class="level_status not_accepted"> 
+                <span>تکمیل نشد</span>
+            </div>
+            <div class="Property">
+                <ul>
+                    <li>افزایش سقف برداشت روزانه</li>
+                    <li>افزایش سقف برداشت روزانه</li>
+                </ul>
+            </div>
+            <button class="verificatin_btn" id="level-3-btn">تکمیل کردن اطلاعات</button>
+        </div>
+    </section>
+</main>
+</div>
+
+
+<div class="overlay "></div>
+<div class="level_2_modal ">سطح 2</div>
+<div class="level_3_modal ">سطح 3</div>
+
+
+
+
+
+<script src="/js/sidebar.js"></script>
+<script src="/js/user-dashboard.js"></script>
+<!-- در فایل HTML -->
+<script type="module" src="/js/verification.js"></script>
+
+</body>
+</html>
+
+
+
+
+
+
