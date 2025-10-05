@@ -172,9 +172,17 @@
     top: 0%;
 }
 
+
+
+.nemuneh{
+    text-decoration: underline;
+    color: var(--color-primary);
+}
+
 .level_2_modal{
-    width: 700px;
+    width: 50%;
     height: 500px;
+    /* overflow-y: scroll; */
     background-color: var(--card-color);
     padding: 20px;
     position: fixed;
@@ -201,10 +209,93 @@
 
 
 
+/* form moudals */
+
+.level_2_modal_form{
+    display: grid;
+    width: 100%;
+}
+
+.level_2_modal_form input{
+    visibility: hidden;
+}
+
+.level_2_modal_form label{
+    /* padding: 50px 100px; */
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 10px;
+    border: 3px dashed var(--gray-color);
+    color: var(--gray-color);
+    cursor: pointer;
+}
+
+.lable img {
+    width: 30px;
+    
+}
+
+
+.lable{
+    display: flex;
+    flex-direction: column;
+    font-size: 12px;
+    gap: 10px;
+}
+
+
+.steps{
+    font-size: 16px;
+    font-weight: 300;
+    color: var(--white-color);
+    margin-bottom: 10px;
+}
+
+.submit-btn{
+    height: 40px;
+    background-color: var(--color-primary);
+    border: none;
+    border-radius: 10px;
+}
+
+.nemuneh_modal{
+    width: 800px;
+    height: 600px;
+    background-color: var(--card-color);
+    padding: 20px;
+    position: fixed;
+    top: 10%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-radius: 10px;
+}
+
+
+.verification_info{
+    height: 80px;
+    grid-column: 1/9;
+    padding: 20px;
+    border: 1px solid var(--yellow-color);
+    border-radius: 10px;
+    color: var(--yellow-color);
+    display: grid;
+    align-items: center;
+    justify-content: start;
+    background-color: var(--card-color);
+}
+
+/* آیکون ها */
 
 
 
-
+.compated_icon svg{
+    color: black;
+}
+.lable  svg{
+    width: 40px;
+}
 
 
 @media (max-width:800px) {
