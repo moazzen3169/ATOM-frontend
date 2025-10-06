@@ -156,18 +156,18 @@ async function apiFetch(url, options = {}) {
  **************************/
 async function getUserProfile() {
   if (userProfileCache) return userProfileCache;
-  
+
   try {
     // تلاش برای دریافت پروفایل از اندپوینت‌های مختلف
     let profile = null;
-    
+
     // اندپوینت ۱: اندپوینت اصلی پروفایل
     try {
-      profile = await apiFetch(`${API_BASE_URL}/api/auth/profile/`);
+      profile = await apiFetch(`${API_BASE_URL}/api/auth/users/me/`);
     } catch (error) {
       console.log("Primary profile endpoint failed, trying alternatives...");
     }
-    
+
     // اندپوینت ۲: اندپوینت جایگزین
     if (!profile) {
       try {
@@ -176,7 +176,7 @@ async function getUserProfile() {
         console.log("Alternative profile endpoint failed...");
       }
     }
-    
+
     // اندپوینت ۳: اندپوینت کاربر
     if (!profile) {
       try {
@@ -185,7 +185,7 @@ async function getUserProfile() {
         console.log("User endpoint failed...");
       }
     }
-    
+
     // اگر هیچکدام کار نکرد، از اطلاعات پایه استفاده کن
     if (!profile) {
       console.warn("All profile endpoints failed, using basic info");
@@ -195,8 +195,9 @@ async function getUserProfile() {
         verification_level: 0
       };
     }
-    
+
     userProfileCache = profile;
+    if (profile && profile.id) localStorage.setItem('userId', profile.id);
     return profile;
     
   } catch (error) {

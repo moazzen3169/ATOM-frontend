@@ -190,6 +190,7 @@ function handleVerificationSuccess(data) {
   if (purpose === 'login' || purpose === 'signup') {
     localStorage.setItem('access_token', data.access);
     localStorage.setItem('refresh_token', data.refresh);
+    localStorage.setItem('userId', data.id);
 
     // پاک‌سازی کلیدهای موقت
     localStorage.removeItem('otp_purpose');
