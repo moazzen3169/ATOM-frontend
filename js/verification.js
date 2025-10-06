@@ -92,13 +92,24 @@ function initializeLevel3FileHandlers() {
 // 📌 دریافت وضعیت کاربر
 async function fetchVerificationStatus() {
   try {
+    const accessToken = localStorage.getItem("access_token");
+    if (!accessToken) {
+      alert("لطفا ابتدا وارد شوید.");
+      window.location.href = "/register/login.html";
+      return;
+    }
     const response = await fetch(`${API_BASE_URL}/api/verification/status/`, {
       headers: {
-        Authorization: "Bearer " + localStorage.getItem("access_token")
-        ,
+        Authorization: "Bearer " + accessToken,
         "Content-Type": "application/json",
       },
     });
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem("access_token");
+      alert("نشست شما منقضی شده است. لطفا مجددا وارد شوید.");
+      window.location.href = "/register/login.html";
+      return;
+    }
     if (!response.ok) throw new Error("خطا در دریافت وضعیت");
     const data = await response.json();
     updateUIBasedOnStatus(data);
@@ -152,8 +163,16 @@ function updateUIBasedOnStatus(data) {
 // 📌 ارسال مدارک سطح 2
 document.querySelector(".level_2_modal_form").addEventListener("submit", async function (e) {
   e.preventDefault();
-  const idCardFile = document.querySelector("#id_card").files[0];
-  const selfieFile = document.querySelector("#selfy_picture_level2").files[0];
+  const idCardInput = document.querySelector("#id_card");
+  const selfieInput = document.querySelector("#selfy_picture_level2");
+
+  if (!idCardInput || !selfieInput) {
+    alert("خطا: عناصر فرم یافت نشد. لطفا صفحه را مجددا بارگذاری کنید.");
+    return;
+  }
+
+  const idCardFile = idCardInput.files[0];
+  const selfieFile = selfieInput.files[0];
 
   if (!idCardFile || !selfieFile) {
     alert("لطفا هر دو فایل را انتخاب کنید.");
@@ -168,13 +187,21 @@ document.querySelector(".level_2_modal_form").addEventListener("submit", async f
     const response = await fetch(`${API_BASE_URL}/api/verification/submit_level2/`, {
       method: "POST",
       headers: {
-        Authorization: "Bearer " + localStorage.getItem("access_token")
-        ,
+        Authorization: "Bearer " + localStorage.getItem("access_token"),
       },
       body: formData,
     });
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem("access_token");
+      alert("نشست شما منقضی شده است. لطفا مجددا وارد شوید.");
+      window.location.href = "/register/login.html";
+      return;
+    }
     if (!response.ok) throw new Error("ارسال مدارک سطح 2 ناموفق بود");
     alert("مدارک سطح 2 ارسال شد. در حال بررسی...");
+    // Close modal and overlay
+    document.querySelector(".level_2_modal").classList.add("hidden");
+    document.querySelector(".overlay").classList.add("hidden");
     fetchVerificationStatus();
   } catch (error) {
     console.error(error);
@@ -184,7 +211,14 @@ document.querySelector(".level_2_modal_form").addEventListener("submit", async f
 // 📌 ارسال مدارک سطح 3
 document.querySelector(".level_3_modal form").addEventListener("submit", async function (e) {
   e.preventDefault();
-  const videoFile = document.querySelector("#selfy_video_level3").files[0];
+  const videoInput = document.querySelector("#selfy_video_level3");
+
+  if (!videoInput) {
+    alert("خطا: عنصر ویدیو یافت نشد. لطفا صفحه را مجددا بارگذاری کنید.");
+    return;
+  }
+
+  const videoFile = videoInput.files[0];
 
   if (!videoFile) {
     alert("لطفا ویدیو را انتخاب کنید.");
@@ -198,13 +232,21 @@ document.querySelector(".level_3_modal form").addEventListener("submit", async f
     const response = await fetch(`${API_BASE_URL}/api/verification/submit_level3/`, {
       method: "POST",
       headers: {
-        Authorization: "Bearer " + localStorage.getItem("access_token")
-        ,
+        Authorization: "Bearer " + localStorage.getItem("access_token"),
       },
       body: formData,
     });
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem("access_token");
+      alert("نشست شما منقضی شده است. لطفا مجددا وارد شوید.");
+      window.location.href = "/register/login.html";
+      return;
+    }
     if (!response.ok) throw new Error("ارسال مدارک سطح 3 ناموفق بود");
     alert("مدارک سطح 3 ارسال شد. در حال بررسی...");
+    // Close modal and overlay
+    document.querySelector(".level_3_modal").classList.add("hidden");
+    document.querySelector(".overlay").classList.add("hidden");
     fetchVerificationStatus();
   } catch (error) {
     console.error(error);

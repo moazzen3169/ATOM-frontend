@@ -299,7 +299,7 @@
 
 
 @media (max-width:800px) {
-    
+
 
 
     .verification_level_2{
@@ -309,4 +309,57 @@
         grid-column: 1/9;
     }
 
+}
+
+/* Admin Verification Styles */
+.accept-verifications {
+    padding: 20px;
+    background-color: var(--card-color);
+    border-radius: 10px;
+    margin: 20px;
+}
+
+.accept-verifications h2 {
+    color: var(--white-color);
+    margin-bottom: 20px;
+}
+
+.verifications-list {
+    display: grid;
+    gap: 20px;
+}
+
+.verification-item {
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 20px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    align-items: center;
+}
+
+.verification-item p {
+    color: var(--white-color);
+    font-size: 14px;
+}
+
+.approve-btn {
+    background-color: var(--color-primary);
+    color: var(--dark-color);
+    border: none;
+    border-radius: 5px;
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: 0.3s ease;
+}
+
+.approve-btn:hover:not(:disabled) {
+    background-color: var(--color-half);
+}
+
+.approve-btn:disabled {
+    background-color: var(--gray-color);
+    cursor: not-allowed;
 }

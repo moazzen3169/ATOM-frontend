@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Accept User Verifications</title>
+
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../css/admin-dashboard.css">
+    <link rel="stylesheet" href="../css/admin-sidebar.css">
+    <link rel="stylesheet" href="../css/verification.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+</head>
+<body>
+
+<div class="body_container">
+    <!-- سایدبار -->
+    <aside id="sidebar" class="sidebar"></aside>
+
+    <!-- محتوای اصلی -->
+    <main class="main_content">
+
+    <!-- هدر -->
+    <header class="dashboard_header" id="dashboard_header">
+      <script>
+        // بارگذاری محتوای هدر
+        fetch('dashboard-header.html')
+          .then(response => response.text())
+          .then(html => {
+            document.getElementById('dashboard_header').innerHTML = html;
+          });
+      </script>
+    </header>
+
+    <!-- Accept Verifications -->
+    <section class="accept-verifications">
+        <h2>درخواست‌های احراز هویت کاربران</h2>
+        <div id="verifications-list" class="verifications-list">
+            <!-- Verifications will be loaded here -->
+        </div>
+    </section>
+</main>
+</div>
+
+<script src="/js/admin-sidebar.js"></script>
+<script src="/js/admin-dashboard.js"></script>
+<script type="module" src="/js/admin-verification.js"></script>
+
+</body>
+</html>
