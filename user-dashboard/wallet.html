@@ -130,6 +130,60 @@
 </main>
 </div>
 
+<div class="Deposit_modal modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>واریز به کیف پول</h2>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="deposit-form" class="wallet-form">
+                <div class="form-group">
+                    <label for="deposit-amount">مبلغ واریز (تومان)</label>
+                    <input type="number" id="deposit-amount" name="amount" min="1000" required placeholder="حداقل ۱۰۰۰ تومان">
+                </div>
+                <div class="form-group">
+                    <label for="deposit-description">توضیحات (اختیاری)</label>
+                    <textarea id="deposit-description" name="description" rows="3" placeholder="توضیحات واریز"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel">لغو</button>
+                    <button type="submit" class="btn-submit">واریز</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<div class="Withdraw_modal modal-overlay">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>برداشت از کیف پول</h2>
+            <button class="modal-close">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="balance-info">
+                <p>موجودی قابل برداشت: <span id="withdrawable-balance">در حال بارگذاری...</span></p>
+            </div>
+            <form id="withdraw-form" class="wallet-form">
+                <div class="form-group">
+                    <label for="withdraw-amount">مبلغ برداشت (تومان)</label>
+                    <input type="number" id="withdraw-amount" name="amount" min="1000" required placeholder="حداقل ۱۰۰۰ تومان">
+                </div>
+                <div class="form-group">
+                    <label for="withdraw-description">توضیحات (اختیاری)</label>
+                    <textarea id="withdraw-description" name="description" rows="3" placeholder="توضیحات برداشت"></textarea>
+                </div>
+                <div class="form-actions">
+                    <button type="button" class="btn-cancel">لغو</button>
+                    <button type="submit" class="btn-submit">برداشت</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
 
 
 

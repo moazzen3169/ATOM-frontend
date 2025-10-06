@@ -7,6 +7,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     const token = setupToken();
     if (!token) return;
 
+    let currentWallet = null;
+
     try {
         // دریافت کیف پول کاربر - آدرس اصلاح شده
         const wallets = await fetchData(`${API_BASE_URL}/api/wallet/wallets/`, token);
@@ -17,21 +19,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         // اولین کیف پول کاربر (فرض بر اینکه هر کاربر یک کیف پول دارد)
-        const wallet = wallets[0];
+        currentWallet = wallets[0];
 
-        if (!wallet || !wallet.id) {
+        if (!currentWallet || !currentWallet.id) {
             walletContainer.innerHTML = `<p>کیف پول یافت نشد</p>`;
             return;
         }
 
         // جایگذاری اطلاعات کیف پول
-        updateWalletInfo(wallet);
+        updateWalletInfo(currentWallet);
 
         // اگر تراکنش‌ها موجود نیستند، جداگانه دریافت کنیم
-        if (!wallet.transactions || !Array.isArray(wallet.transactions) || wallet.transactions.length === 0) {
-            await loadTransactions(wallet.id, token);
+        if (!currentWallet.transactions || !Array.isArray(currentWallet.transactions) || currentWallet.transactions.length === 0) {
+            await loadTransactions(currentWallet.id, token);
         } else {
-            updateTransactions(wallet.transactions);
+            updateTransactions(currentWallet.transactions);
         }
 
     } catch (error) {
@@ -39,15 +41,175 @@ document.addEventListener("DOMContentLoaded", async () => {
         walletContainer.innerHTML = `<p>مشکلی در ارتباط با سرور پیش آمد: ${error.message}</p>`;
     }
 
+    // Modal elements
+    const depositModal = document.querySelector(".Deposit_modal");
+    const withdrawModal = document.querySelector(".Withdraw_modal");
+
+    // Buttons
+    const depositBtn = document.querySelector(".Deposit_btn");
+    const withdrawBtn = document.querySelector(".Withdraw_btn");
+
+    // Forms
+    const depositForm = document.getElementById("deposit-form");
+    const withdrawForm = document.getElementById("withdraw-form");
+
+    // Withdrawable balance span in withdraw modal
+    const withdrawableBalanceSpan = document.getElementById("withdrawable-balance");
+
+    // Show modals on button click
+    depositBtn.addEventListener("click", () => {
+        depositModal.classList.add("show");
+    });
+
+    withdrawBtn.addEventListener("click", () => {
+        if (currentWallet) {
+            withdrawableBalanceSpan.textContent = (currentWallet.withdrawable_balance || 0) + " تومان";
+        }
+        withdrawModal.classList.add("show");
+    });
+
+    // Close modals on close button, cancel button, or outside click
+    [depositModal, withdrawModal].forEach(modal => {
+        modal.addEventListener("click", (e) => {
+            if (e.target.classList.contains("modal-close") || e.target.classList.contains("btn-cancel") || e.target === modal) {
+                modal.classList.remove("show");
+                const form = modal.querySelector("form");
+                if (form) form.reset();
+            }
+        });
+    });
+
+    // Handle deposit form submission
+    depositForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const amount = parseFloat(depositForm.amount.value);
+        const description = depositForm.description.value.trim();
+
+        if (isNaN(amount) || amount < 1000) {
+            alert("لطفا مبلغ معتبر و حداقل ۱۰۰۰ تومان وارد کنید.");
+            return;
+        }
+
+        try {
+            depositForm.querySelector(".btn-submit").disabled = true;
+
+            const response = await fetch(`${API_BASE_URL}/api/wallet/deposit/`, {
+                method: "POST",
+                headers: {
+                    "Authorization": "Bearer " + token,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    description: description
+                }),
+            });
+
+            if (!response.ok) {
+                let errorText = await response.text();
+                try {
+                    const errorData = JSON.parse(errorText);
+                    throw new Error(errorData.detail || "خطا در واریز");
+                } catch {
+                    throw new Error(errorText || "خطا در واریز");
+                }
+            }
+
+            alert("واریز با موفقیت انجام شد.");
+            depositModal.classList.remove("show");
+            clearForm(depositForm);
+
+            // Refresh wallet info and transactions
+            await refreshWalletData();
+
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            depositForm.querySelector(".btn-submit").disabled = false;
+        }
+    });
+
+    // Handle withdraw form submission
+    withdrawForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        const amount = parseFloat(withdrawForm.amount.value);
+        const description = withdrawForm.description.value.trim();
+
+        if (isNaN(amount) || amount < 1000) {
+            alert("لطفا مبلغ معتبر و حداقل ۱۰۰۰ تومان وارد کنید.");
+            return;
+        }
+
+        if (currentWallet && amount > currentWallet.withdrawable_balance) {
+            alert("مبلغ برداشت نمی‌تواند بیشتر از موجودی قابل برداشت باشد.");
+            return;
+        }
+
+        try {
+            withdrawForm.querySelector(".btn-submit").disabled = true;
+
+            const response = await fetch(`${API_BASE_URL}/api/wallet/withdraw/`, {
+                method: "POST",
+                headers: {
+                    "Authorization": "Bearer " + token,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    description: description
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.detail || "خطا در برداشت");
+            }
+
+            alert("برداشت با موفقیت انجام شد.");
+            withdrawModal.classList.remove("show");
+            clearForm(withdrawForm);
+
+            // Refresh wallet info and transactions
+            await refreshWalletData();
+
+        } catch (error) {
+            alert(error.message);
+        } finally {
+            withdrawForm.querySelector(".btn-submit").disabled = false;
+        }
+    });
+
+    // Clear form inputs
+    function clearForm(form) {
+        if (!form) return;
+        form.reset();
+    }
+
+    // Refresh wallet info and transactions after deposit/withdraw
+    async function refreshWalletData() {
+        try {
+            const wallets = await fetchData(`${API_BASE_URL}/api/wallet/wallets/`, token);
+            if (!wallets || !Array.isArray(wallets) || wallets.length === 0) {
+                walletContainer.innerHTML = `<p>کیف پول یافت نشد</p>`;
+                return;
+            }
+            currentWallet = wallets[0];
+            updateWalletInfo(currentWallet);
+            await loadTransactions(currentWallet.id, token);
+        } catch (error) {
+            console.error("Error refreshing wallet data:", error);
+        }
+    }
+
     // تابع برای دریافت تراکنش‌ها
     async function loadTransactions(walletId, token) {
         try {
             // اگر API جداگانه برای دریافت تراکنش‌ها دارید
             // const transactions = await fetchData(`${API_BASE_URL}/api/wallet/transactions/?wallet=${walletId}`, token);
-            
+
             // یا از API کیف پول استفاده کنید
             const walletDetail = await fetchData(`${API_BASE_URL}/api/wallet/wallets/${walletId}/`, token);
-            
+
             if (walletDetail.transactions && Array.isArray(walletDetail.transactions)) {
                 updateTransactions(walletDetail.transactions);
             } else {
@@ -80,18 +242,18 @@ document.addEventListener("DOMContentLoaded", async () => {
                 "Content-Type": "application/json",
             },
         });
-        
+
         if (response.status === 401) {
             // توکن منقضی، refresh
             await refreshToken();
             const newToken = localStorage.getItem('token') || localStorage.getItem('access_token');
             return fetchData(url, newToken);
         }
-        
+
         if (!response.ok) {
             throw new Error(`HTTP error! Status: ${response.status}`);
         }
-        
+
         return await response.json();
     }
 
@@ -207,7 +369,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     function formatDate(isoDate) {
         if (!isoDate) return "تاریخ نامشخص";
-        
+
         try {
             const date = new Date(isoDate);
             return date.toLocaleString("fa-IR", {
