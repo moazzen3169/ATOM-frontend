@@ -1,4 +1,6 @@
-- [x] Extract alert CSS styles from css/loby.css and add to css/user-dashboard.css
-- [x] Extract alert JS functions from js/loby.js and add to js/user-dashboard.js
-- [x] Replace alert calls in js/user-dashboard.js with showError
-- [ ] Test the toast messages in user-dashboard
+# TODO for Fixing Verification Requests
+
+- [x] Add readFileAsBase64 function to js/verification.js
+- [x] Modify level 2 submit function to send JSON with base64 encoded files
+- [x] Modify level 3 submit function to send JSON with base64 encoded video
+- [ ] Test the changes by running the app and checking network requests
