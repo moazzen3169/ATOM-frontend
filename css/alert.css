@@ -1,0 +1,82 @@
+/* Alert/Toast CSS styles extracted from css/loby.css */
+
+.alert_stack {
+    position: fixed;
+    top: 16px;
+    right: 16px; /* For RTL layouts */
+    z-index: 2000;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Alert box */
+.alert {
+    min-width: 280px;
+    max-width: 420px;
+    background: var(--card-color);
+    color: var(--white-color);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 12px 14px 12px 40px;
+    position: relative;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    direction: rtl;
+}
+
+.alert_title {
+    font-weight: 700;
+    margin-bottom: 6px;
+}
+
+.alert_msg {
+    opacity: 0.9;
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.alert_actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.alert_btn {
+    border: 1px solid var(--border-color);
+    background: transparent;
+    color: var(--white-color);
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.alert_btn:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.alert_close {
+    position: absolute;
+    top: 6px;
+    left: 8px; /* For RTL */
+    background: transparent;
+    border: none;
+    color: var(--white-color);
+    font-size: 20px;
+    cursor: pointer;
+}
+
+/* Alert types */
+.alert-error {
+    border-right: 4px solid #e74c3c;
+}
+
+.alert-success {
+    border-right: 4px solid #2ecc71;
+}
+
+.alert-info {
+    border-right: 4px solid #3498db;
+}
