@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پرداخت موفق - Atom Game</title>
+
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../css/user-dashboard.css">
+    <link rel="stylesheet" href="../css/user-sidebar.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+    <link rel="stylesheet" href="../css/wallet.css">
+
+    <style>
+        .payment-result {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 70vh;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            background-color: #10b981;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        }
+
+        .success-icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        .payment-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--color-primary);
+            margin-bottom: 1rem;
+        }
+
+        .payment-message {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .balance-info {
+            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .balance-info h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.2rem;
+        }
+
+        .balance-info p {
+            margin: 0;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--white-color);
+            color: var(--color-primary);
+            border: 2px solid var(--color-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .payment-title {
+                font-size: 1.5rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-primary, .btn-secondary {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="body_container">
+    <!-- سایدبار -->
+    <aside id="sidebar" class="sidebar"></aside>
+
+    <!-- محتوای اصلی -->
+    <main class="main_content">
+
+    <!-- هدر -->
+    <header class="dashboard_header" id="dashboard_header">
+      <script>
+        // بارگذاری محتوای هدر
+        fetch('../user-dashboard/dashboard-header.html')
+          .then(response => response.text())
+          .then(html => {
+            document.getElementById('dashboard_header').innerHTML = html;
+          });
+      </script>
+    </header>
+
+    <div class="payment-result">
+        <div class="success-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
+            </svg>
+        </div>
+
+        <h1 class="payment-title">پرداخت با موفقیت انجام شد!</h1>
+
+        <p class="payment-message">
+            مبلغ واریزی به کیف پول شما اضافه شده و آماده استفاده است.
+        </p>
+
+        <div class="balance-info">
+            <h3>موجودی جدید کیف پول</h3>
+            <p id="current-balance">در حال بارگذاری...</p>
+        </div>
+
+        <div class="action-buttons">
+            <a href="../user-dashboard/wallet.html" class="btn-primary">
+                مشاهده کیف پول
+            </a>
+            <a href="../index.html" class="btn-secondary">
+                بازگشت به صفحه اصلی
+            </a>
+        </div>
+    </div>
+
+    </main>
+</div>
+
+<script src="../js/sidebar.js"></script>
+<script src="../js/user-dashboard.js"></script>
+<script type="module" src="../js/payment-success.js"></script>
+
+</body>
+</html>

@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پرداخت ناموفق - Atom Game</title>
+
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../css/user-dashboard.css">
+    <link rel="stylesheet" href="../css/user-sidebar.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+    <link rel="stylesheet" href="../css/wallet.css">
+
+    <style>
+        .payment-result {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 70vh;
+            text-align: center;
+            padding: 2rem;
+        }
+
+        .failed-icon {
+            width: 80px;
+            height: 80px;
+            background-color: #ef4444;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+        }
+
+        .failed-icon svg {
+            width: 40px;
+            height: 40px;
+            fill: white;
+        }
+
+        .payment-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #ef4444;
+            margin-bottom: 1rem;
+        }
+
+        .payment-message {
+            font-size: 1.1rem;
+            color: var(--text-color);
+            margin-bottom: 2rem;
+            line-height: 1.6;
+        }
+
+        .error-details {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            max-width: 500px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: var(--color-primary);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--color-primary-dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: var(--white-color);
+            color: var(--color-primary);
+            border: 2px solid var(--color-primary);
+        }
+
+        .btn-secondary:hover {
+            background: var(--color-primary);
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 768px) {
+            .payment-title {
+                font-size: 1.5rem;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+
+            .btn-primary, .btn-secondary {
+                width: 200px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="body_container">
+    <!-- سایدبار -->
+    <aside id="sidebar" class="sidebar"></aside>
+
+    <!-- محتوای اصلی -->
+    <main class="main_content">
+
+    <!-- هدر -->
+    <header class="dashboard_header" id="dashboard_header">
+      <script>
+        // بارگذاری محتوای هدر
+        fetch('../user-dashboard/dashboard-header.html')
+          .then(response => response.text())
+          .then(html => {
+            document.getElementById('dashboard_header').innerHTML = html;
+          });
+      </script>
+    </header>
+
+    <div class="payment-result">
+        <div class="failed-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+            </svg>
+        </div>
+
+        <h1 class="payment-title">پرداخت ناموفق</h1>
+
+        <p class="payment-message">
+            متاسفانه پرداخت شما با مشکل مواجه شده و تکمیل نشد.
+        </p>
+
+        <div class="error-details" id="error-details">
+            <strong>علت احتمالی:</strong> پرداخت توسط درگاه بانکی لغو شده یا با خطا مواجه شده است.
+        </div>
+
+        <div class="action-buttons">
+            <a href="../user-dashboard/wallet.html" class="btn-primary">
+                تلاش مجدد
+            </a>
+            <a href="../index.html" class="btn-secondary">
+                بازگشت به صفحه اصلی
+            </a>
+        </div>
+    </div>
+
+    </main>
+</div>
+
+<script src="../js/sidebar.js"></script>
+<script src="../js/user-dashboard.js"></script>
+
+</body>
+</html>

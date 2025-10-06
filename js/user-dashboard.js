@@ -65,6 +65,40 @@ async function fetchDashboardData(token) {
     }
 }
 
+// تابع برای دریافت تیم‌های کاربر
+async function fetchUserTeams(token) {
+    try {
+        console.log('دریافت تیم‌های کاربر از API...');
+
+        const response = await fetch(`${API_BASE_URL}/api/users/teams/`, {
+            method: 'GET',
+            headers: {
+                "Authorization": "Bearer " + token,
+                "Content-Type": "application/json"
+            }
+        });
+
+        console.log('Status:', response.status);
+
+        if (response.status === 401) {
+            // توکن منقضی شده
+            await refreshToken();
+            return fetchUserTeams(localStorage.getItem('token'));
+        }
+
+        if (!response.ok) {
+            throw new Error(`خطای HTTP: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log('داده‌های دریافتی تیم‌ها:', data);
+        return data;
+    } catch (error) {
+        console.error("خطا در دریافت تیم‌های کاربر:", error);
+        throw error;
+    }
+}
+
 // تابع برای refresh توکن
 async function refreshToken() {
     try {
@@ -192,22 +226,30 @@ async function loadDashboardData() {
         // تنظیم عنوان صفحه
         setPageTitle();
 
-        // دریافت تمام اطلاعات داشبورد از API واحد
-        const dashboardData = await fetchDashboardData(token);
+        const path = window.location.pathname;
 
-        // نمایش اطلاعات پروفایل کاربر
-        if (dashboardData.user_profile) {
-            displayUserProfile(dashboardData.user_profile, dashboardData.teams.length, dashboardData.tournament_history.length);
-        }
+        if (path.includes('teams') && document.getElementById('teams_container')) {
+            // اگر در صفحه تیم‌ها هستیم، تیم‌ها رو از API جداگانه دریافت کنیم
+            const teams = await fetchUserTeams(token);
+            displayUserTeams(teams);
+        } else {
+            // دریافت تمام اطلاعات داشبورد از API واحد
+            const dashboardData = await fetchDashboardData(token);
 
-        // نمایش تیم‌ها
-        if (dashboardData.teams && document.getElementById('teams_container')) {
-            displayUserTeams(dashboardData.teams);
-        }
+            // نمایش اطلاعات پروفایل کاربر
+            if (dashboardData.user_profile) {
+                displayUserProfile(dashboardData.user_profile, dashboardData.teams ? dashboardData.teams.length : 0, dashboardData.tournament_history ? dashboardData.tournament_history.length : 0);
+            }
 
-        // نمایش تاریخچه تورنومنت‌ها
-        if (dashboardData.tournament_history && document.getElementById('tournaments_history_body')) {
-            displayTournamentHistory(dashboardData.tournament_history);
+            // نمایش تیم‌ها (اگر در صفحه داشبورد هستیم و تیم‌ها موجود است)
+            if (dashboardData.teams && document.getElementById('teams_container')) {
+                displayUserTeams(dashboardData.teams);
+            }
+
+            // نمایش تاریخچه تورنومنت‌ها
+            if (dashboardData.tournament_history && document.getElementById('tournaments_history_body')) {
+                displayTournamentHistory(dashboardData.tournament_history);
+            }
         }
 
     } catch (error) {
@@ -225,11 +267,11 @@ async function loadDashboardData() {
             } catch (e) {
                 console.error('خطا در parsing user_data:', e);
             }
-    } else {
-        showError("خطا در دریافت اطلاعات. لطفا دوباره وارد شوید.");
-        localStorage.clear();
-        window.location.href = "../register/login.html";
-    }
+        } else {
+            showError("خطا در دریافت اطلاعات. لطفا دوباره وارد شوید.");
+            localStorage.clear();
+            window.location.href = "../register/login.html";
+        }
     }
 }
 
@@ -250,7 +292,7 @@ function displayUserTeams(teams) {
         teamCard.innerHTML = `
             <img src="${team.team_picture || '../img/default-team.png'}" alt="${team.name}" class="team_image">
             <h3>${team.name}</h3>
-            <p>کاپیتان: ${team.captain_username || 'نامشخص'}</p>
+            <p>کاپیتان: ${team.captain || 'نامشخص'}</p>
             <p>اعضا: ${team.members ? team.members.length : 0}</p>
         `;
         container.appendChild(teamCard);
