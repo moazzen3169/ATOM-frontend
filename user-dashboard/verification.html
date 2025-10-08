@@ -65,6 +65,12 @@
             </div>
         </div>
 
+        <div class="verification_info">
+            <li><a   href="">حتما در ارسال اطلاعات خود  دقت کامل داشته باشید </a></li>
+            <button class="nemuneh">مشاهده راهنما</button>
+        </div>
+
+
         <div class="verification_level_2">
             <div class="level">
                 <span>سطح 2</span>
@@ -77,7 +83,6 @@
                 <ul>
                     <li>افزایش سقف برداشت روزانه</li>
                     <li>افزایش سقف برداشت روزانه</li>
-                    <li><a class="nemuneh"  href="#">مشاهده نمونه فرم تایید </a></li>
                 </ul>
             </div>
             <button class="verificatin_btn" id="level-2-btn">تکمیل کردن اطلاعات</button>
@@ -111,7 +116,9 @@
 
 
 <div class="overlay  hidden"></div>
-<div class="level_2_modal hidden ">
+<div class="level_2_modal modal hidden ">
+
+    <button class="modal-close-btn" onclick="this.closest('.modal').classList.add('hidden'); document.querySelector('.overlay').classList.add('hidden');">×</button>
 
     <form class="level_2_modal_form" method="post">
         <h3 class="steps">انتخاب عکس سلفی</h3>
@@ -147,7 +154,9 @@
 
 
 </div>
-<div class="level_3_modal  hidden">
+<div class="level_3_modal modal hidden">
+
+    <button class="modal-close-btn" onclick="this.closest('.modal').classList.add('hidden'); document.querySelector('.overlay').classList.add('hidden');">×</button>
 
     <form class="level_3_modal_form" method="post">
 
@@ -165,13 +174,53 @@
     <button type="submit" class="submit-btn">ارسال مدارک</button>
     </form>
 
-    <li><a class="nemuneh"  href="#">مشاهده نمونه فرم تایید </a></li>
 
 
 </div>
 
-<div class="nemuneh_modal hidden">
-    نمونه
+<div class="nemuneh_modal modal hidden">
+    <button class="modal-close-btn" onclick="this.closest('.modal').classList.add('hidden'); document.querySelector('.overlay').classList.add('hidden');">×</button>
+    <p class="guide-intro">برای افزایش سطح امنیتی حساب خود، مراحل زیر را دنبال کنید. هر سطح مزایای بیشتری به شما می‌دهد.</p>
+
+    <div class="guide-section level-2">
+        <div class="section-header">
+            <svg class="level-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+            </svg>
+            <h3>سطح ۲: ارسال عکس سلفی و کارت ملی</h3>
+        </div>
+        <p>برای تکمیل سطح ۲ احراز هویت، لطفا عکس سلفی واضح از خودتان همراه با عکس کارت ملی یا شناسنامه ارسال کنید. عکس‌ها باید با کیفیت بالا و خوانا باشند. حداکثر اندازه هر عکس ۵ مگابایت است.</p>
+        <div class="samples">
+            <div class="sample-item">
+                <h4>نمونه عکس سلفی:</h4>
+                <img src="/img/banner5.jpg" alt="نمونه عکس سلفی">
+            </div>
+            <div class="sample-item">
+                <h4>نمونه عکس کارت ملی:</h4>
+                <img src="/img/banner5.jpg" alt="نمونه عکس کارت ملی">
+            </div>
+        </div>
+    </div>
+
+    <div class="guide-section level-3">
+        <div class="section-header">
+            <svg class="level-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+            </svg>
+            <h3>سطح ۳: ارسال ویدیو سلفی با متن تنظیم شده</h3>
+        </div>
+        <p>برای تکمیل سطح ۳ احراز هویت، لطفا یک ویدیو سلفی ارسال کنید که در آن متن زیر را به صورت واضح بخوانید: <strong>"من [نام شما] هستم و این ویدیو برای احراز هویت در سایت است."</strong></p>
+        <div class="samples">
+            <div class="sample-item">
+                <h4>نمونه ویدیو:</h4>
+                <video controls>
+                    <source src="../img/video/ATOM    TOURNOMANTS - Figma 2025-07-26 15-29-26.mp4" type="video/mp4">
+                    مرورگر شما از ویدیو پشتیبانی نمی‌کند.
+                </video>
+            </div>
+        </div>
+    </div>
 </div>
 
 
