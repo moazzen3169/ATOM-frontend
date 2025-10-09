@@ -238,8 +238,34 @@ function formatLevel(level) {
   return map[normalized] || (level ? `سطح ${escapeHtml(level)}` : "نامشخص");
 }
 
+function getUserObject(item) {
+  return item?.user || item?.user_info || item?.profile || item?.user_data || null;
+}
+
+function getUserDisplayName(item) {
+  const user = getUserObject(item);
+  if (!user) {
+    const fallback = item?.user_name || item?.username || item?.display_name;
+    return fallback || "کاربر ناشناس";
+  }
+
+  if (typeof user === "string") {
+    return user;
+  }
+
+  const firstName = user.first_name || user.firstname || user.name;
+  const lastName = user.last_name || user.lastname || user.family;
+  const username = user.username || user.user_name;
+
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  if (fullName) {
+    return fullName + (username ? ` (${username})` : "");
+  }
+  return username || fullName || user.email || "کاربر ناشناس";
+}
+
 function formatUserDetails(item) {
-  const user = item?.user || item?.user_info || item?.profile;
+  const user = getUserObject(item);
   if (!user) {
     return "<p class=\"verification-card__note\">اطلاعات کاربر موجود نیست.</p>";
   }
@@ -247,9 +273,11 @@ function formatUserDetails(item) {
     return `<p class="verification-card__note">${escapeHtml(user)}</p>`;
   }
 
-  const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ");
+  const firstName = user.first_name || user.firstname || user.name;
+  const lastName = user.last_name || user.lastname || user.family;
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
   const fields = [
-    { label: "نام کاربری", value: user.username },
+    { label: "نام کاربری", value: user.username || user.user_name },
     { label: "نام کامل", value: fullName },
     { label: "ایمیل", value: user.email },
     { label: "شماره موبایل", value: user.phone_number || user.mobile || user.phone },
@@ -367,6 +395,31 @@ function formatAdditionalDetails(item) {
   `;
 }
 
+function isLikelyImage(url) {
+  if (!url || typeof url !== "string") return false;
+  return /(\.)(jpe?g|png|gif|bmp|webp|svg)(\?.*)?$/i.test(url);
+}
+
+function normalizeDocumentEntry(doc, index) {
+  if (!doc) return null;
+  if (typeof doc === "string") {
+    return { url: doc, title: `فایل ${index + 1}` };
+  }
+  if (doc.url || doc.file || doc.file_url || doc.document_url || doc.path) {
+    const url = doc.url || doc.file || doc.file_url || doc.document_url || doc.path;
+    const title =
+      doc.label ||
+      doc.name ||
+      doc.title ||
+      doc.type ||
+      doc.field ||
+      doc.description ||
+      `فایل ${index + 1}`;
+    return { url, title };
+  }
+  return null;
+}
+
 function formatDocuments(item) {
   const documents = item?.documents || item?.files || item?.attachments;
   if (!documents) return "";
@@ -377,29 +430,32 @@ function formatDocuments(item) {
 
   if (!items.length) return "";
 
-  const links = items
-    .map((doc, index) => {
-      if (!doc) return "";
-      const url = doc.url || doc.file || doc.file_url || doc.document_url || doc.path;
-      if (!url) return "";
-      const title =
-        doc.label ||
-        doc.name ||
-        doc.type ||
-        doc.field ||
-        doc.description ||
-        `فایل ${index + 1}`;
-      return `<li><a href="${escapeHtml(url)}" target="_blank" rel="noopener">${escapeHtml(title)}</a></li>`;
-    })
-    .filter(Boolean);
+  const elements = items
+    .map((doc, index) => normalizeDocumentEntry(doc, index))
+    .filter(Boolean)
+    .map((doc) => {
+      const url = escapeHtml(doc.url);
+      const title = escapeHtml(doc.title);
+      if (isLikelyImage(doc.url)) {
+        return `
+          <li class="verification-documents__item">
+            <figure>
+              <img src="${url}" alt="${title}" loading="lazy" />
+              <figcaption>${title}</figcaption>
+            </figure>
+          </li>
+        `;
+      }
+      return `<li class="verification-documents__item"><a href="${url}" target="_blank" rel="noopener">${title}</a></li>`;
+    });
 
-  if (!links.length) return "";
+  if (!elements.length) return "";
 
   return `
     <div class="verification-card__section">
       <h3>مدارک ارسال شده</h3>
       <ul class="verification-documents">
-        ${links.join("")}
+        ${elements.join("")}
       </ul>
     </div>
   `;
@@ -490,10 +546,12 @@ function renderVerifications(verifications) {
     const rejectDisabledAttr =
       statusKey === "rejected" ? "disabled data-static-disabled=\"true\"" : "";
 
+    const userDisplayName = getUserDisplayName(item);
+
     article.innerHTML = `
       <header class="verification-card__header">
         <div class="verification-card__title">
-          <h3>${escapeHtml(item?.user?.username || item?.user_name || item?.user || "کاربر ناشناس")}</h3>
+          <h3>${escapeHtml(userDisplayName)}</h3>
           ${statusBadge}
         </div>
         <div class="verification-card__meta">
@@ -546,7 +604,14 @@ async function postAction(id, action, payload = {}) {
     return null;
   }
   if (!response.ok) {
-    const message = await response.text();
+    const text = await response.text();
+    let message = text;
+    try {
+      const parsed = JSON.parse(text);
+      message = parsed?.detail || parsed?.message || text;
+    } catch (error) {
+      // ignore parse error
+    }
     throw new Error(message || "خطا در ارسال درخواست");
   }
   try {
@@ -583,12 +648,13 @@ async function handleApprove(id, button) {
   try {
     const result = await postAction(id, "approve", {
       is_verified: true,
+      status: "approved",
     });
     updateState(id, result || {}, "approved");
     alert("درخواست با موفقیت تایید شد.");
   } catch (error) {
     console.error("Approve verification failed", error);
-    alert("خطا در تایید درخواست: " + error.message);
+    alert("خطا در تایید درخواست: " + (error.message || ""));
   } finally {
     setButtonsDisabled(button, false);
   }
@@ -602,9 +668,11 @@ async function handleReject(id, button) {
   try {
     const payload = {
       is_verified: false,
+      status: "rejected",
     };
     if (reason) {
       payload.reason = reason;
+      payload.rejection_reason = reason;
     }
     const result = await postAction(id, "reject", payload);
     const updates = result || {};
