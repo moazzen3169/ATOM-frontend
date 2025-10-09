@@ -57,6 +57,12 @@ class UserTickets {
                 this.currentUser = { id: null };
             }
         } catch (error) {
+            if (error && error.status === 401) {
+                this.clearAuthTokens();
+                this.redirectToLogin();
+                throw error;
+            }
+
             console.error('Authentication error:', error);
             this.redirectToLogin();
             throw error;
@@ -87,6 +93,10 @@ class UserTickets {
                 this.updateConversationHeader();
             }
         } catch (error) {
+            if (this.handleUnauthorized(error)) {
+                return;
+            }
+
             console.error('Error loading tickets:', error);
             this.tickets = [];
             this.renderTicketsList();
@@ -191,6 +201,10 @@ class UserTickets {
             this.showConversation();
             await this.loadTicketMessages(ticketId);
         } catch (error) {
+            if (this.handleUnauthorized(error)) {
+                return;
+            }
+
             console.error('Error selecting ticket:', error);
             this.showError('خطا در بارگذاری اطلاعات تیکت');
         }
@@ -237,6 +251,10 @@ class UserTickets {
                 this.renderMessages();
             }
         } catch (error) {
+            if (this.handleUnauthorized(error)) {
+                return;
+            }
+
             console.error('Error loading messages:', error);
             this.showError('خطا در بارگذاری پیام‌ها');
         }
@@ -445,6 +463,10 @@ class UserTickets {
             await this.selectTicket(ticketResponse.id);
             this.showSuccess('تیکت با موفقیت ایجاد شد');
         } catch (error) {
+            if (this.handleUnauthorized(error)) {
+                return;
+            }
+
             console.error('Error creating ticket:', error);
             this.showError('خطا در ایجاد تیکت');
         }
@@ -476,6 +498,10 @@ class UserTickets {
             messageInput.value = '';
             await this.loadTicketMessages(this.selectedTicket.id);
         } catch (error) {
+            if (this.handleUnauthorized(error)) {
+                return;
+            }
+
             console.error('Error sending message:', error);
             this.showError('خطا در ارسال پیام');
         }
