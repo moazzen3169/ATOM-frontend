@@ -53,15 +53,15 @@
         <div class="your_level">
             <div class="level_title">
                 <span>سطح شما :</span>
-                <span>سطح 1</span>
-            </div>  
-            <div class="compated_icon">
-                <img src="https://unpkg.com/heroicons@2.0.18/24/solid/check.svg" alt="check">
-                <h3>تکمیل شده</h3>
+                <span data-current-level-label>...</span>
+            </div>
+            <div class="compated_icon" data-current-level-status-wrapper>
+                <img src="https://unpkg.com/heroicons@2.0.18/24/solid/check.svg" alt="check" data-status-icon>
+                <h3 data-current-level-status>در حال بارگذاری...</h3>
             </div>
             <div class="level_Property">
                 <span>مزایا :</span>
-                <span>دسترسی به امکانات عمومی</span>
+                <span data-current-level-benefits>دسترسی به امکانات عمومی</span>
             </div>
         </div>
 
@@ -76,7 +76,7 @@
                 <span>سطح 2</span>
             </div>
             <!-- pending - accepted - not_accepted -->
-            <div class="level_status not_accepted"> 
+            <div class="level_status not_accepted">
                 <span>تکمیل نشد</span>
             </div>
             <div class="Property">
@@ -94,7 +94,7 @@
                 <span>سطح 3</span>
             </div>
             <!-- pending - accepted - not_accepted -->
-            <div class="level_status not_accepted"> 
+            <div class="level_status not_accepted">
                 <span>تکمیل نشد</span>
             </div>
             <div class="Property">

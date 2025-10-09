@@ -34,8 +34,34 @@
 
     <!-- Accept Verifications -->
     <section class="accept-verifications">
-        <h2>درخواست‌های احراز هویت کاربران</h2>
-        <div id="verifications-list" class="verifications-list">
+        <div class="accept-verifications__header">
+            <h2>درخواست‌های احراز هویت کاربران</h2>
+            <div class="verifications-toolbar" aria-label="فیلتر درخواست‌ها">
+                <label class="toolbar-field">
+                    <span>فیلتر تاریخ:</span>
+                    <select id="verification-date-filter" class="toolbar-select">
+                        <option value="all">همه</option>
+                        <option value="today">امروز</option>
+                        <option value="last7">۷ روز اخیر</option>
+                        <option value="last30">۳۰ روز اخیر</option>
+                        <option value="last90">۹۰ روز اخیر</option>
+                    </select>
+                </label>
+                <label class="toolbar-field">
+                    <span>وضعیت:</span>
+                    <select id="verification-status-filter" class="toolbar-select">
+                        <option value="all">همه</option>
+                        <option value="pending">در انتظار بررسی</option>
+                        <option value="approved">تایید شده</option>
+                        <option value="rejected">رد شده</option>
+                    </select>
+                </label>
+                <button type="button" class="toolbar-refresh" id="verification-refresh" title="به‌روزرسانی لیست">
+                    به‌روزرسانی
+                </button>
+            </div>
+        </div>
+        <div id="verifications-list" class="verifications-list" role="list">
             <!-- Verifications will be loaded here -->
         </div>
     </section>
@@ -44,7 +70,7 @@
 
 <script src="/js/admin-sidebar.js"></script>
 <script src="/js/admin-dashboard.js"></script>
-<script type="module" src="/js/admin-verification.js"></script>
+<script type="module" src="/js/admin/admin-verification.js"></script>
 
 </body>
 </html>
