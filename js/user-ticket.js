@@ -1,19 +1,3 @@
-
-
-
-const creatTicketBtn = document.querySelector(".creat_ticket_btn");
-const creatTicketmodalContainer = document.querySelector(".creat_ticket_modal_container");
-
-creatTicketmodalContainer.classList.add("hidden");
-creatTicketBtn.addEventListener("click" , function(){
-    creatTicketmodalContainer.classList.toggle("hidden");
-})
-creatTicketmodalContainer.addEventListener("click" , function(){
-    creatTicketmodalContainer.classList.toggle("hidden");
-})
-
-
-
 // user-ticket.js
 
 class UserTickets {
@@ -21,68 +5,186 @@ class UserTickets {
         this.tickets = [];
         this.selectedTicket = null;
         this.currentUser = null;
-        this.baseURL = '/api/support/tickets/';
-        
+        this.apiBaseURL = this.getApiBaseUrl();
+        this.baseURL = this.buildApiUrl('/api/support/tickets/');
+
+        this.ticketsListContainer = document.querySelector('.tickets_lists_container');
+        this.modalContainer = document.querySelector('.creat_ticket_modal_container');
+        this.modalContent = document.querySelector('.creat_ticket_modal');
+        this.conversationSection = document.querySelector('.tickets_conversation');
+        this.conversationTitle = document.querySelector('.conversation_ticket_title');
+        this.conversationStatus = document.querySelector('.conversation_ticket_status');
+        this.conversationDate = document.querySelector('.conversation_ticket_date');
+        this.messagesContainer = document.querySelector('.show_message');
+        this.answerForm = document.querySelector('.answer_form form');
+
+        this.handleDocumentClick = this.handleDocumentClick.bind(this);
+        this.handleModalOutsideClick = this.handleModalOutsideClick.bind(this);
+        this.handleAnswerFormSubmit = this.handleAnswerFormSubmit.bind(this);
+
         this.init();
     }
 
     async init() {
-        // بررسی لاگین بودن کاربر
-        await this.checkAuth();
-        
-        // بارگذاری تیکت‌ها
-        await this.loadTickets();
-        
-        // تنظیم event listeners
-        this.setupEventListeners();
-    }
-
-    // بررسی وضعیت احراز هویت کاربر
-    async checkAuth() {
         try {
-            const token = localStorage.getItem('access_token');
-            if (!token) {
-                window.location.href = '../register/login.html';
-                return;
-            }
-            
-            // در اینجا می‌توانید اطلاعات کاربر را از API بگیرید
-            this.currentUser = {
-                id: 1, // این مقدار باید از API گرفته شود
-                name: 'user name'
-            };
-            
+            await this.checkAuth();
+            await this.loadTickets();
+            this.setupEventListeners();
         } catch (error) {
-            console.error('Authentication error:', error);
-            window.location.href = '/login.html';
+            console.error('Initialization error:', error);
         }
     }
 
-    // بارگذاری لیست تیکت‌ها
+    getApiBaseUrl() {
+        try {
+            const metaTag = document.querySelector('meta[name="api-base-url"]');
+            if (metaTag && metaTag.content) {
+                return metaTag.content.replace(/\/$/, '');
+            }
+        } catch (error) {
+            console.warn('Meta tag lookup for API base URL failed:', error);
+        }
+
+        if (typeof window !== 'undefined') {
+            if (window.API_BASE_URL) {
+                return window.API_BASE_URL.replace(/\/$/, '');
+            }
+
+            if (window.location && window.location.origin && window.location.origin !== 'null') {
+                return window.location.origin.replace(/\/$/, '');
+            }
+        }
+
+        return 'https://atom-game.ir';
+    }
+
+    buildApiUrl(path) {
+        if (!path) {
+            return this.apiBaseURL;
+        }
+
+        if (/^https?:\/\//i.test(path)) {
+            return path;
+        }
+
+        if (path.startsWith('/')) {
+            return `${this.apiBaseURL}${path}`;
+        }
+
+        return `${this.apiBaseURL}/${path}`;
+    }
+
+    getAuthToken() {
+        return localStorage.getItem('access_token') || localStorage.getItem('token');
+    }
+
+    redirectToLogin() {
+        window.location.href = '../register/login.html';
+    }
+
+    async checkAuth() {
+        const token = this.getAuthToken();
+        if (!token) {
+            this.redirectToLogin();
+            throw new Error('No authentication token found');
+        }
+
+        try {
+            const user = await this.apiCall('/api/auth/users/me/', 'GET');
+            if (user && user.id) {
+                this.currentUser = user;
+            } else {
+                this.currentUser = { id: null };
+            }
+        } catch (error) {
+            if (error && error.status === 401) {
+                this.clearAuthTokens();
+                this.redirectToLogin();
+                throw error;
+            }
+
+            console.error('Authentication error:', error);
+            this.currentUser = { id: null };
+            this.showError('خطا در دریافت اطلاعات کاربر');
+        }
+    }
+
     async loadTickets() {
+        const previousSelectedId = this.selectedTicket ? this.selectedTicket.id : null;
+
         try {
             const response = await this.apiCall(this.baseURL, 'GET');
-            
-            if (response && Array.isArray(response)) {
-                this.tickets = response;
-                this.renderTicketsList();
-            } else {
-                this.tickets = [];
-                this.renderTicketsList();
+            this.tickets = Array.isArray(response) ? response : [];
+
+            if (previousSelectedId && !this.tickets.some(ticket => ticket.id === previousSelectedId)) {
+                this.selectedTicket = null;
+            } else if (this.selectedTicket) {
+                const updated = this.tickets.find(ticket => ticket.id === this.selectedTicket.id);
+                if (updated) {
+                    this.selectedTicket = { ...updated, messages: this.selectedTicket.messages || [] };
+                }
             }
-            
+
+            this.renderTicketsList();
+
+            if (!this.selectedTicket) {
+                this.resetConversation();
+            } else {
+                this.updateConversationHeader();
+            }
         } catch (error) {
+            if (this.handleUnauthorized(error)) {
+                return;
+            }
+
             console.error('Error loading tickets:', error);
+            this.tickets = [];
+            this.renderTicketsList();
+            this.selectedTicket = null;
+            this.resetConversation();
             this.showError('خطا در بارگذاری تیکت‌ها');
         }
     }
 
-    // نمایش لیست تیکت‌ها
+    setupEventListeners() {
+        document.addEventListener('click', this.handleDocumentClick);
+
+        if (this.modalContainer) {
+            this.modalContainer.addEventListener('click', this.handleModalOutsideClick);
+        }
+
+        if (this.answerForm) {
+            this.answerForm.addEventListener('submit', this.handleAnswerFormSubmit);
+        }
+    }
+
+    handleDocumentClick(event) {
+        const createBtn = event.target.closest('.creat_ticket_btn');
+        if (createBtn) {
+            event.preventDefault();
+            this.showCreateTicketModal();
+            return;
+        }
+    }
+
+    handleModalOutsideClick(event) {
+        if (event.target === this.modalContainer) {
+            this.hideCreateTicketModal();
+        }
+    }
+
+    handleAnswerFormSubmit(event) {
+        event.preventDefault();
+        this.sendMessage();
+    }
+
     renderTicketsList() {
-        const container = document.querySelector('.tickets_lists_container');
-        
-        if (this.tickets.length === 0) {
-            container.innerHTML = `
+        if (!this.ticketsListContainer) {
+            return;
+        }
+
+        if (!this.tickets.length) {
+            this.ticketsListContainer.innerHTML = `
                 <div class="no-tickets-message">
                     <p>هنوز هیچ تیکتی ایجاد نکرده‌اید</p>
                     <button class="creat_ticket_btn">ایجاد اولین تیکت</button>
@@ -91,33 +193,154 @@ class UserTickets {
             return;
         }
 
-        container.innerHTML = this.tickets.map(ticket => `
-            <div class="ticket_item ${this.getStatusClass(ticket.status)} ${this.selectedTicket && this.selectedTicket.id === ticket.id ? 'selected' : ''}" 
+        this.ticketsListContainer.innerHTML = this.tickets.map(ticket => {
+            const normalizedStatus = this.normalizeStatus(ticket.status);
+            return `
+            <div class="ticket_item ${this.getStatusClass(normalizedStatus)} ${this.selectedTicket && this.selectedTicket.id === ticket.id ? 'selected' : ''}"
                  data-ticket-id="${ticket.id}">
                 <div class="ticket_title">${ticket.title}</div>
-                <div class="ticket_status ${ticket.status}">${this.getStatusText(ticket.status)}</div>
+                <div class="ticket_status ${this.getStatusClass(normalizedStatus)}">${this.getStatusText(normalizedStatus)}</div>
                 <div class="ticket_last_message">${this.getLastMessagePreview(ticket)}</div>
                 <div class="ticket_add_date">${this.formatDate(ticket.created_at)}</div>
             </div>
-        `).join('');
+            `;
+        }).join('');
 
-        // اضافه کردن event listener برای آیتم‌ها
         this.addTicketItemListeners();
     }
 
-    // دریافت کلاس وضعیت برای استایل‌دهی
+    addTicketItemListeners() {
+        if (!this.ticketsListContainer) {
+            return;
+        }
+
+        this.ticketsListContainer.querySelectorAll('.ticket_item').forEach(item => {
+            item.addEventListener('click', async () => {
+                const ticketId = parseInt(item.dataset.ticketId, 10);
+                await this.selectTicket(ticketId);
+            });
+        });
+    }
+
+    async selectTicket(ticketId) {
+        try {
+            if (this.ticketsListContainer) {
+                this.ticketsListContainer.querySelectorAll('.ticket_item').forEach(item => {
+                    item.classList.remove('selected');
+                });
+
+                const selectedItem = this.ticketsListContainer.querySelector(`[data-ticket-id="${ticketId}"]`);
+                if (selectedItem) {
+                    selectedItem.classList.add('selected');
+                }
+            }
+
+            const response = await this.apiCall(`${this.baseURL}${ticketId}/`, 'GET');
+            this.selectedTicket = response;
+
+            this.showConversation();
+            await this.loadTicketMessages(ticketId);
+        } catch (error) {
+            if (this.handleUnauthorized(error)) {
+                return;
+            }
+
+            console.error('Error selecting ticket:', error);
+            this.showError('خطا در بارگذاری اطلاعات تیکت');
+        }
+    }
+
+    showConversation() {
+        if (!this.conversationSection) {
+            return;
+        }
+
+        this.conversationSection.classList.add('C-open');
+        this.conversationSection.classList.remove('no-open');
+
+        this.updateConversationHeader();
+        this.renderMessages();
+    }
+
+    updateConversationHeader() {
+        if (!this.selectedTicket) {
+            this.resetConversation();
+            return;
+        }
+
+        if (this.conversationTitle) {
+            this.conversationTitle.textContent = this.selectedTicket.title || '-';
+        }
+
+        if (this.conversationStatus) {
+            const normalizedStatus = this.normalizeStatus(this.selectedTicket.status);
+            this.conversationStatus.textContent = this.getStatusText(normalizedStatus);
+            this.conversationStatus.className = `conversation_ticket_status badge ${this.getStatusClass(normalizedStatus)}`;
+        }
+
+        if (this.conversationDate) {
+            this.conversationDate.textContent = this.formatDateTime(this.selectedTicket.created_at);
+        }
+    }
+
+    async loadTicketMessages(ticketId) {
+        try {
+            const response = await this.apiCall(`${this.baseURL}${ticketId}/messages/`, 'GET');
+            if (this.selectedTicket) {
+                this.selectedTicket.messages = Array.isArray(response) ? response : [];
+                this.renderMessages();
+            }
+        } catch (error) {
+            if (this.handleUnauthorized(error)) {
+                return;
+            }
+
+            console.error('Error loading messages:', error);
+            this.showError('خطا در بارگذاری پیام‌ها');
+        }
+    }
+
+    renderMessages() {
+        if (!this.messagesContainer) {
+            return;
+        }
+
+        const messages = this.selectedTicket && Array.isArray(this.selectedTicket.messages)
+            ? this.selectedTicket.messages
+            : [];
+
+        if (!messages.length) {
+            this.messagesContainer.innerHTML = '<p class="no-messages">هنوز پیامی ارسال نشده است</p>';
+            return;
+        }
+
+        const currentUserId = this.currentUser ? this.currentUser.id : null;
+
+        this.messagesContainer.innerHTML = messages.map(message => `
+            <div class="message ${message.user === currentUserId ? 'user_message' : 'support_message'}">
+                <p>${message.message}</p>
+                <span class="message-time">${this.formatTime(message.created_at)}</span>
+            </div>
+        `).join('');
+
+        this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+    }
+
+    normalizeStatus(status) {
+        return (status || '').toString().toLowerCase();
+    }
+
     getStatusClass(status) {
         const statusMap = {
             'open': 'open',
             'pending': 'pending',
-            'resolved': 'resolved',
-            'closed': 'closed',
+            'resolved': 'Resolved',
+            'closed': 'Closed',
             'new': 'new'
         };
-        return statusMap[status] || 'closed';
+        return statusMap[status] || 'Closed';
     }
 
-    // دریافت متن وضعیت به فارسی
     getStatusText(status) {
         const statusTextMap = {
             'open': 'باز',
@@ -129,152 +352,77 @@ class UserTickets {
         return statusTextMap[status] || 'بسته شده';
     }
 
-    // پیش‌نمایش آخرین پیام
     getLastMessagePreview(ticket) {
-        if (!ticket.messages || ticket.messages.length === 0) {
+        if (!ticket.messages || !ticket.messages.length) {
             return 'هنوز پیامی ارسال نشده است...';
         }
-        
+
         const lastMessage = ticket.messages[ticket.messages.length - 1].message;
-        return lastMessage.length > 50 ? lastMessage.substring(0, 50) + '...' : lastMessage;
+        return lastMessage.length > 50 ? `${lastMessage.substring(0, 50)}...` : lastMessage;
     }
 
-    // فرمت تاریخ
     formatDate(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleDateString('fa-IR');
-    }
+        if (!dateString) {
+            return '-';
+        }
 
-    // اضافه کردن event listener برای آیتم‌های تیکت
-    addTicketItemListeners() {
-        document.querySelectorAll('.ticket_item').forEach(item => {
-            item.addEventListener('click', async (e) => {
-                const ticketId = parseInt(item.dataset.ticketId);
-                await this.selectTicket(ticketId);
-            });
-        });
-    }
-
-    // انتخاب تیکت و نمایش جزئیات
-    async selectTicket(ticketId) {
         try {
-            // حذف کلاس selected از همه آیتم‌ها
-            document.querySelectorAll('.ticket_item').forEach(item => {
-                item.classList.remove('selected');
-            });
-            
-            // اضافه کردن کلاس selected به آیتم انتخاب شده
-            const selectedItem = document.querySelector(`[data-ticket-id="${ticketId}"]`);
-            if (selectedItem) {
-                selectedItem.classList.add('selected');
-            }
-            
-            // بارگذاری اطلاعات کامل تیکت
-            const response = await this.apiCall(`${this.baseURL}${ticketId}/`, 'GET');
-            this.selectedTicket = response;
-            
-            // نمایش بخش مکالمه
-            this.showConversation();
-            
-            // بارگذاری پیام‌های تیکت
-            await this.loadTicketMessages(ticketId);
-            
+            const date = new Date(dateString);
+            return date.toLocaleDateString('fa-IR');
         } catch (error) {
-            console.error('Error selecting ticket:', error);
-            this.showError('خطا در بارگذاری اطلاعات تیکت');
+            console.error('Date format error:', error);
+            return dateString;
         }
     }
 
-    // نمایش بخش مکالمه
-    showConversation() {
-        const conversationSection = document.querySelector('.tickets_conversation');
-        const conversationHead = document.querySelector('.conversation_head span');
-        
-        conversationSection.classList.add('C-open');
-        conversationSection.classList.remove('no-open');
-        
-        conversationHead.textContent = this.selectedTicket.title;
-        
-        this.renderMessages();
-    }
+    formatDateTime(dateString) {
+        if (!dateString) {
+            return '-';
+        }
 
-    // بارگذاری پیام‌های تیکت
-    async loadTicketMessages(ticketId) {
         try {
-            const response = await this.apiCall(`${this.baseURL}${ticketId}/messages/`, 'GET');
-            
-            if (this.selectedTicket) {
-                this.selectedTicket.messages = response;
-                this.renderMessages();
-            }
-            
+            const date = new Date(dateString);
+            const faDate = date.toLocaleDateString('fa-IR');
+            const faTime = date.toLocaleTimeString('fa-IR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            return `${faDate}، ${faTime}`;
         } catch (error) {
-            console.error('Error loading messages:', error);
-            this.showError('خطا در بارگذاری پیام‌ها');
+            console.error('DateTime format error:', error);
+            return dateString;
         }
     }
 
-    // نمایش پیام‌ها
-    renderMessages() {
-        const messagesContainer = document.querySelector('.show_message');
-        
-        if (!this.selectedTicket || !this.selectedTicket.messages || this.selectedTicket.messages.length === 0) {
-            messagesContainer.innerHTML = '<p class="no-messages">هنوز پیامی ارسال نشده است</p>';
+    formatTime(dateString) {
+        if (!dateString) {
+            return '-';
+        }
+
+        try {
+            const date = new Date(dateString);
+            return date.toLocaleTimeString('fa-IR', {
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch (error) {
+            console.error('Time format error:', error);
+            return dateString;
+        }
+    }
+
+    showCreateTicketModal() {
+        if (!this.modalContainer || !this.modalContent) {
             return;
         }
 
-        messagesContainer.innerHTML = this.selectedTicket.messages.map(message => `
-            <div class="message ${message.user === this.currentUser.id ? 'user_message' : 'support_message'}">
-                <p>${message.message}</p>
-                <span class="message-time">${this.formatTime(message.created_at)}</span>
-            </div>
-        `).join('');
+        this.modalContainer.classList.remove('hidden');
 
-        // اسکرول به پایین
-        messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-
-    // فرمت زمان
-    formatTime(dateString) {
-        const date = new Date(dateString);
-        return date.toLocaleTimeString('fa-IR', { 
-            hour: '2-digit', 
-            minute: '2-digit' 
-        });
-    }
-
-    // تنظیم event listeners
-    setupEventListeners() {
-        // دکمه ایجاد تیکت جدید
-        document.querySelector('.creat_ticket_btn').addEventListener('click', () => {
-            this.showCreateTicketModal();
-        });
-
-        // ارسال پاسخ
-        document.querySelector('.answer_form form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.sendMessage();
-        });
-
-        // بستن مدال با کلیک خارج از آن
-        document.querySelector('.creat_ticket_modal_container').addEventListener('click', (e) => {
-            if (e.target === e.currentTarget) {
-                this.hideCreateTicketModal();
-            }
-        });
-    }
-
-    // نمایش مدال ایجاد تیکت
-    showCreateTicketModal() {
-        const modal = document.querySelector('.creat_ticket_modal_container');
-        modal.classList.remove('hidden');
-        
-        // محتوای مدال
-        document.querySelector('.creat_ticket_modal').innerHTML = `
+        this.modalContent.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>ایجاد تیکت جدید</h3>
-                    <button class="close-modal">&times;</button>
+                    <button type="button" class="close-modal">&times;</button>
                 </div>
                 <form id="createTicketForm">
                     <div class="form-group">
@@ -293,56 +441,77 @@ class UserTickets {
             </div>
         `;
 
-        // event listeners برای مدال
-        document.querySelector('.close-modal').addEventListener('click', () => {
-            this.hideCreateTicketModal();
-        });
+        const form = this.modalContent.querySelector('#createTicketForm');
+        const closeBtn = this.modalContent.querySelector('.close-modal');
+        const cancelBtn = this.modalContent.querySelector('.cancel-btn');
 
-        document.querySelector('.cancel-btn').addEventListener('click', () => {
-            this.hideCreateTicketModal();
-        });
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => this.hideCreateTicketModal());
+        }
 
-        document.getElementById('createTicketForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            await this.createNewTicket();
-        });
-    }
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => this.hideCreateTicketModal());
+        }
 
-    // پنهان کردن مدال ایجاد تیکت
-    hideCreateTicketModal() {
-        document.querySelector('.creat_ticket_modal_container').classList.add('hidden');
-    }
-
-    // ایجاد تیکت جدید
-    async createNewTicket() {
-        try {
-            const formData = new FormData(document.getElementById('createTicketForm'));
-            const title = formData.get('title');
-            const message = formData.get('message');
-
-            // ایجاد تیکت
-            const ticketResponse = await this.apiCall(this.baseURL, 'POST', {
-                title: title
+        if (form) {
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                await this.createNewTicket(form);
             });
+        }
+    }
 
-            // ارسال پیام اولیه
+    hideCreateTicketModal() {
+        if (this.modalContainer) {
+            this.modalContainer.classList.add('hidden');
+        }
+
+        if (this.modalContent) {
+            this.modalContent.innerHTML = '';
+        }
+    }
+
+    async createNewTicket(formElement) {
+        try {
+            const formData = new FormData(formElement);
+            const title = formData.get('title') ? formData.get('title').toString().trim() : '';
+            const message = formData.get('message') ? formData.get('message').toString().trim() : '';
+
+            if (!title) {
+                this.showError('عنوان تیکت را وارد کنید');
+                return;
+            }
+
+            if (!message) {
+                this.showError('متن پیام را وارد کنید');
+                return;
+            }
+
+            const ticketResponse = await this.apiCall(this.baseURL, 'POST', { title });
+
+            if (!ticketResponse || !ticketResponse.id) {
+                throw new Error('Invalid ticket response');
+            }
+
             await this.apiCall(`${this.baseURL}${ticketResponse.id}/messages/`, 'POST', {
                 ticket: ticketResponse.id,
                 message: message
             });
 
             this.hideCreateTicketModal();
-            await this.loadTickets(); // بارگذاری مجدد لیست
-            
+            await this.loadTickets();
+            await this.selectTicket(ticketResponse.id);
             this.showSuccess('تیکت با موفقیت ایجاد شد');
-            
         } catch (error) {
+            if (this.handleUnauthorized(error)) {
+                return;
+            }
+
             console.error('Error creating ticket:', error);
             this.showError('خطا در ایجاد تیکت');
         }
     }
 
-    // ارسال پیام
     async sendMessage() {
         if (!this.selectedTicket) {
             this.showError('لطفاً ابتدا یک تیکت انتخاب کنید');
@@ -350,8 +519,11 @@ class UserTickets {
         }
 
         const messageInput = document.querySelector('#resporn');
-        const message = messageInput.value.trim();
+        if (!messageInput) {
+            return;
+        }
 
+        const message = messageInput.value.trim();
         if (!message) {
             this.showError('لطفاً پیام خود را وارد کنید');
             return;
@@ -363,71 +535,151 @@ class UserTickets {
                 message: message
             });
 
-            // پاک کردن فیلد ورودی
             messageInput.value = '';
-            
-            // بارگذاری مجدد پیام‌ها
             await this.loadTicketMessages(this.selectedTicket.id);
-            
         } catch (error) {
+            if (this.handleUnauthorized(error)) {
+                return;
+            }
+
             console.error('Error sending message:', error);
             this.showError('خطا در ارسال پیام');
         }
     }
 
-    // فراخوانی API
-    async apiCall(url, method = 'GET', data = null) {
-        const token = localStorage.getItem('access_token');
+    async apiCall(url, method = 'GET', data = null, options = {}) {
+        const token = this.getAuthToken();
         const headers = {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
+            'Accept': 'application/json'
         };
+
+        if (token) {
+            headers['Authorization'] = `Bearer ${token}`;
+        }
 
         const config = {
-            method: method,
-            headers: headers
+            method,
+            headers
         };
 
-        if (data && (method === 'POST' || method === 'PUT' || method === 'PATCH')) {
+        const upperMethod = method.toUpperCase();
+        if (data && ['POST', 'PUT', 'PATCH'].includes(upperMethod)) {
+            headers['Content-Type'] = 'application/json';
             config.body = JSON.stringify(data);
         }
 
-        try {
-            const response = await fetch(url, config);
-            
-            if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+        const fullUrl = this.buildApiUrl(url);
+
+        const response = await fetch(fullUrl, config);
+
+        if (response.status === 401 && !options.skipRefresh) {
+            const refreshed = await this.refreshAccessToken();
+            if (refreshed) {
+                return this.apiCall(url, method, data, { ...options, skipRefresh: true });
             }
-            
-            if (response.status !== 204) { // برای درخواست‌های DELETE که response body ندارند
-                return await response.json();
-            }
-            
-            return null;
-        } catch (error) {
-            console.error('API call failed:', error);
+        }
+
+        if (!response.ok) {
+            const error = new Error(`HTTP error! status: ${response.status}`);
+            error.status = response.status;
             throw error;
+        }
+
+        if (response.status === 204) {
+            return null;
+        }
+
+        return await response.json();
+    }
+
+    async refreshAccessToken() {
+        const refreshToken = localStorage.getItem('refresh_token');
+        if (!refreshToken) {
+            return false;
+        }
+
+        try {
+            const response = await fetch(this.buildApiUrl('/auth/jwt/refresh/'), {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ refresh: refreshToken })
+            });
+
+            if (!response.ok) {
+                return false;
+            }
+
+            const data = await response.json();
+            if (data && data.access) {
+                localStorage.setItem('access_token', data.access);
+                localStorage.setItem('token', data.access);
+                return true;
+            }
+
+            return false;
+        } catch (error) {
+            console.error('Error refreshing access token:', error);
+            return false;
         }
     }
 
-    // نمایش پیام موفقیت
+    clearAuthTokens() {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('token');
+        localStorage.removeItem('refresh_token');
+    }
+
+    handleUnauthorized(error) {
+        if (error && error.status === 401) {
+            this.clearAuthTokens();
+            this.redirectToLogin();
+            return true;
+        }
+
+        return false;
+    }
+
+    resetConversation() {
+        if (!this.conversationSection) {
+            return;
+        }
+
+        this.conversationSection.classList.remove('C-open');
+        this.conversationSection.classList.add('no-open');
+
+        if (this.conversationTitle) {
+            this.conversationTitle.textContent = 'یک تیکت را انتخاب کنید';
+        }
+
+        if (this.conversationStatus) {
+            this.conversationStatus.textContent = '-';
+            this.conversationStatus.className = 'conversation_ticket_status badge';
+        }
+
+        if (this.conversationDate) {
+            this.conversationDate.textContent = '-';
+        }
+
+        if (this.messagesContainer) {
+            this.messagesContainer.innerHTML = '<p class="no-messages">برای مشاهده گفتگو، یکی از تیکت‌های خود را انتخاب کنید.</p>';
+        }
+    }
+
     showSuccess(message) {
         this.showNotification(message, 'success');
     }
 
-    // نمایش پیام خطا
     showError(message) {
         this.showNotification(message, 'error');
     }
 
-    // نمایش نوتیفیکیشن
     showNotification(message, type) {
-        // ایجاد عنصر نوتیفیکیشن
         const notification = document.createElement('div');
         notification.className = `notification ${type}`;
         notification.textContent = message;
-        
-        // استایل‌دهی
+
         notification.style.cssText = `
             position: fixed;
             top: 20px;
@@ -439,10 +691,9 @@ class UserTickets {
             font-family: inherit;
             ${type === 'success' ? 'background: #4CAF50;' : 'background: #f44336;'}
         `;
-        
+
         document.body.appendChild(notification);
-        
-        // حذف خودکار بعد از 3 ثانیه
+
         setTimeout(() => {
             notification.remove();
         }, 3000);

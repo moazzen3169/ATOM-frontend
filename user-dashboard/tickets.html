@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="api-base-url" content="https://atom-game.ir">
     <title>داشبورد-حساب کاربری</title>
 
     <link rel="stylesheet" href="../css/colors.css">
@@ -55,76 +56,33 @@
 
           <!-- status: new - pending - Resolved  -  Closed  -->
           <div class="tickets_lists_container">
-            <!-- ITEM -->
-            <div class="ticket_item  closed  new">
-              <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
-              <div class="ticket_status ">جدید</div>
-              <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
-              <div class="ticket_add_date">۱۴۰۲/۰۵/۲۰</div>
-          </div>
-
-                      <!-- ITEM -->
-            <div class="ticket_item  open  pending">
-              <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
-              <div class="ticket_status ">درحال انتظار</div>
-              <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
-              <div class="ticket_add_date">۱۴۰۲/۰۵/۲۰</div>
-          </div>
-
-                      <!-- ITEM -->
-            <div class="ticket_item  closed  Resolved">
-              <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
-              <div class="ticket_status ">پاسخ داده  شده</div>
-              <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
-              <div class="ticket_add_date">۱۴۰۲/۰۵/۲۰</div>
-          </div>
-
-                      <!-- ITEM -->
-            <div class="ticket_item  closed  Closed">
-              <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
-              <div class="ticket_status ">بسته شده</div>
-              <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
-              <div class="ticket_add_date">۱۴۰۲/۰۵/۲۰</div>
-          </div>
-
-                                <!-- ITEM -->
-            <div class="ticket_item  closed  Closed">
-              <div class="ticket_title">مشکل در ورود به حساب کاربری</div>
-              <div class="ticket_status ">بسته شده</div>
-              <div class="ticket_last_message">من نمی‌توانم با رمز عبور خود وارن نمی‌توانم با رمز عبور خود وارد حساب کاربری شوم...</div>
-              <div class="ticket_add_date">۱۴۰۲/۰۵/۲۰</div>
-          </div>
-
-          
-
+            <!-- لیست تیکت‌ها به صورت داینامیک با جاوااسکریپت بارگذاری می‌شود -->
           </div>
         </section>
 
         <!-- قسمت مکالکه و ارسال پیام کاربر -->
          <!-- این بخش 2حالت داره اگه تیکتی اتخاب شده بود C-open اگه نه no-open -->
-        <section class="tickets_conversation C-open " >
+        <section class="tickets_conversation no-open" >
 
           <div class="conversation_head">
-            <!-- ticket title -->
-            <span>مشکل در ورود به حساب کاربری</span>
+            <div class="conversation_title">
+              <span class="conversation_ticket_title">یک تیکت را انتخاب کنید</span>
+              <span class="conversation_ticket_status badge">-</span>
+            </div>
+            <div class="conversation_meta">
+              <span class="conversation_ticket_date">-</span>
+            </div>
           </div>
           <div class="conversation_container">
             <!-- محل نمایش پیام های دو طرف -->
             <div class="show_message">
-              
-            <!-- پیام های کاربر -->
-            <p class="message user_message ">مشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخهمشکل من حل نشد آخه</p>
-
-            <!-- پیام های پشتیبانی -->
-            <p class="message support_message">باشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیمباشه الان حل میکنیم</p>            
-
-            
+              <p class="no-messages">برای مشاهده گفتگو، یکی از تیکت‌های خود را انتخاب کنید.</p>
             </div>
             <!-- فرم پاسخگویی -->
             <div class="answer_form">
-              <form action="#">
+              <form>
                 <div class="answer_input">
-                  <input type="text" name="resporn" id="resporn" placeholder="متن خودرا وارد کنید">
+                  <input type="text" name="resporn" id="resporn" placeholder="متن خود را وارد کنید">
                 </div>
                 <label id="file_tag" for="file">
                   <img src="/img/icons/file-input.svg" alt="file-input">
@@ -134,7 +92,7 @@
               </form>
             </div>
           </div>
-          
+
         </section>
 
       </section>
