@@ -5,6 +5,57 @@ document.addEventListener("DOMContentLoaded", async () => {
     const walletContainer = document.querySelector(".wallet_container");
     const withdrawableBalanceSpan = document.getElementById("withdrawable-balance");
 
+    const TRANSACTION_TYPE_DETAILS = [
+        {
+            aliases: ["deposit"],
+            className: "Deposit",
+            iconClass: "Deposit_icon",
+            label: "واریز",
+            sign: "+",
+            filter: "deposit",
+        },
+        {
+            aliases: ["withdraw", "withdrawal"],
+            className: "Withdraw",
+            iconClass: "Withdraw_icon",
+            label: "برداشت",
+            sign: "-",
+            filter: "withdraw",
+        },
+        {
+            aliases: ["spending"],
+            className: "Spending",
+            iconClass: "Spending_icon",
+            label: "خرج شده",
+            sign: "-",
+            filter: "spending",
+        },
+        {
+            aliases: ["entry_fee", "entryfee"],
+            className: "EntryFee",
+            iconClass: "EntryFee_icon",
+            label: "هزینه ورود",
+            sign: "-",
+            filter: "entry_fee",
+        },
+        {
+            aliases: ["prize", "reward"],
+            className: "Prize",
+            iconClass: "Prize_icon",
+            label: "جایزه",
+            sign: "+",
+            filter: "prize",
+        },
+    ];
+
+    const DEFAULT_TRANSACTION_TYPE = {
+        className: "Deposit",
+        iconClass: "Deposit_icon",
+        label: "نامشخص",
+        sign: "+",
+        filter: "",
+    };
+
     const token = setupToken();
     if (!token) return;
 
@@ -363,19 +414,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         transactionsToRender.forEach((tx) => {
-            const typeClass = getTransactionTypeClass(tx.transaction_type);
+            const typeInfo = getTransactionTypeInfo(tx.transaction_type);
+            const typeClass = typeInfo.className;
             const statusClass = getStatusClass(tx.status);
             const amountValue = normalizeAmount(tx.amount);
-            const sign = getAmountSign(tx.transaction_type);
+            const sign = typeInfo.sign;
             const formattedAmount = formatCurrency(Math.abs(amountValue));
 
             const item = `
                 <div class="Transaction_item ${typeClass}">
                     <div class="icon_container">
-                        <div class="${typeClass}_icon"></div>
+                        <div class="${typeInfo.iconClass}"></div>
                     </div>
                     <div class="Transaction_mode_date">
-                        <span>${translateType(tx.transaction_type)}</span>
+                        <span>${typeInfo.label}</span>
                         <div class="date">${formatDate(tx.timestamp)}</div>
                     </div>
                     <div class="Transaction_prise_status">
@@ -397,7 +449,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         const filtered = allTransactions.filter((tx) => {
             if (currentFilter === "all") return true;
-            return (tx.transaction_type || "").toLowerCase() === currentFilter;
+            const info = getTransactionTypeInfo(tx.transaction_type);
+            return info.filter === currentFilter;
         });
 
         return filtered.sort((a, b) => sortTransactions(a, b));
@@ -421,27 +474,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         return Number.isNaN(time) ? 0 : time;
     }
 
-    function getTransactionTypeClass(type) {
-        switch ((type || "").toLowerCase()) {
-            case "deposit": return "Deposit";
-            case "withdraw": return "Withdraw";
-            case "spending": return "Spending";
-            default: return "Deposit";
-        }
+    function getTransactionTypeInfo(type) {
+        const normalized = (type || "").toLowerCase();
+        const match = TRANSACTION_TYPE_DETAILS.find((detail) =>
+            detail.aliases.some((alias) => alias.toLowerCase() === normalized)
+        );
+
+        return match || DEFAULT_TRANSACTION_TYPE;
     }
 
     function getStatusClass(status) {
         const normalized = (status || "done").toLowerCase();
         return normalized === "done" || normalized === "success" ? "done" : "Not_done";
-    }
-
-    function translateType(type) {
-        switch ((type || "").toLowerCase()) {
-            case "deposit": return "واریز";
-            case "withdraw": return "برداشت";
-            case "spending": return "خرج شده";
-            default: return "نامشخص";
-        }
     }
 
     function translateStatus(status) {
@@ -486,11 +530,4 @@ document.addEventListener("DOMContentLoaded", async () => {
         return Number.isNaN(numericAmount) ? 0 : numericAmount;
     }
 
-    function getAmountSign(type) {
-        const normalized = (type || "deposit").toLowerCase();
-        if (normalized === "withdraw" || normalized === "spending") {
-            return "-";
-        }
-        return "+";
-    }
 });
