@@ -57,15 +57,13 @@ class UserTickets {
                 this.currentUser = { id: null };
             }
         } catch (error) {
-            if (error && error.status === 401) {
-                this.clearAuthTokens();
-                this.redirectToLogin();
+            if (this.handleUnauthorized(error)) {
                 throw error;
             }
 
             console.error('Authentication error:', error);
-            this.redirectToLogin();
-            throw error;
+            this.currentUser = { id: null };
+            this.showError('خطا در دریافت اطلاعات کاربر');
         }
     }
 
@@ -531,14 +529,56 @@ class UserTickets {
         const response = await fetch(url, config);
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+            let errorDetail = null;
+            const error = new Error(`HTTP error! status: ${response.status}`);
+            error.status = response.status;
+
+            try {
+                const contentType = response.headers.get('content-type') || '';
+                if (contentType.includes('application/json')) {
+                    errorDetail = await response.json();
+                } else {
+                    errorDetail = await response.text();
+                }
+            } catch (parseError) {
+                errorDetail = null;
+            }
+
+            if (errorDetail) {
+                error.detail = errorDetail;
+            }
+
+            throw error;
         }
 
         if (response.status === 204) {
             return null;
         }
 
-        return await response.json();
+        const contentType = response.headers.get('content-type') || '';
+        if (contentType.includes('application/json')) {
+            return await response.json();
+        }
+
+        return await response.text();
+    }
+
+    clearAuthTokens() {
+        try {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('token');
+        } catch (error) {
+            console.error('Error clearing auth tokens:', error);
+        }
+    }
+
+    handleUnauthorized(error) {
+        if (error && error.status === 401) {
+            this.clearAuthTokens();
+            this.redirectToLogin();
+            return true;
+        }
+        return false;
     }
 
     resetConversation() {
