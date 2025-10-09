@@ -136,6 +136,36 @@
     justify-self: flex-end;
 }
 
+[data-current-level-status-wrapper].status-info {
+    background-color: var(--border-color);
+}
+
+[data-current-level-status-wrapper].status-pending {
+    background-color: var(--yellow-color);
+}
+
+[data-current-level-status-wrapper].status-success {
+    background-color: var(--color-primary);
+}
+
+[data-current-level-status-wrapper].status-pending h3{
+    color: var(--dark-color);
+}
+
+[data-current-level-status-wrapper].status-info h3,
+[data-current-level-status-wrapper].status-success h3{
+    color: var(--white-color);
+}
+
+[data-current-level-status-wrapper].status-pending svg{
+    color: var(--dark-color);
+}
+
+[data-current-level-status-wrapper].status-info svg,
+[data-current-level-status-wrapper].status-success svg{
+    color: var(--white-color);
+}
+
 .compated_icon h3{
     position: absolute;
     top: 130%;
@@ -193,10 +223,19 @@
 }
 
 .verificatin_btn:hover{
-    border: 1px solid var(--color-primary);    
+    border: 1px solid var(--color-primary);
     color: var(--color-primary);
     transform: translateY(-5px);
     box-shadow: 0px 0px 100px var(--color-half   );
+}
+
+.verificatin_btn.hidden{
+    display: none;
+}
+
+.section-disabled{
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 .overlay{
