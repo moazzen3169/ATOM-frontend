@@ -200,10 +200,53 @@ body{
 }
 .C-open .conversation_head{
     width: 100%;
-    text-align: right;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     color: var(--white-color);
     font-size: 16px;
-    height: 40px;
+    text-align: right;
+    direction: rtl;
+}
+.conversation_title{
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    justify-content: flex-start;
+    width: 100%;
+}
+.conversation_ticket_title{
+    font-weight: 500;
+}
+.conversation_ticket_status{
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 14px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 400;
+    background-color: var(--card-color);
+    color: var(--white-color);
+}
+.conversation_ticket_status.open,
+.conversation_ticket_status.new{
+    background-color: var(--color-primary);
+}
+.conversation_ticket_status.pending{
+    background-color: var(--yellow-color);
+    color: var(--dark-color);
+}
+.conversation_ticket_status.Resolved{
+    background-color: var(--card-color);
+}
+.conversation_ticket_status.Closed{
+    background-color: var(--red-color);
+}
+.conversation_ticket_date{
+    font-size: 12px;
+    color: var(--white-color);
+    opacity: 0.7;
 }
 .C-open .conversation_container{
     display: flex;
