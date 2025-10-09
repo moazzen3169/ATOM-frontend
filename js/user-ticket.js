@@ -5,8 +5,7 @@ class UserTickets {
         this.tickets = [];
         this.selectedTicket = null;
         this.currentUser = null;
-        this.apiBaseURL = this.getApiBaseUrl();
-        this.baseURL = this.buildApiUrl('/api/support/tickets/');
+        this.baseURL = '/api/support/tickets/';
 
         this.ticketsListContainer = document.querySelector('.tickets_lists_container');
         this.modalContainer = document.querySelector('.creat_ticket_modal_container');
@@ -33,45 +32,6 @@ class UserTickets {
         } catch (error) {
             console.error('Initialization error:', error);
         }
-    }
-
-    getApiBaseUrl() {
-        try {
-            const metaTag = document.querySelector('meta[name="api-base-url"]');
-            if (metaTag && metaTag.content) {
-                return metaTag.content.replace(/\/$/, '');
-            }
-        } catch (error) {
-            console.warn('Meta tag lookup for API base URL failed:', error);
-        }
-
-        if (typeof window !== 'undefined') {
-            if (window.API_BASE_URL) {
-                return window.API_BASE_URL.replace(/\/$/, '');
-            }
-
-            if (window.location && window.location.origin && window.location.origin !== 'null') {
-                return window.location.origin.replace(/\/$/, '');
-            }
-        }
-
-        return 'https://atom-game.ir';
-    }
-
-    buildApiUrl(path) {
-        if (!path) {
-            return this.apiBaseURL;
-        }
-
-        if (/^https?:\/\//i.test(path)) {
-            return path;
-        }
-
-        if (path.startsWith('/')) {
-            return `${this.apiBaseURL}${path}`;
-        }
-
-        return `${this.apiBaseURL}/${path}`;
     }
 
     getAuthToken() {
@@ -104,8 +64,8 @@ class UserTickets {
             }
 
             console.error('Authentication error:', error);
-            this.currentUser = { id: null };
-            this.showError('خطا در دریافت اطلاعات کاربر');
+            this.redirectToLogin();
+            throw error;
         }
     }
 
@@ -547,7 +507,7 @@ class UserTickets {
         }
     }
 
-    async apiCall(url, method = 'GET', data = null, options = {}) {
+    async apiCall(url, method = 'GET', data = null) {
         const token = this.getAuthToken();
         const headers = {
             'Accept': 'application/json'
@@ -568,21 +528,10 @@ class UserTickets {
             config.body = JSON.stringify(data);
         }
 
-        const fullUrl = this.buildApiUrl(url);
-
-        const response = await fetch(fullUrl, config);
-
-        if (response.status === 401 && !options.skipRefresh) {
-            const refreshed = await this.refreshAccessToken();
-            if (refreshed) {
-                return this.apiCall(url, method, data, { ...options, skipRefresh: true });
-            }
-        }
+        const response = await fetch(url, config);
 
         if (!response.ok) {
-            const error = new Error(`HTTP error! status: ${response.status}`);
-            error.status = response.status;
-            throw error;
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         if (response.status === 204) {
@@ -590,55 +539,6 @@ class UserTickets {
         }
 
         return await response.json();
-    }
-
-    async refreshAccessToken() {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!refreshToken) {
-            return false;
-        }
-
-        try {
-            const response = await fetch(this.buildApiUrl('/auth/jwt/refresh/'), {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ refresh: refreshToken })
-            });
-
-            if (!response.ok) {
-                return false;
-            }
-
-            const data = await response.json();
-            if (data && data.access) {
-                localStorage.setItem('access_token', data.access);
-                localStorage.setItem('token', data.access);
-                return true;
-            }
-
-            return false;
-        } catch (error) {
-            console.error('Error refreshing access token:', error);
-            return false;
-        }
-    }
-
-    clearAuthTokens() {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
-    }
-
-    handleUnauthorized(error) {
-        if (error && error.status === 401) {
-            this.clearAuthTokens();
-            this.redirectToLogin();
-            return true;
-        }
-
-        return false;
     }
 
     resetConversation() {
