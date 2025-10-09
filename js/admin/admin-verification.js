@@ -63,6 +63,23 @@ const SKIP_DETAIL_KEYS = new Set([
   "reason_text",
 ]);
 
+const APPROVED_STATUS_VALUES = [
+  "approved",
+  "accept",
+  "accepted",
+  "verified",
+  "done",
+];
+
+const REJECTED_STATUS_VALUES = [
+  "rejected",
+  "declined",
+  "denied",
+  "failed",
+  "cancelled",
+  "canceled",
+];
+
 function isSameDay(a, b) {
   if (!a || !b) return false;
   return (
@@ -201,10 +218,10 @@ function applyFilters() {
 
 function getStatusKey(item) {
   const normalizedStatus = (item?.status || "").toString().toLowerCase();
-  if (["approved", "accept", "accepted", "verified", "done"].includes(normalizedStatus)) {
+  if (APPROVED_STATUS_VALUES.includes(normalizedStatus)) {
     return "approved";
   }
-  if (["rejected", "declined", "denied", "failed", "cancelled", "canceled"].includes(normalizedStatus)) {
+  if (REJECTED_STATUS_VALUES.includes(normalizedStatus)) {
     return "rejected";
   }
   if (normalizedStatus) {
@@ -395,9 +412,18 @@ function formatAdditionalDetails(item) {
   `;
 }
 
-function isLikelyImage(url) {
+function isLikelyImage(url, mimeType) {
+  if (mimeType && /^image\//i.test(mimeType)) return true;
   if (!url || typeof url !== "string") return false;
+  if (/^data:image\//i.test(url)) return true;
   return /(\.)(jpe?g|png|gif|bmp|webp|svg)(\?.*)?$/i.test(url);
+}
+
+function isLikelyVideo(url, mimeType) {
+  if (mimeType && /^video\//i.test(mimeType)) return true;
+  if (!url || typeof url !== "string") return false;
+  if (/^data:video\//i.test(url)) return true;
+  return /(\.)(mp4|webm|ogv|ogg|mov|m4v|avi|mkv)(\?.*)?$/i.test(url);
 }
 
 function normalizeDocumentEntry(doc, index) {
@@ -415,7 +441,16 @@ function normalizeDocumentEntry(doc, index) {
       doc.field ||
       doc.description ||
       `فایل ${index + 1}`;
-    return { url, title };
+    const mimeTypeCandidates = [
+      doc.mime_type,
+      doc.mimetype,
+      doc.content_type,
+      doc.file_mime_type,
+    ].filter((value) => typeof value === "string" && value.includes("/"));
+    const explicitType =
+      typeof doc.type === "string" && doc.type.includes("/") ? doc.type : null;
+    const mimeType = mimeTypeCandidates[0] || explicitType || null;
+    return { url, title, mimeType };
   }
   return null;
 }
@@ -436,11 +471,30 @@ function formatDocuments(item) {
     .map((doc) => {
       const url = escapeHtml(doc.url);
       const title = escapeHtml(doc.title);
-      if (isLikelyImage(doc.url)) {
+      const mimeType = doc.mimeType || null;
+      if (isLikelyImage(doc.url, mimeType)) {
         return `
           <li class="verification-documents__item">
             <figure>
               <img src="${url}" alt="${title}" loading="lazy" />
+              <figcaption>${title}</figcaption>
+            </figure>
+          </li>
+        `;
+      }
+      if (isLikelyVideo(doc.url, mimeType)) {
+        const typeAttribute =
+          mimeType && /^video\//i.test(mimeType)
+            ? ` type="${escapeHtml(mimeType)}"`
+            : "";
+        return `
+          <li class="verification-documents__item">
+            <figure>
+              <video controls preload="metadata">
+                <source src="${url}"${typeAttribute} />
+                مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند. 
+                <a href="${url}" target="_blank" rel="noopener">دانلود ${title}</a>
+              </video>
               <figcaption>${title}</figcaption>
             </figure>
           </li>
@@ -530,9 +584,11 @@ function renderVerifications(verifications) {
       .filter(Boolean)
       .join("");
 
+    const userDisplayName = getUserDisplayName(item);
     const userDetails = formatUserDetails(item);
     const levelDetails = buildDetailsGrid([
       { label: "شناسه درخواست", value: item?.id },
+      { label: "نام کاربر", value: userDisplayName },
       { label: "سطح احراز", value: formatLevel(item?.level) },
       { label: "وضعیت", value: STATUS_METADATA[getStatusKey(item)]?.label || "" },
     ]);
@@ -545,8 +601,6 @@ function renderVerifications(verifications) {
       statusKey === "approved" ? "disabled data-static-disabled=\"true\"" : "";
     const rejectDisabledAttr =
       statusKey === "rejected" ? "disabled data-static-disabled=\"true\"" : "";
-
-    const userDisplayName = getUserDisplayName(item);
 
     article.innerHTML = `
       <header class="verification-card__header">
