@@ -378,10 +378,26 @@ body{
     
   }
   
-   .icon_container  .Spending_icon  {
+  .icon_container  .Spending_icon  {
     width: 20px;
     height: 20px;
     background: url("/img/icons/money.svg") no-repeat center;
+    background-size: contain;
+
+  }
+
+  .icon_container  .EntryFee_icon  {
+    width: 20px;
+    height: 20px;
+    background: url("/img/icons/money.svg") no-repeat center;
+    background-size: contain;
+
+  }
+
+  .icon_container  .Prize_icon  {
+    width: 20px;
+    height: 20px;
+    background: url("/img/icons/cup.svg") no-repeat center;
     background-size: contain;
 
   }
