@@ -238,6 +238,343 @@ function formatLevel(level) {
   return map[normalized] || (level ? `سطح ${escapeHtml(level)}` : "نامشخص");
 }
 
+function getUserObject(item) {
+  return item?.user || item?.user_info || item?.profile || item?.user_data || null;
+}
+
+function getUserDisplayName(item) {
+  const user = getUserObject(item);
+  if (!user) {
+    const fallback = item?.user_name || item?.username || item?.display_name;
+    return fallback || "کاربر ناشناس";
+  }
+
+  if (typeof user === "string") {
+    return user;
+  }
+
+  const firstName = user.first_name || user.firstname || user.name;
+  const lastName = user.last_name || user.lastname || user.family;
+  const username = user.username || user.user_name;
+
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  if (fullName) {
+    return fullName + (username ? ` (${username})` : "");
+  }
+  return username || fullName || user.email || "کاربر ناشناس";
+}
+
+function formatUserDetails(item) {
+  const user = getUserObject(item);
+  if (!user) {
+    return "<p class=\"verification-card__note\">اطلاعات کاربر موجود نیست.</p>";
+  }
+  if (typeof user === "string") {
+    return `<p class="verification-card__note">${escapeHtml(user)}</p>`;
+  }
+
+  const firstName = user.first_name || user.firstname || user.name;
+  const lastName = user.last_name || user.lastname || user.family;
+  const fullName = [firstName, lastName].filter(Boolean).join(" ");
+  const fields = [
+    { label: "نام کاربری", value: user.username || user.user_name },
+    { label: "نام کامل", value: fullName },
+    { label: "ایمیل", value: user.email },
+    { label: "شماره موبایل", value: user.phone_number || user.mobile || user.phone },
+    { label: "کد ملی", value: user.national_code || user.national_id },
+  ].filter((field) => field.value);
+
+  if (!fields.length) {
+    return `<div class="verification-card__note">${escapeHtml(
+      JSON.stringify(user, null, 2)
+    )}</div>`;
+  }
+
+  return `
+    <div class="verification-details">
+      ${fields
+        .map(
+          (field) => `
+            <div class="verification-details__item">
+              <span class="verification-details__label">${field.label}</span>
+              <span class="verification-details__value">${escapeHtml(field.value)}</span>
+            </div>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function buildDetailsGrid(pairs) {
+  const validPairs = pairs.filter((pair) => pair.value !== null && pair.value !== undefined && pair.value !== "");
+  if (!validPairs.length) return "";
+  return `
+    <div class="verification-details">
+      ${validPairs
+        .map(
+          (pair) => `
+            <div class="verification-details__item">
+              <span class="verification-details__label">${pair.label}</span>
+              <span class="verification-details__value">${escapeHtml(pair.value)}</span>
+            </div>
+          `
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function flattenObjectEntries(obj, prefix = "") {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj)) {
+    return [];
+  }
+  return Object.entries(obj).flatMap(([key, value]) => {
+    const nextKey = prefix ? `${prefix}.${key}` : key;
+    if (value && typeof value === "object" && !Array.isArray(value)) {
+      return flattenObjectEntries(value, nextKey);
+    }
+    return [{ key: nextKey, value }];
+  });
+}
+
+function formatAdditionalDetails(item) {
+  const entries = Object.entries(item || {})
+    .filter(([key, value]) => {
+      if (SKIP_DETAIL_KEYS.has(key)) return false;
+      if (value === null || value === undefined || value === "") return false;
+      if (Array.isArray(value) && value.length === 0) return false;
+      if (typeof value === "object" && Object.keys(value).length === 0) return false;
+      return true;
+    })
+    .flatMap(([key, value]) => {
+      if (Array.isArray(value)) {
+        const formatted = value
+          .map((itemValue) => {
+            if (itemValue === null || itemValue === undefined || itemValue === "") {
+              return null;
+            }
+            if (typeof itemValue === "object") {
+              return JSON.stringify(itemValue);
+            }
+            return itemValue;
+          })
+          .filter(Boolean)
+          .map((val) => val.toString())
+          .join("، ");
+        return [{ label: formatLabel(key), value: formatted }];
+      }
+      if (value && typeof value === "object") {
+        const flattened = flattenObjectEntries(value).map(({ key: nestedKey, value: nestedValue }) => {
+          let normalizedValue = nestedValue;
+          if (Array.isArray(nestedValue)) {
+            normalizedValue = nestedValue
+              .filter((v) => v !== null && v !== undefined && v !== "")
+              .map((v) => (typeof v === "object" ? JSON.stringify(v) : v))
+              .join("، ");
+          } else if (nestedValue && typeof nestedValue === "object") {
+            normalizedValue = JSON.stringify(nestedValue);
+          }
+          return {
+            label: formatLabel(`${key}.${nestedKey}`),
+            value: normalizedValue,
+          };
+        });
+        return flattened;
+      }
+      return [{ label: formatLabel(key), value }];
+    })
+    .slice(0, 24);
+
+  if (!entries.length) return "";
+  return `
+    <div class="verification-card__section">
+      <h3>جزئیات فرم</h3>
+      ${buildDetailsGrid(entries)}
+    </div>
+  `;
+}
+
+function isLikelyImage(url) {
+  if (!url || typeof url !== "string") return false;
+  return /(\.)(jpe?g|png|gif|bmp|webp|svg)(\?.*)?$/i.test(url);
+}
+
+function normalizeDocumentEntry(doc, index) {
+  if (!doc) return null;
+  if (typeof doc === "string") {
+    return { url: doc, title: `فایل ${index + 1}` };
+  }
+  if (doc.url || doc.file || doc.file_url || doc.document_url || doc.path) {
+    const url = doc.url || doc.file || doc.file_url || doc.document_url || doc.path;
+    const title =
+      doc.label ||
+      doc.name ||
+      doc.title ||
+      doc.type ||
+      doc.field ||
+      doc.description ||
+      `فایل ${index + 1}`;
+    return { url, title };
+  }
+  return null;
+}
+
+function formatDocuments(item) {
+  const documents = item?.documents || item?.files || item?.attachments;
+  if (!documents) return "";
+
+  const items = Array.isArray(documents)
+    ? documents
+    : Object.values(documents).filter(Boolean);
+
+  if (!items.length) return "";
+
+  const elements = items
+    .map((doc, index) => normalizeDocumentEntry(doc, index))
+    .filter(Boolean)
+    .map((doc) => {
+      const url = escapeHtml(doc.url);
+      const title = escapeHtml(doc.title);
+      if (isLikelyImage(doc.url)) {
+        return `
+          <li class="verification-documents__item">
+            <figure>
+              <img src="${url}" alt="${title}" loading="lazy" />
+              <figcaption>${title}</figcaption>
+            </figure>
+          </li>
+        `;
+      }
+      return `<li class="verification-documents__item"><a href="${url}" target="_blank" rel="noopener">${title}</a></li>`;
+    });
+
+  if (!elements.length) return "";
+
+  return `
+    <div class="verification-card__section">
+      <h3>مدارک ارسال شده</h3>
+      <ul class="verification-documents">
+        ${elements.join("")}
+      </ul>
+    </div>
+  `;
+}
+
+function formatNotes(item) {
+  const rejection = item?.rejection_reason || item?.reason || item?.reason_message;
+  const reviewer = item?.reviewer_note || item?.admin_note || item?.note;
+  const sections = [];
+
+  if (rejection) {
+    sections.push(
+      `<div class="verification-card__note verification-card__note--danger">${escapeHtml(
+        rejection
+      )}</div>`
+    );
+  }
+  if (reviewer) {
+    sections.push(
+      `<div class="verification-card__note verification-card__note--warning">${escapeHtml(
+        reviewer
+      )}</div>`
+    );
+  }
+
+  return sections.join("");
+}
+
+function createRawDataBlock(item) {
+  try {
+    const raw = escapeHtml(JSON.stringify(item, null, 2));
+    return `
+      <div class="verification-card__section">
+        <details class="verification-card__raw">
+          <summary>مشاهده داده کامل</summary>
+          <pre>${raw}</pre>
+        </details>
+      </div>
+    `;
+  } catch (error) {
+  } catch (error) {
+    console.error("Failed to load verifications", error);
+    renderMessage("خطا در بارگذاری درخواست‌ها. لطفا دوباره تلاش کنید.");
+  } finally {
+    setLoading(false);
+  }
+}
+
+function renderMessage(message) {
+  if (!verificationsList) return;
+  verificationsList.innerHTML = `<div class="verifications-list__message">${escapeHtml(
+    message
+  )}</div>`;
+}
+
+function applyFilters() {
+  if (!verificationsList) return;
+  const { date, status } = STATE.filters;
+  let items = [...STATE.all];
+  items.sort((a, b) => {
+    const dateA = toDate(a?.created_at)?.getTime() || 0;
+    const dateB = toDate(b?.created_at)?.getTime() || 0;
+    return dateB - dateA;
+  });
+
+  if (DATE_FILTERS[date]) {
+    items = items.filter((item) => {
+      const itemDate = toDate(item?.created_at);
+      return DATE_FILTERS[date](itemDate);
+    });
+  }
+
+  if (status && status !== "all") {
+    items = items.filter((item) => getStatusKey(item) === status);
+  }
+
+  STATE.filtered = items;
+  renderVerifications(items);
+}
+
+function getStatusKey(item) {
+  const normalizedStatus = (item?.status || "").toString().toLowerCase();
+  if (["approved", "accept", "accepted", "verified", "done"].includes(normalizedStatus)) {
+    return "approved";
+  }
+  if (["rejected", "declined", "denied", "failed", "cancelled", "canceled"].includes(normalizedStatus)) {
+    return "rejected";
+  }
+  if (normalizedStatus) {
+    return "pending";
+  }
+  if (item?.is_rejected || item?.rejection_reason) {
+    return "rejected";
+  }
+  if (item?.is_verified) {
+    return "approved";
+  }
+  return "pending";
+}
+
+function formatStatusBadge(item) {
+  const key = getStatusKey(item);
+  const meta = STATUS_METADATA[key] || STATUS_METADATA.pending;
+  return `<span class="status-badge ${meta.className}" data-status="${key}">
+    ${meta.icon}
+    <span>${meta.label}</span>
+  </span>`;
+}
+
+function formatLevel(level) {
+  const map = {
+    1: "سطح ۱",
+    2: "سطح ۲",
+    3: "سطح ۳",
+  };
+  const normalized = Number(level);
+  return map[normalized] || (level ? `سطح ${escapeHtml(level)}` : "نامشخص");
+}
+
 function formatUserDetails(item) {
   const user = item?.user || item?.user_info || item?.profile;
   if (!user) {
@@ -490,6 +827,12 @@ function renderVerifications(verifications) {
     const rejectDisabledAttr =
       statusKey === "rejected" ? "disabled data-static-disabled=\"true\"" : "";
 
+    const userDisplayName = getUserDisplayName(item);
+
+    article.innerHTML = `
+      <header class="verification-card__header">
+        <div class="verification-card__title">
+          <h3>${escapeHtml(userDisplayName)}</h3>
     article.innerHTML = `
       <header class="verification-card__header">
         <div class="verification-card__title">
@@ -546,6 +889,50 @@ async function postAction(id, action, payload = {}) {
     return null;
   }
   if (!response.ok) {
+    const text = await response.text();
+    let message = text;
+    try {
+      const parsed = JSON.parse(text);
+      message = parsed?.detail || parsed?.message || text;
+    } catch (error) {
+      // ignore parse error
+    }
+    throw new Error(message || "خطا در ارسال درخواست");
+  }
+  try {
+    return await response.json();
+  } catch (error) {
+    return null;
+  }
+}
+
+function updateState(id, data = {}, fallbackStatus) {
+  STATE.all = STATE.all.map((item) => {
+    if (String(item?.id) !== String(id)) return item;
+    const nextItem = { ...item, ...data };
+    if (fallbackStatus) {
+      if (fallbackStatus === "approved") {
+        nextItem.is_verified = true;
+        nextItem.status = nextItem.status || "approved";
+      }
+      if (fallbackStatus === "rejected") {
+        nextItem.is_verified = false;
+        nextItem.status = nextItem.status || "rejected";
+      }
+    }
+    return nextItem;
+  });
+  applyFilters();
+}
+
+  });
+  if (response.status === 401 || response.status === 403) {
+    localStorage.removeItem("access_token");
+    alert("نشست شما منقضی شده است. لطفا مجددا وارد شوید.");
+    window.location.href = "/register/login.html";
+    return null;
+  }
+  if (!response.ok) {
     const message = await response.text();
     throw new Error(message || "خطا در ارسال درخواست");
   }
@@ -581,11 +968,16 @@ async function handleApprove(id, button) {
   if (!confirmed) return;
   setButtonsDisabled(button, true);
   try {
+    const result = await postAction(id, "approve", {
+      is_verified: true,
+      status: "approved",
+    });
     const result = await postAction(id, "approve", {});
     updateState(id, result || {}, "approved");
     alert("درخواست با موفقیت تایید شد.");
   } catch (error) {
     console.error("Approve verification failed", error);
+    alert("خطا در تایید درخواست: " + (error.message || ""));
     alert("خطا در تایید درخواست: " + error.message);
   } finally {
     setButtonsDisabled(button, false);
@@ -598,6 +990,14 @@ async function handleReject(id, button) {
   if (reason === null) return;
   setButtonsDisabled(button, true);
   try {
+    const payload = {
+      is_verified: false,
+      status: "rejected",
+    };
+    if (reason) {
+      payload.reason = reason;
+      payload.rejection_reason = reason;
+    }
     const payload = reason ? { reason } : {};
     const result = await postAction(id, "reject", payload);
     const updates = result || {};

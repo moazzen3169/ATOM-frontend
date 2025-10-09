@@ -719,6 +719,42 @@
     gap: 10px;
 }
 
+.verification-documents li {
+    flex: 0 1 auto;
+}
+
+.verification-documents__item {
+    position: relative;
+    flex: 1 1 160px;
+    max-width: 220px;
+}
+
+.verification-documents__item figure {
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border-radius: 12px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.verification-documents__item img {
+    width: 100%;
+    height: 140px;
+    object-fit: cover;
+    display: block;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.verification-documents__item figcaption {
+    font-size: 12px;
+    padding: 6px 10px 10px;
+    color: rgba(255, 255, 255, 0.8);
+}
+
 .verification-documents li a {
     display: inline-flex;
     align-items: center;
