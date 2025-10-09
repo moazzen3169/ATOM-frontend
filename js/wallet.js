@@ -3,6 +3,7 @@ import { API_BASE_URL } from "/js/config.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     const walletContainer = document.querySelector(".wallet_container");
+    const withdrawableBalanceSpan = document.getElementById("withdrawable-balance");
 
     const token = setupToken();
     if (!token) return;
@@ -52,7 +53,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     const withdrawForm = document.getElementById("withdraw-form");
 
     // Withdrawable balance span
-    const withdrawableBalanceSpan = document.getElementById("withdrawable-balance");
     const transactionFilterButtons = document.querySelectorAll(".filter_item");
     const orderingSelect = document.getElementById("ordering");
 
