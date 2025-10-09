@@ -8,6 +8,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!token) return;
 
     let currentWallet = null;
+    let allTransactions = [];
+    let currentFilter = "all";
+    let currentOrdering = "last";
 
     try {
         const wallets = await fetchData(`${API_BASE_URL}/api/wallet/wallets/`, token);
@@ -28,7 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!currentWallet.transactions || !Array.isArray(currentWallet.transactions) || currentWallet.transactions.length === 0) {
             await loadTransactions(currentWallet.id, token);
         } else {
-            updateTransactions(currentWallet.transactions);
+            setTransactions(currentWallet.transactions);
         }
 
     } catch (error) {
@@ -50,12 +53,35 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Withdrawable balance span
     const withdrawableBalanceSpan = document.getElementById("withdrawable-balance");
+    const transactionFilterButtons = document.querySelectorAll(".filter_item");
+    const orderingSelect = document.getElementById("ordering");
+
+    transactionFilterButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+            transactionFilterButtons.forEach((btn) => {
+                btn.classList.remove("active_sort");
+                btn.classList.add("none_active");
+            });
+            button.classList.add("active_sort");
+            button.classList.remove("none_active");
+            currentFilter = button.dataset.filter || "all";
+            renderTransactions();
+        });
+    });
+
+    if (orderingSelect) {
+        orderingSelect.addEventListener("change", () => {
+            currentOrdering = orderingSelect.value;
+            renderTransactions();
+        });
+    }
 
     // Show modals
     depositBtn.addEventListener("click", () => depositModal.classList.add("show"));
     withdrawBtn.addEventListener("click", () => {
         if (currentWallet) {
-            withdrawableBalanceSpan.textContent = (currentWallet.withdrawable_balance || 0) + " تومان";
+            withdrawableBalanceSpan.textContent =
+                formatCurrency(currentWallet.withdrawable_balance || 0) + " تومان";
         }
         withdrawModal.classList.add("show");
     });
@@ -77,6 +103,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     depositForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const amount = parseFloat(depositForm.amount.value);
+        const descriptionField = depositForm.querySelector("[name='description']");
+        const description = descriptionField ? descriptionField.value.trim() : "";
 
         if (isNaN(amount) || amount < 1000) {
             alert("لطفا مبلغ معتبر و حداقل ۱۰۰۰ تومان وارد کنید.");
@@ -86,15 +114,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             depositForm.querySelector(".btn-submit").disabled = true;
 
+            const payload = {
+                amount: amount.toFixed(2).toString(),
+            };
+
+            if (description) {
+                payload.description = description;
+            }
+
             const response = await fetch(`${API_BASE_URL}/api/wallet/deposit/`, {
                 method: "POST",
                 headers: {
                     "Authorization": "Bearer " + token,
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    amount: amount.toFixed(2).toString() // اطمینان از رعایت الگو اعشاری
-                }),
+                body: JSON.stringify(payload),
             });
 
             // لاگ کامل پاسخ سرور
@@ -134,7 +168,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     withdrawForm.addEventListener("submit", async (e) => {
         e.preventDefault();
         const amount = parseFloat(withdrawForm.amount.value);
-        const description = withdrawForm.description.value.trim();
+        const descriptionField = withdrawForm.querySelector("[name='description']");
+        const description = descriptionField ? descriptionField.value.trim() : "";
 
         if (isNaN(amount) || amount < 1000) {
             alert("لطفا مبلغ معتبر و حداقل ۱۰۰۰ تومان وارد کنید.");
@@ -149,16 +184,21 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             withdrawForm.querySelector(".btn-submit").disabled = true;
 
+            const payload = {
+                amount: amount.toFixed(2).toString(),
+            };
+
+            if (description) {
+                payload.description = description;
+            }
+
             const response = await fetch(`${API_BASE_URL}/api/wallet/withdraw/`, {
                 method: "POST",
                 headers: {
                     "Authorization": "Bearer " + token,
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({
-                    amount: amount.toFixed(2).toString(),
-                    description: description
-                }),
+                body: JSON.stringify(payload),
             });
 
             const rawText = await response.text();
@@ -214,7 +254,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const walletDetail = await fetchData(`${API_BASE_URL}/api/wallet/wallets/${walletId}/`, token);
             if (walletDetail.transactions && Array.isArray(walletDetail.transactions)) {
-                updateTransactions(walletDetail.transactions);
+                setTransactions(walletDetail.transactions);
             } else {
                 document.querySelector(".Transactions_container").innerHTML = "<p>تراکنشی یافت نشد</p>";
             }
@@ -222,6 +262,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Error loading transactions:", error);
             document.querySelector(".Transactions_container").innerHTML = "<p>خطا در دریافت تراکنش‌ها</p>";
         }
+    }
+
+    function setTransactions(transactions) {
+        allTransactions = Array.isArray(transactions) ? [...transactions] : [];
+        renderTransactions();
     }
 
     function setupToken() {
@@ -282,24 +327,47 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function updateWalletInfo(wallet) {
-        document.querySelector(".Wallet_balance span").textContent =
-            (wallet.total_balance || 0) + " تومان";
-        document.querySelector(".Withdrawable_wallet_balance span:last-child").textContent =
-            (wallet.withdrawable_balance || 0) + " تومان";
+        const walletBalanceSpan = document.querySelector(".Wallet_balance_value");
+        const withdrawableSpan = document.querySelector(".Withdrawable_wallet_balance_value");
+
+        if (walletBalanceSpan) {
+            walletBalanceSpan.textContent = formatCurrency(wallet.total_balance || 0);
+        }
+
+        if (withdrawableSpan) {
+            withdrawableSpan.textContent = formatCurrency(wallet.withdrawable_balance || 0);
+        }
+
+        if (withdrawableBalanceSpan) {
+            withdrawableBalanceSpan.textContent =
+                formatCurrency(wallet.withdrawable_balance || 0) + " تومان";
+        }
+
+        currentWallet = { ...(currentWallet || {}), ...wallet };
+
+        if (currentWallet) {
+            currentWallet.total_balance = wallet.total_balance;
+            currentWallet.withdrawable_balance = wallet.withdrawable_balance;
+        }
     }
 
-    function updateTransactions(transactions) {
+    function renderTransactions() {
         const container = document.querySelector(".Transactions_container");
         container.innerHTML = "";
 
-        if (!transactions || transactions.length === 0) {
+        const transactionsToRender = prepareTransactions();
+
+        if (!transactionsToRender || transactionsToRender.length === 0) {
             container.innerHTML = "<p>تراکنشی یافت نشد</p>";
             return;
         }
 
-        transactions.forEach((tx) => {
+        transactionsToRender.forEach((tx) => {
             const typeClass = getTransactionTypeClass(tx.transaction_type);
-            const statusClass = "done";
+            const statusClass = getStatusClass(tx.status);
+            const amountValue = normalizeAmount(tx.amount);
+            const sign = getAmountSign(tx.transaction_type);
+            const formattedAmount = formatCurrency(Math.abs(amountValue));
 
             const item = `
                 <div class="Transaction_item ${typeClass}">
@@ -312,10 +380,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                     </div>
                     <div class="Transaction_prise_status">
                         <div class="prise">
-                            <span>${tx.amount || 0}</span><span>تومان</span>
+                            <span>${sign}${formattedAmount}</span><span>تومان</span>
                         </div>
                         <div class="status ${statusClass}">
-                            <span>${translateStatus("done")}</span>
+                            <span>${translateStatus(tx.status)}</span>
                         </div>
                     </div>
                 </div>
@@ -324,8 +392,37 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
+    function prepareTransactions() {
+        if (!allTransactions || allTransactions.length === 0) return [];
+
+        const filtered = allTransactions.filter((tx) => {
+            if (currentFilter === "all") return true;
+            return (tx.transaction_type || "").toLowerCase() === currentFilter;
+        });
+
+        return filtered.sort((a, b) => sortTransactions(a, b));
+    }
+
+    function sortTransactions(a, b) {
+        if (currentOrdering === "start") {
+            return getTimestamp(a) - getTimestamp(b);
+        }
+
+        if (currentOrdering === "end" || currentOrdering === "last") {
+            return getTimestamp(b) - getTimestamp(a);
+        }
+
+        return 0;
+    }
+
+    function getTimestamp(transaction) {
+        if (!transaction || !transaction.timestamp) return 0;
+        const time = new Date(transaction.timestamp).getTime();
+        return Number.isNaN(time) ? 0 : time;
+    }
+
     function getTransactionTypeClass(type) {
-        switch (type) {
+        switch ((type || "").toLowerCase()) {
             case "deposit": return "Deposit";
             case "withdraw": return "Withdraw";
             case "spending": return "Spending";
@@ -333,8 +430,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    function getStatusClass(status) {
+        const normalized = (status || "done").toLowerCase();
+        return normalized === "done" || normalized === "success" ? "done" : "Not_done";
+    }
+
     function translateType(type) {
-        switch (type) {
+        switch ((type || "").toLowerCase()) {
             case "deposit": return "واریز";
             case "withdraw": return "برداشت";
             case "spending": return "خرج شده";
@@ -343,7 +445,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     function translateStatus(status) {
-        return status === "done" ? "انجام شده" : "انجام نشده";
+        switch ((status || "done").toLowerCase()) {
+            case "done":
+            case "success":
+                return "انجام شده";
+            case "pending":
+                return "در انتظار";
+            case "failed":
+            case "rejected":
+                return "ناموفق";
+            default:
+                return "نامشخص";
+        }
     }
 
     function formatDate(isoDate) {
@@ -361,5 +474,23 @@ document.addEventListener("DOMContentLoaded", async () => {
             console.error("Error formatting date:", error);
             return "تاریخ نامشخص";
         }
+    }
+
+    function formatCurrency(amount) {
+        const numericAmount = normalizeAmount(amount);
+        return numericAmount.toLocaleString("fa-IR");
+    }
+
+    function normalizeAmount(amount) {
+        const numericAmount = Number(typeof amount === "string" ? amount.replace(/,/g, "") : amount);
+        return Number.isNaN(numericAmount) ? 0 : numericAmount;
+    }
+
+    function getAmountSign(type) {
+        const normalized = (type || "deposit").toLowerCase();
+        if (normalized === "withdraw" || normalized === "spending") {
+            return "-";
+        }
+        return "+";
     }
 });
