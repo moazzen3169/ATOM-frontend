@@ -45,6 +45,16 @@ const LEVEL_BENEFITS = {
   3: "دسترسی کامل به تمامی امکانات و برداشت‌های ویژه",
 };
 
+const APPROVED_STATUS_VALUES = ["approved", "accept", "accepted", "verified", "done"];
+const REJECTED_STATUS_VALUES = [
+  "rejected",
+  "declined",
+  "denied",
+  "failed",
+  "cancelled",
+  "canceled",
+];
+
 function openModal(modalElement, initializeFilesCallback) {
   if (overlay) {
     overlay.classList.remove("hidden");
@@ -259,6 +269,41 @@ function normalizeLevel(levelValue) {
   return Math.min(parsed, 3);
 }
 
+function normalizeStatusKey(value) {
+  if (!value) return "";
+  const normalized = value.toString().toLowerCase();
+  if (APPROVED_STATUS_VALUES.includes(normalized)) return "approved";
+  if (REJECTED_STATUS_VALUES.includes(normalized)) return "rejected";
+  return normalized;
+}
+
+function extractStatusFlags(statusData) {
+  if (!statusData) {
+    return {
+      level: null,
+      approved: false,
+      rejected: false,
+      pending: false,
+    };
+  }
+
+  const level =
+    typeof statusData.level === "number" || typeof statusData.level === "string"
+      ? normalizeLevel(statusData.level)
+      : null;
+  const statusKey = normalizeStatusKey(statusData.status);
+  const approved = Boolean(statusData.is_verified) || statusKey === "approved";
+  const rejected = Boolean(statusData.is_rejected) || statusKey === "rejected";
+  const pending = !approved && !rejected && level !== null;
+
+  return {
+    level,
+    approved,
+    rejected,
+    pending,
+  };
+}
+
 function setLevelStatus(level, state, text) {
   const statusElement = levelStatusElements[level];
   if (!statusElement) return;
@@ -303,6 +348,8 @@ function toggleSectionAvailability(level, options = {}) {
 function updateCurrentLevelSummary(verifiedLevel, statusData) {
   if (!levelSummary) return;
 
+  const statusFlags = extractStatusFlags(statusData);
+
   if (!userProfile) {
     if (currentLevelLabel) {
       currentLevelLabel.textContent = "—";
@@ -328,10 +375,19 @@ function updateCurrentLevelSummary(verifiedLevel, statusData) {
 
   if (!currentLevelStatus) return;
 
-  if (statusData && !statusData.is_verified && statusData.level) {
-    currentLevelStatus.textContent = `در حال بررسی سطح ${statusData.level}`;
+  if (statusFlags.pending && statusFlags.level) {
+    currentLevelStatus.textContent = `در حال بررسی سطح ${statusFlags.level}`;
     setSummaryVisualState("pending");
-  } else if (verifiedLevel >= 3) {
+    return;
+  }
+
+  if (statusFlags.rejected && statusFlags.level) {
+    currentLevelStatus.textContent = `درخواست سطح ${statusFlags.level} رد شده است`;
+    setSummaryVisualState("info");
+    return;
+  }
+
+  if (verifiedLevel >= 3) {
     currentLevelStatus.textContent = "تمامی سطوح تایید شده";
     setSummaryVisualState("success");
   } else {
@@ -341,52 +397,84 @@ function updateCurrentLevelSummary(verifiedLevel, statusData) {
 }
 
 function updateUIBasedOnStatus(statusData) {
-  const verifiedLevel = normalizeLevel(userProfile?.verification_level ?? 1);
+  const previousVerifiedLevel = normalizeLevel(userProfile?.verification_level ?? 1);
+  const statusFlags = extractStatusFlags(statusData);
 
-  const hasPendingLevel2 = statusData && statusData.level === 2 && !statusData.is_verified;
-  const hasPendingLevel3 = statusData && statusData.level === 3 && !statusData.is_verified;
-
-  setLevelStatus(2, "not_accepted", "تکمیل نشده");
-  setLevelStatus(3, "not_accepted", "تکمیل نشده");
-
-  if (verifiedLevel >= 2) {
-    setLevelStatus(2, "accepted", "تایید شده");
+  let verifiedLevel = previousVerifiedLevel;
+  if (statusFlags.approved && statusFlags.level) {
+    verifiedLevel = Math.max(verifiedLevel, statusFlags.level);
   }
 
-  if (verifiedLevel >= 3) {
-    setLevelStatus(3, "accepted", "تایید شده");
+  if (userProfile && verifiedLevel !== previousVerifiedLevel) {
+    userProfile = {
+      ...userProfile,
+      verification_level: verifiedLevel,
+    };
   }
 
-  if (statusData?.level === 2 && statusData.is_verified) {
-    setLevelStatus(2, "accepted", "تایید شده");
+  const isLevel2Verified = verifiedLevel >= 2;
+  const isLevel3Verified = verifiedLevel >= 3;
+  const isLevel2Pending = statusFlags.pending && statusFlags.level === 2;
+  const isLevel3Pending = statusFlags.pending && statusFlags.level === 3;
+  const isLevel2Rejected = statusFlags.rejected && statusFlags.level === 2;
+  const isLevel3Rejected = statusFlags.rejected && statusFlags.level === 3;
+
+  const level2State = {
+    className: "not_accepted",
+    text: "تکمیل نشده",
+  };
+
+  if (isLevel2Rejected) {
+    level2State.text = "رد شده";
+  }
+  if (isLevel2Pending) {
+    level2State.className = "pending";
+    level2State.text = "در حال بررسی";
+  }
+  if (isLevel2Verified) {
+    level2State.className = "accepted";
+    level2State.text = "تایید شده";
   }
 
-  if (statusData?.level === 3 && statusData.is_verified) {
-    setLevelStatus(3, "accepted", "تایید شده");
+  const level3State = {
+    className: "not_accepted",
+    text: "تکمیل نشده",
+  };
+
+  if (isLevel3Rejected) {
+    level3State.text = "رد شده";
+  }
+  if (isLevel3Pending) {
+    level3State.className = "pending";
+    level3State.text = "در حال بررسی";
+  }
+  if (isLevel3Verified) {
+    level3State.className = "accepted";
+    level3State.text = "تایید شده";
   }
 
-  if (hasPendingLevel2) {
-    setLevelStatus(2, "pending", "در حال بررسی");
-  }
-
-  if (hasPendingLevel3) {
-    setLevelStatus(3, "pending", "در حال بررسی");
-  }
+  setLevelStatus(2, level2State.className, level2State.text);
+  setLevelStatus(3, level3State.className, level3State.text);
 
   updateCurrentLevelSummary(verifiedLevel, statusData);
 
-  toggleSectionAvailability(2, { disabled: true, hidden: false });
-  toggleSectionAvailability(3, { disabled: true, hidden: false });
+  const shouldHideLevel2Button = isLevel2Verified;
+  const shouldDisableLevel2Button = isLevel2Verified || isLevel2Pending;
 
-  if (verifiedLevel === 1) {
-    toggleSectionAvailability(2, { disabled: hasPendingLevel2 });
-    toggleSectionAvailability(3, { disabled: hasPendingLevel3 });
-  } else if (verifiedLevel === 2) {
-    toggleSectionAvailability(3, { disabled: hasPendingLevel3 });
-  } else if (verifiedLevel >= 3) {
-    toggleSectionAvailability(2, { hidden: true });
-    toggleSectionAvailability(3, { hidden: true });
-  }
+  toggleSectionAvailability(2, {
+    hidden: shouldHideLevel2Button,
+    disabled: shouldDisableLevel2Button,
+  });
+
+  const level3AccessLocked = !isLevel2Verified && !isLevel3Pending && !isLevel3Verified;
+  const shouldHideLevel3Button = isLevel3Verified;
+  const shouldDisableLevel3Button =
+    isLevel3Verified || isLevel3Pending || (!isLevel2Verified && !isLevel3Pending);
+
+  toggleSectionAvailability(3, {
+    hidden: shouldHideLevel3Button,
+    disabled: shouldDisableLevel3Button || level3AccessLocked,
+  });
 }
 
 async function submitLevel2(formEvent) {
