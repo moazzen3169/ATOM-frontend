@@ -363,47 +363,35 @@ function extractTickets(payload) {
 function normalizeTicket(raw = {}) {
   const messages = Array.isArray(raw.messages)
     ? raw.messages.map((message) => ({
-        author: message.author || "user",
-        authorName: message.authorName || raw.user?.name || "کاربر",
-        timestamp: message.timestamp || raw.updatedAt || raw.createdAt || new Date().toISOString(),
-        content: message.content || "",
-        attachments: Array.isArray(message.attachments)
-          ? message.attachments.map((file) => ({
-              name: file.name || "بدون نام",
-              size: file.size || "",
-            }))
-          : [],
+        author: "user",
+        authorName: "کاربر",
+        timestamp: message.created_at || new Date().toISOString(),
+        content: message.message || "",
+        attachments: [],
       }))
     : [];
 
-  const metrics = raw.metrics || {};
-  const tags = Array.isArray(raw.tags) ? raw.tags.filter(Boolean) : [];
-  const watchers = Array.isArray(raw.watchers) ? raw.watchers.filter(Boolean) : [];
+  const status = raw.status === "open" ? "new" : raw.status || "new";
 
   return {
     id: String(raw.id ?? ""),
-    subject: raw.subject || "بدون عنوان",
-    status: raw.status || "new",
-    priority: raw.priority || "medium",
-    channel: raw.channel || "website",
-    createdAt: raw.createdAt || new Date().toISOString(),
-    updatedAt: raw.updatedAt || raw.createdAt || new Date().toISOString(),
-    slaDue: raw.slaDue || null,
-    unread: Boolean(raw.unread),
-    csat:
-      typeof raw.csat === "number"
-        ? raw.csat
-        : raw.csat == null
-        ? null
-        : Number.parseInt(raw.csat, 10) || null,
-    assignedTo: raw.assignedTo || null,
-    watchers,
-    user: raw.user ? { ...raw.user } : null,
-    tags,
+    subject: raw.title || "بدون عنوان",
+    status: status,
+    priority: "medium",
+    channel: "website",
+    createdAt: raw.created_at || new Date().toISOString(),
+    updatedAt: raw.created_at || new Date().toISOString(),
+    slaDue: null,
+    unread: false,
+    csat: null,
+    assignedTo: null,
+    watchers: [],
+    user: raw.user ? { name: `کاربر ${raw.user}`, id: raw.user } : { name: "کاربر ناشناس" },
+    tags: [],
     metrics: {
-      totalMessages: metrics.totalMessages ?? messages.length,
-      firstResponseAt: metrics.firstResponseAt || null,
-      lastPublicReply: metrics.lastPublicReply || null,
+      totalMessages: messages.length,
+      firstResponseAt: null,
+      lastPublicReply: null,
     },
     messages,
   };
