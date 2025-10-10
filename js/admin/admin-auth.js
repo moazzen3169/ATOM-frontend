@@ -49,7 +49,7 @@ const adminAccessPromise = (async () => {
   }
 
   const storedUser = getStoredAdminUser();
-  if (storedUser && hasAdminPrivileges(storedUser)) {
+  if (storedUser) {
     window.__ADMIN_CURRENT_USER__ = storedUser;
     emitAdminUserChange(storedUser);
     return storedUser;
@@ -58,12 +58,6 @@ const adminAccessPromise = (async () => {
   try {
     const profile = await fetchProfile(token);
     const normalizedProfile = mergeUsers(storedUser, profile);
-    if (!hasAdminPrivileges(normalizedProfile)) {
-      redirectToHome(
-        "حساب شما دسترسی لازم برای ورود به پنل مدیریت را ندارد."
-      );
-      throw new Error("ADMIN_PRIVILEGES_REQUIRED");
-    }
     cacheAdminUser(normalizedProfile);
     return normalizedProfile;
   } catch (error) {
