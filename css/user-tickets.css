@@ -369,18 +369,21 @@ body{
     background-color: var(--dark-color);
     width: 100%;
     height: 100%;
-    overflow-y: scroll;
-    display: grid;
-    align-items: start;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
     gap: 12px;
     border-radius:16px;
     padding: 20px;
     border: 5px solid var(--background-color);
     max-height: 450px;
+    scroll-behavior: smooth;
 }
 
 .show_message[data-empty="true"]{
-    place-items: center;
+    justify-content: center;
+    align-items: center;
     text-align: center;
     color: rgba(255,255,255,0.8);
 }
@@ -494,40 +497,81 @@ body{
 
 /* استایل های پیام ها */
 .message{
-    padding: 16px;
+    padding: 16px 18px;
     font-size: 16px;
     color: var(--white-color);
     font-weight: normal;
-    display: block;
-    justify-self: flex-start;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
     background: rgba(255,255,255,0.05);
+    border-radius: 16px;
+    border: 1px solid rgba(255,255,255,0.06);
+    position: relative;
+    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    direction: rtl;
+    text-align: right;
 }
 
 .user_message{
-    max-width: 90%;
-    background-color: var(--discord-bg);
-    border-radius: 12px 12px 0px 12px;
-    justify-self: flex-start;
+    margin-inline-start: auto;
+    max-width: min(90%, 520px);
+    background: linear-gradient(135deg, rgba(137, 97, 255, 0.2), rgba(137, 97, 255, 0.05));
+    border: 1px solid rgba(137, 97, 255, 0.35);
 }
 
 .support_message{
-    max-width: 90%;
-    background-color: var(--card-color);
-    border-radius: 12px 12px 12px 0px;
-    justify-self: flex-end;
+    margin-inline-end: auto;
+    max-width: min(90%, 520px);
+    background: rgba(28, 31, 52, 0.95);
+    border: 1px solid rgba(255,255,255,0.08);
 }
 
+.message_header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.message_sender{
+    font-size: 13px;
+    font-weight: 600;
+    color: rgba(255,255,255,0.85);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.message_sender::before{
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background-color: currentColor;
+}
+
+.user_message .message_sender{
+    color: rgba(218, 200, 255, 0.95);
+}
+
+.support_message .message_sender{
+    color: rgba(255,255,255,0.7);
+}
+
+.message_time,
+.message-time{
+    font-size: 11px;
+    opacity: 0.65;
+    color: rgba(255,255,255,0.8);
+}
+
+.message_body,
 .message p{
     font-size: 14px;
     line-height: 2;
     white-space: pre-wrap;
-}
-
-.message-time{
-    display: inline-block;
-    margin-top: 6px;
-    font-size: 11px;
-    opacity: 0.6;
+    color: rgba(255,255,255,0.9);
 }
 
 /* مودال ایجاد تیکت */
