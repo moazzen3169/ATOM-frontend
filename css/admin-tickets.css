@@ -116,6 +116,15 @@ body {
   }
 }
 
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .tickets-toolbar {
   display: flex;
   flex-direction: column;
@@ -227,6 +236,47 @@ body {
   border-bottom: 1px solid rgba(148, 163, 184, 0.1);
   font-size: 14px;
   color: rgba(255, 255, 255, 0.65);
+}
+
+.tickets-list__state {
+  padding: 32px 24px;
+  min-height: 240px;
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  text-align: center;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+.tickets-list__state.is-error {
+  color: rgba(248, 113, 113, 0.85);
+}
+
+.tickets-list__spinner,
+.ticket-placeholder__spinner {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid rgba(148, 163, 184, 0.32);
+  border-top-color: var(--color-primary);
+  animation: spin 0.9s linear infinite;
+}
+
+.tickets-list__retry {
+  padding: 8px 18px;
+  border-radius: 999px;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+  background: rgba(30, 41, 59, 0.55);
+  color: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+.tickets-list__retry:hover,
+.tickets-list__retry:focus-visible {
+  border-color: rgba(0, 245, 255, 0.45);
+  color: var(--white-color);
+  outline: none;
 }
 
 .ticket-items {
@@ -417,6 +467,18 @@ body {
   color: rgba(255, 255, 255, 0.7);
   display: grid;
   gap: 10px;
+}
+
+.ticket-placeholder--loading {
+  gap: 14px;
+}
+
+.ticket-placeholder--error {
+  color: rgba(248, 113, 113, 0.85);
+}
+
+.ticket-placeholder--error h3 {
+  color: rgba(248, 113, 113, 0.95);
 }
 
 .ticket-placeholder h3 {
