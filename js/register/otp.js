@@ -2,6 +2,7 @@ import { API_BASE_URL } from "/js/config.js";
 
 const SEND_OTP_URL = `${API_BASE_URL}/api/users/users/send_otp/`;
 const VERIFY_OTP_URL = `${API_BASE_URL}/api/users/users/verify_otp/`;
+const TOKEN_REFRESH_URL = `${API_BASE_URL}/auth/jwt/refresh/`;
 
 // ---- گرفتن پارامترها + fallback از localStorage
 const qs = new URL(window.location.href).searchParams;
@@ -42,6 +43,7 @@ const changeNumberLink = document.getElementById('change-number-link');
 let countdown = 120;
 let countdownInterval = null;
 let busy = false;
+let refreshTimeoutId = null;
 
 if (!purpose) showMessage('حالت عملیات مشخص نیست (login / signup / forgot).', 'error');
 if (!identifier) showMessage('شناسه کاربر پیدا نشد. لطفاً از صفحه‌ی قبل مجدداً وارد شوید.', 'error');
@@ -188,8 +190,11 @@ function handleVerificationSuccess(data) {
   localStorage.setItem('identifier', identifier);
 
   if (purpose === 'login' || purpose === 'signup') {
-    localStorage.setItem('access_token', data.access);
-    localStorage.setItem('refresh_token', data.refresh);
+    const didStoreTokens = safelyStoreTokens(data);
+    if (!didStoreTokens) {
+      return;
+    }
+    scheduleAccessTokenRefresh();
     localStorage.setItem('userId', data.id);
 
     // پاک‌سازی کلیدهای موقت
@@ -207,4 +212,133 @@ function handleVerificationSuccess(data) {
   } else {
     showMessage('وضعیت درخواست نامعتبر است', 'error');
   }
+}
+
+function safelyStoreTokens(payload) {
+  const tokens = extractTokens(payload);
+  const accessToken = tokens.access;
+  const refreshToken = tokens.refresh;
+
+  if (!isValidJwtToken(accessToken)) {
+    showMessage('توکن دسترسی معتبر از سرور دریافت نشد. لطفاً دوباره تلاش کنید.', 'error');
+    clearStoredTokens();
+    return false;
+  }
+
+  localStorage.setItem('access_token', accessToken.trim());
+
+  if (refreshToken) {
+    localStorage.setItem('refresh_token', refreshToken.trim());
+  } else {
+    localStorage.removeItem('refresh_token');
+  }
+
+  cacheTokensForRefresh(accessToken, refreshToken);
+  return true;
+}
+
+let cachedTokens = { access: '', refresh: '' };
+
+function cacheTokensForRefresh(access, refresh) {
+  cachedTokens = {
+    access: typeof access === 'string' ? access.trim() : '',
+    refresh: typeof refresh === 'string' ? refresh.trim() : ''
+  };
+}
+
+function extractTokens(payload = {}) {
+  const access = firstTruthyString(
+    payload.access,
+    payload.access_token,
+    payload.token,
+    payload.jwt
+  );
+  const refresh = firstTruthyString(
+    payload.refresh,
+    payload.refresh_token,
+    payload.new_refresh,
+    payload.new_refresh_token
+  );
+
+  return { access, refresh };
+}
+
+function firstTruthyString(...candidates) {
+  for (const candidate of candidates) {
+    if (typeof candidate !== 'string') continue;
+    const trimmed = candidate.trim();
+    if (!trimmed || trimmed === 'undefined' || trimmed === 'null') continue;
+    return trimmed;
+  }
+  return '';
+}
+
+function isValidJwtToken(token) {
+  if (typeof token !== 'string') return false;
+  const trimmed = token.trim();
+  if (!trimmed || trimmed === 'undefined' || trimmed === 'null') return false;
+  const parts = trimmed.split('.');
+  return parts.length === 3 && parts.every(Boolean);
+}
+
+function clearStoredTokens() {
+  localStorage.removeItem('access_token');
+  localStorage.removeItem('refresh_token');
+  cacheTokensForRefresh('', '');
+  clearTimeout(refreshTimeoutId);
+  refreshTimeoutId = null;
+}
+
+function scheduleAccessTokenRefresh() {
+  clearTimeout(refreshTimeoutId);
+  const access = cachedTokens.access;
+  const refresh = cachedTokens.refresh || localStorage.getItem('refresh_token');
+  if (!isValidJwtToken(access) || !refresh) {
+    return;
+  }
+
+  const exp = getJwtExpiration(access);
+  if (!exp) return;
+
+  const now = Math.floor(Date.now() / 1000);
+  const refreshInSeconds = Math.max(exp - now - 30, 5);
+  refreshTimeoutId = setTimeout(() => {
+    refreshAccessToken(refresh);
+  }, refreshInSeconds * 1000);
+}
+
+async function refreshAccessToken(refreshToken) {
+  try {
+    const response = await fetch(TOKEN_REFRESH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh: refreshToken })
+    });
+
+    let data = {};
+    try { data = await response.json(); } catch {}
+
+    if (!response.ok) {
+      throw new Error(data?.detail || 'به‌روزرسانی توکن با خطا مواجه شد');
+    }
+
+    if (safelyStoreTokens(data)) {
+      scheduleAccessTokenRefresh();
+    }
+  } catch (error) {
+    console.error('Refresh token failed:', error);
+    clearStoredTokens();
+  }
+}
+
+function getJwtExpiration(token) {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (payload && typeof payload.exp === 'number') {
+      return payload.exp;
+    }
+  } catch (err) {
+    console.error('Cannot parse JWT expiration', err);
+  }
+  return 0;
 }
