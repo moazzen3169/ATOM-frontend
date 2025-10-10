@@ -96,6 +96,10 @@ function hasAdminPrivileges(profile) {
 
   if (typeof profile.role === "string" && isAdminRole(profile.role)) return true;
 
+  if (Array.isArray(profile.role) && profile.role.some(isAdminRole)) return true;
+
+  if (isAdminRole(profile.role?.name)) return true;
+
   if (Array.isArray(profile.roles) && profile.roles.some(isAdminRole)) return true;
 
   if (Array.isArray(profile.groups) && profile.groups.some(isAdminRole)) return true;
@@ -111,13 +115,24 @@ function hasAdminPrivileges(profile) {
 
 function isAdminRole(value) {
   if (!value) return false;
-  const label = value.toString().toLowerCase();
+
+  if (typeof value === "object") {
+    const entries = [value.name, value.code, value.label, value.title];
+    return entries.some((entry) => entry && entry !== value && isAdminRole(entry));
+  }
+
+  const label = value.toString().trim().toLowerCase();
+  if (!label) return false;
+
   return (
     label.includes("admin") ||
     label.includes("superuser") ||
     label.includes("staff") ||
     label.includes("manager") ||
-    label.includes("support")
+    label.includes("support") ||
+    label.includes("ادمین") ||
+    label.includes("مدیر") ||
+    label.includes("پشتیبان")
   );
 }
 
