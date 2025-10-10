@@ -5,6 +5,14 @@ const dateFilterSelect = document.getElementById("verification-date-filter");
 const statusFilterSelect = document.getElementById("verification-status-filter");
 const refreshButton = document.getElementById("verification-refresh");
 
+// Cached DOM elements for performance
+const elements = {
+  verificationsList,
+  dateFilterSelect,
+  statusFilterSelect,
+  refreshButton,
+};
+
 const STATE = {
   all: [],
   filtered: [],
@@ -355,6 +363,42 @@ function flattenObjectEntries(obj, prefix = "") {
   });
 }
 
+function handleArrayValue(value, key) {
+  const formatted = value
+    .map((itemValue) => {
+      if (itemValue === null || itemValue === undefined || itemValue === "") {
+        return null;
+      }
+      if (typeof itemValue === "object") {
+        return JSON.stringify(itemValue);
+      }
+      return itemValue;
+    })
+    .filter(Boolean)
+    .map((val) => val.toString())
+    .join("، ");
+  return [{ label: formatLabel(key), value: formatted }];
+}
+
+function handleObjectValue(value, key) {
+  const flattened = flattenObjectEntries(value).map(({ key: nestedKey, value: nestedValue }) => {
+    let normalizedValue = nestedValue;
+    if (Array.isArray(nestedValue)) {
+      normalizedValue = nestedValue
+        .filter((v) => v !== null && v !== undefined && v !== "")
+        .map((v) => (typeof v === "object" ? JSON.stringify(v) : v))
+        .join("، ");
+    } else if (nestedValue && typeof nestedValue === "object") {
+      normalizedValue = JSON.stringify(nestedValue);
+    }
+    return {
+      label: formatLabel(`${key}.${nestedKey}`),
+      value: normalizedValue,
+    };
+  });
+  return flattened;
+}
+
 function formatAdditionalDetails(item) {
   const entries = Object.entries(item || {})
     .filter(([key, value]) => {
@@ -366,38 +410,10 @@ function formatAdditionalDetails(item) {
     })
     .flatMap(([key, value]) => {
       if (Array.isArray(value)) {
-        const formatted = value
-          .map((itemValue) => {
-            if (itemValue === null || itemValue === undefined || itemValue === "") {
-              return null;
-            }
-            if (typeof itemValue === "object") {
-              return JSON.stringify(itemValue);
-            }
-            return itemValue;
-          })
-          .filter(Boolean)
-          .map((val) => val.toString())
-          .join("، ");
-        return [{ label: formatLabel(key), value: formatted }];
+        return handleArrayValue(value, key);
       }
       if (value && typeof value === "object") {
-        const flattened = flattenObjectEntries(value).map(({ key: nestedKey, value: nestedValue }) => {
-          let normalizedValue = nestedValue;
-          if (Array.isArray(nestedValue)) {
-            normalizedValue = nestedValue
-              .filter((v) => v !== null && v !== undefined && v !== "")
-              .map((v) => (typeof v === "object" ? JSON.stringify(v) : v))
-              .join("، ");
-          } else if (nestedValue && typeof nestedValue === "object") {
-            normalizedValue = JSON.stringify(nestedValue);
-          }
-          return {
-            label: formatLabel(`${key}.${nestedKey}`),
-            value: normalizedValue,
-          };
-        });
-        return flattened;
+        return handleObjectValue(value, key);
       }
       return [{ label: formatLabel(key), value }];
     })
@@ -554,63 +570,45 @@ function createRawDataBlock(item) {
   }
 }
 
-function renderVerifications(verifications) {
-  if (!verificationsList) return;
-  if (!verifications || verifications.length === 0) {
-    renderMessage("درخواستی برای احراز هویت وجود ندارد.");
-    return;
-  }
+function createVerificationCard(item) {
+  const statusBadge = formatStatusBadge(item);
+  const statusKey = getStatusKey(item);
+  const createdAt = formatDate(item?.created_at);
+  const updatedAt = item?.updated_at ? formatDate(item.updated_at) : null;
+  const reviewer = item?.reviewer || item?.reviewed_by;
+  const reviewDate = item?.reviewed_at ? formatDate(item.reviewed_at) : null;
 
-  verificationsList.innerHTML = "";
+  const headerMeta = [
+    createdAt ? `<span>ایجاد: ${escapeHtml(createdAt)}</span>` : "",
+    updatedAt ? `<span>آخرین به‌روزرسانی: ${escapeHtml(updatedAt)}</span>` : "",
+    reviewer ? `<span>بررسی توسط: ${escapeHtml(reviewer)}</span>` : "",
+    reviewDate ? `<span>تاریخ بررسی: ${escapeHtml(reviewDate)}</span>` : "",
+  ].filter(Boolean).join("");
 
-  verifications.forEach((item) => {
-    const article = document.createElement("article");
-    article.className = "verification-card";
-    article.dataset.verificationId = item?.id;
+  const userDisplayName = getUserDisplayName(item);
+  const userDetails = formatUserDetails(item);
+  const levelDetails = buildDetailsGrid([
+    { label: "شناسه درخواست", value: item?.id },
+    { label: "نام کاربر", value: userDisplayName },
+    { label: "سطح احراز", value: formatLevel(item?.level) },
+    { label: "وضعیت", value: STATUS_METADATA[getStatusKey(item)]?.label || "" },
+  ]);
 
-    const statusBadge = formatStatusBadge(item);
-    const statusKey = getStatusKey(item);
-    const createdAt = formatDate(item?.created_at);
-    const updatedAt = item?.updated_at ? formatDate(item.updated_at) : null;
-    const reviewer = item?.reviewer || item?.reviewed_by;
-    const reviewDate = item?.reviewed_at ? formatDate(item.reviewed_at) : null;
+  const extraDetails = formatAdditionalDetails(item);
+  const documentsSection = formatDocuments(item);
+  const notes = formatNotes(item);
+  const rawDataSection = createRawDataBlock(item);
+  const approveDisabledAttr = statusKey === "approved" ? 'disabled data-static-disabled="true"' : "";
+  const rejectDisabledAttr = statusKey === "rejected" ? 'disabled data-static-disabled="true"' : "";
 
-    const headerMeta = [
-      createdAt ? `<span>ایجاد: ${escapeHtml(createdAt)}</span>` : "",
-      updatedAt ? `<span>آخرین به‌روزرسانی: ${escapeHtml(updatedAt)}</span>` : "",
-      reviewer ? `<span>بررسی توسط: ${escapeHtml(reviewer)}</span>` : "",
-      reviewDate ? `<span>تاریخ بررسی: ${escapeHtml(reviewDate)}</span>` : "",
-    ]
-      .filter(Boolean)
-      .join("");
-
-    const userDisplayName = getUserDisplayName(item);
-    const userDetails = formatUserDetails(item);
-    const levelDetails = buildDetailsGrid([
-      { label: "شناسه درخواست", value: item?.id },
-      { label: "نام کاربر", value: userDisplayName },
-      { label: "سطح احراز", value: formatLevel(item?.level) },
-      { label: "وضعیت", value: STATUS_METADATA[getStatusKey(item)]?.label || "" },
-    ]);
-
-    const extraDetails = formatAdditionalDetails(item);
-    const documentsSection = formatDocuments(item);
-    const notes = formatNotes(item);
-    const rawDataSection = createRawDataBlock(item);
-    const approveDisabledAttr =
-      statusKey === "approved" ? "disabled data-static-disabled=\"true\"" : "";
-    const rejectDisabledAttr =
-      statusKey === "rejected" ? "disabled data-static-disabled=\"true\"" : "";
-
-    article.innerHTML = `
+  return `
+    <article class="verification-card" data-verification-id="${escapeHtml(item?.id || '')}">
       <header class="verification-card__header">
         <div class="verification-card__title">
           <h3>${escapeHtml(userDisplayName)}</h3>
           ${statusBadge}
         </div>
-        <div class="verification-card__meta">
-          ${headerMeta || ""}
-        </div>
+        <div class="verification-card__meta">${headerMeta || ""}</div>
       </header>
       <div class="verification-card__body">
         <div class="verification-card__section">
@@ -627,17 +625,22 @@ function renderVerifications(verifications) {
         ${rawDataSection}
       </div>
       <div class="verification-card__actions">
-        <button type="button" class="approve-action" data-action="approve" data-id="${escapeHtml(
-          item?.id
-        )}" ${approveDisabledAttr}>تایید</button>
-        <button type="button" class="reject-action" data-action="reject" data-id="${escapeHtml(
-          item?.id
-        )}" ${rejectDisabledAttr}>رد</button>
+        <button type="button" class="approve-action" data-action="approve" data-id="${escapeHtml(item?.id || '')}" ${approveDisabledAttr}>تایید</button>
+        <button type="button" class="reject-action" data-action="reject" data-id="${escapeHtml(item?.id || '')}" ${rejectDisabledAttr}>رد</button>
       </div>
-    `;
+    </article>
+  `;
+}
 
-    verificationsList.appendChild(article);
-  });
+function renderVerifications(verifications) {
+  if (!elements.verificationsList) return;
+  if (!verifications || verifications.length === 0) {
+    renderMessage("درخواستی برای احراز هویت وجود ندارد.");
+    return;
+  }
+
+  const cardsHtml = verifications.map(createVerificationCard).join("");
+  elements.verificationsList.innerHTML = cardsHtml;
 }
 
 async function postAction(id, action, payload = {}) {
