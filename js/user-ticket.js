@@ -47,6 +47,164 @@ class UserTickets {
         return localStorage.getItem('access_token') || localStorage.getItem('token');
     }
 
+    normalizePossibleId(value) {
+        if (value === null || value === undefined) {
+            return null;
+        }
+
+        if (typeof value === 'number') {
+            return value;
+        }
+
+        if (typeof value === 'string') {
+            const trimmed = value.trim();
+            if (!trimmed) {
+                return null;
+            }
+
+            const numeric = Number(trimmed);
+            return Number.isNaN(numeric) ? trimmed : numeric;
+        }
+
+        if (typeof value === 'object') {
+            return this.normalizePossibleId(value.id ?? value.user_id ?? value.pk ?? null);
+        }
+
+        return null;
+    }
+
+    normalizeIdForComparison(value) {
+        const normalized = this.normalizePossibleId(value);
+        return normalized === null || normalized === undefined ? null : String(normalized);
+    }
+
+    extractTicketOwnerId(ticket) {
+        if (!ticket || typeof ticket !== 'object') {
+            return null;
+        }
+
+        const candidates = [];
+        const addCandidate = (candidate) => {
+            if (candidate === null || candidate === undefined) {
+                return;
+            }
+
+            if (typeof candidate === 'object') {
+                addCandidate(candidate.id);
+                addCandidate(candidate.user_id);
+                addCandidate(candidate.pk);
+                return;
+            }
+
+            candidates.push(candidate);
+        };
+
+        ['user', 'owner', 'creator', 'created_by', 'customer'].forEach(key => addCandidate(ticket[key]));
+        ['user_id', 'owner_id', 'creator_id', 'created_by_id', 'customer_id'].forEach(key => addCandidate(ticket[key]));
+
+        for (const candidate of candidates) {
+            const normalized = this.normalizePossibleId(candidate);
+            if (normalized !== null && normalized !== undefined) {
+                return normalized;
+            }
+        }
+
+        return null;
+    }
+
+    filterTicketsForCurrentUser(tickets) {
+        const currentUserId = this.normalizeIdForComparison(this.currentUser?.id);
+        if (!currentUserId) {
+            return tickets;
+        }
+
+        return tickets.filter(ticket => {
+            const ownerId = this.normalizeIdForComparison(this.extractTicketOwnerId(ticket));
+            return ownerId !== null && ownerId === currentUserId;
+        });
+    }
+
+    extractMessageAuthorId(message) {
+        if (!message || typeof message !== 'object') {
+            return null;
+        }
+
+        const candidates = [];
+        const addCandidate = (candidate) => {
+            if (candidate === null || candidate === undefined) {
+                return;
+            }
+
+            if (typeof candidate === 'object') {
+                addCandidate(candidate.id);
+                addCandidate(candidate.user_id);
+                addCandidate(candidate.pk);
+                return;
+            }
+
+            candidates.push(candidate);
+        };
+
+        ['user', 'author', 'sender', 'owner'].forEach(key => addCandidate(message[key]));
+        ['user_id', 'author_id', 'sender_id', 'owner_id', 'created_by'].forEach(key => addCandidate(message[key]));
+
+        for (const candidate of candidates) {
+            const normalized = this.normalizePossibleId(candidate);
+            if (normalized !== null && normalized !== undefined) {
+                return normalized;
+            }
+        }
+
+        return null;
+    }
+
+    isSupportMessage(message) {
+        if (!message || typeof message !== 'object') {
+            return false;
+        }
+
+        const noteIndicators = ['is_internal', 'internal', 'is_private', 'private'];
+        if (noteIndicators.some(key => message[key] === true)) {
+            return false;
+        }
+
+        const typeField = (message.type || message.message_type || message.visibility || '').toString().toLowerCase();
+        if (['note', 'internal', 'private'].includes(typeField)) {
+            return false;
+        }
+
+        const supportFlags = ['is_support', 'is_staff', 'staff', 'support', 'from_support', 'by_support'];
+        for (const flag of supportFlags) {
+            if (typeof message[flag] === 'boolean') {
+                return message[flag];
+            }
+        }
+
+        const authorType = (message.author_type || message.role || '').toString().toLowerCase();
+        if (authorType && authorType !== 'user') {
+            return true;
+        }
+
+        const nameFields = [
+            message.support_name,
+            message.support_display_name,
+            message.support_full_name,
+            message.staff_name,
+            message.staff_full_name
+        ];
+        if (nameFields.some(value => typeof value === 'string' && value.trim().length)) {
+            return true;
+        }
+
+        const messageAuthorId = this.normalizeIdForComparison(this.extractMessageAuthorId(message));
+        const currentUserId = this.normalizeIdForComparison(this.currentUser?.id);
+        if (messageAuthorId && currentUserId && messageAuthorId !== currentUserId) {
+            return true;
+        }
+
+        return false;
+    }
+
     redirectToLogin() {
         window.location.href = '../register/login.html';
     }
@@ -81,7 +239,8 @@ class UserTickets {
 
         try {
             const response = await this.apiCall(this.ticketsEndpoint, 'GET');
-            this.tickets = Array.isArray(response) ? response : [];
+            const fetchedTickets = Array.isArray(response) ? response : [];
+            this.tickets = this.filterTicketsForCurrentUser(fetchedTickets);
 
             if (previousSelectedId && !this.tickets.some(ticket => ticket.id === previousSelectedId)) {
                 this.selectedTicket = null;
@@ -204,6 +363,13 @@ class UserTickets {
             }
 
             const response = await this.apiCall(`${this.ticketsEndpoint}${ticketId}/`, 'GET');
+            const ownerId = this.normalizeIdForComparison(this.extractTicketOwnerId(response));
+            const currentUserId = this.normalizeIdForComparison(this.currentUser?.id);
+
+            if (currentUserId && ownerId && ownerId !== currentUserId) {
+                throw new Error('Access denied');
+            }
+
             this.selectedTicket = {
                 ...response,
                 messages: this.sortMessages(response?.messages)
@@ -213,6 +379,14 @@ class UserTickets {
             await this.loadTicketMessages(ticketId);
         } catch (error) {
             if (this.handleUnauthorized(error)) {
+                return;
+            }
+
+            if (error && error.message === 'Access denied') {
+                console.error('Ticket access denied:', error);
+                this.showError('شما به این تیکت دسترسی ندارید');
+                this.selectedTicket = null;
+                await this.loadTickets();
                 return;
             }
 
@@ -302,11 +476,14 @@ class UserTickets {
         const sortedMessages = this.sortMessages(messages);
 
         this.messagesContainer.innerHTML = sortedMessages.map(message => {
-            const isUserMessage = message.user === currentUserId;
+            const messageAuthorId = this.normalizeIdForComparison(this.extractMessageAuthorId(message));
+            const isUserMessage = currentUserId && messageAuthorId === currentUserId;
+            const isSupportMessage = !isUserMessage && this.isSupportMessage(message);
             const messageClasses = `message ${isUserMessage ? 'user_message' : 'support_message'}`;
-            const senderLabel = this.getMessageSenderLabel(message, isUserMessage);
-            const dateTime = this.formatDateTime(message.created_at);
-            const dateTimeAttr = this.escapeAttribute(message.created_at || '');
+            const senderLabel = this.getMessageSenderLabel(message, isUserMessage, isSupportMessage);
+            const createdAt = message.created_at || message.timestamp || '';
+            const dateTime = this.formatDateTime(createdAt);
+            const dateTimeAttr = this.escapeAttribute(createdAt);
 
             return `
             <article class="${messageClasses}" role="listitem">
@@ -334,23 +511,23 @@ class UserTickets {
         });
     }
 
-    getMessageSenderLabel(message, isUserMessage) {
+    getMessageSenderLabel(message, isUserMessage, isSupportMessage) {
         if (isUserMessage) {
             return 'شما';
         }
 
+        if (isSupportMessage) {
+            return 'admin';
+        }
+
         const possibleNames = [
-            message?.support_name,
-            message?.support_display_name,
-            message?.support_full_name,
-            message?.staff_name,
-            message?.staff_full_name,
             message?.user_full_name,
-            message?.user_display_name
+            message?.user_display_name,
+            message?.name
         ];
 
         const name = possibleNames.find(value => typeof value === 'string' && value.trim().length);
-        return this.escapeHtml(name || 'پشتیبانی اتم');
+        return this.escapeHtml(name || 'کاربر');
     }
 
     normalizeStatus(status) {

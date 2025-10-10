@@ -51,6 +51,254 @@ const channelDictionary = {
   account: "حساب کاربری",
 };
 
+function ensureArray(value) {
+  if (Array.isArray(value)) {
+    return value;
+  }
+  if (value === null || value === undefined) {
+    return [];
+  }
+  return [value];
+}
+
+function normalizePossibleId(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const numeric = Number(trimmed);
+    return Number.isNaN(numeric) ? trimmed : numeric;
+  }
+
+  if (typeof value === "object") {
+    return normalizePossibleId(value.id ?? value.user_id ?? value.pk ?? value.uuid ?? null);
+  }
+
+  return null;
+}
+
+function normalizeIdForComparison(value) {
+  const normalized = normalizePossibleId(value);
+  return normalized === null || normalized === undefined ? null : String(normalized);
+}
+
+function extractUserInfo(rawTicket = {}) {
+  const userCandidate = rawTicket.user;
+  const normalizedUser = {};
+
+  if (userCandidate && typeof userCandidate === "object") {
+    Object.assign(normalizedUser, userCandidate);
+  }
+
+  const idCandidates = [];
+  const addIdCandidate = (candidate) => {
+    if (candidate === null || candidate === undefined) {
+      return;
+    }
+
+    if (typeof candidate === "object") {
+      addIdCandidate(candidate.id);
+      addIdCandidate(candidate.user_id);
+      addIdCandidate(candidate.pk);
+      addIdCandidate(candidate.uuid);
+      return;
+    }
+
+    idCandidates.push(candidate);
+  };
+
+  [
+    userCandidate,
+    rawTicket.user_id,
+    rawTicket.owner,
+    rawTicket.owner_id,
+    rawTicket.created_by,
+    rawTicket.created_by_id,
+    rawTicket.customer,
+    rawTicket.customer_id,
+  ].forEach(addIdCandidate);
+
+  const normalizedIdCandidate = idCandidates
+    .map((candidate) => normalizePossibleId(candidate))
+    .find((candidate) => candidate !== null && candidate !== undefined);
+
+  const nameCandidates = [];
+  const addNameCandidate = (candidate) => {
+    if (typeof candidate === "string" && candidate.trim()) {
+      nameCandidates.push(candidate.trim());
+    }
+  };
+
+  if (userCandidate && typeof userCandidate === "object") {
+    addNameCandidate(userCandidate.full_name);
+    addNameCandidate(userCandidate.fullName);
+    addNameCandidate(userCandidate.display_name);
+    addNameCandidate(userCandidate.displayName);
+    addNameCandidate(userCandidate.name);
+    addNameCandidate(userCandidate.username);
+    if (userCandidate.gamerTag && !normalizedUser.gamerTag) {
+      normalizedUser.gamerTag = userCandidate.gamerTag;
+    }
+  }
+
+  [
+    rawTicket.user_full_name,
+    rawTicket.user_display_name,
+    rawTicket.user_name,
+    rawTicket.owner_name,
+    rawTicket.created_by_name,
+    rawTicket.customer_name,
+  ].forEach(addNameCandidate);
+
+  const resolvedName =
+    nameCandidates.find(Boolean) ||
+    (normalizedIdCandidate !== null && normalizedIdCandidate !== undefined
+      ? `کاربر ${normalizedIdCandidate}`
+      : "کاربر ناشناس");
+
+  const resolvedId =
+    normalizedIdCandidate ??
+    normalizePossibleId(normalizedUser.id ?? normalizedUser.user_id ?? normalizedUser.pk ?? null);
+
+  return {
+    ...normalizedUser,
+    id: resolvedId ?? null,
+    name: resolvedName,
+  };
+}
+
+function extractMessageAuthorId(message = {}) {
+  const candidates = [];
+  const addCandidate = (candidate) => {
+    if (candidate === null || candidate === undefined) {
+      return;
+    }
+
+    if (typeof candidate === "object") {
+      addCandidate(candidate.id);
+      addCandidate(candidate.user_id);
+      addCandidate(candidate.pk);
+      addCandidate(candidate.uuid);
+      return;
+    }
+
+    candidates.push(candidate);
+  };
+
+  [message.user, message.author, message.sender, message.owner].forEach(addCandidate);
+  [message.user_id, message.author_id, message.sender_id, message.owner_id, message.created_by].forEach(addCandidate);
+
+  return candidates
+    .map((candidate) => normalizePossibleId(candidate))
+    .find((candidate) => candidate !== null && candidate !== undefined);
+}
+
+function isMessageNote(message = {}) {
+  const booleanIndicators = ["is_internal", "internal", "is_private", "private", "note", "is_note"];
+  if (booleanIndicators.some((flag) => message[flag] === true)) {
+    return true;
+  }
+
+  const typeFields = [message.type, message.message_type, message.visibility, message.scope];
+  return typeFields
+    .filter((value) => typeof value === "string")
+    .map((value) => value.toLowerCase())
+    .some((value) => ["note", "internal", "private"].includes(value));
+}
+
+function isSupportAuthor(message = {}, ticketOwnerId = null, authorId = null) {
+  if (isMessageNote(message)) {
+    return false;
+  }
+
+  const supportFlags = ["is_support", "is_staff", "staff", "support", "from_support", "by_support"];
+  for (const flag of supportFlags) {
+    if (typeof message[flag] === "boolean") {
+      return message[flag];
+    }
+  }
+
+  const authorField = String(message.author || message.role || "").toLowerCase();
+  if (authorField && authorField !== "user") {
+    return true;
+  }
+
+  const nameIndicators = [
+    message.support_name,
+    message.support_display_name,
+    message.support_full_name,
+    message.staff_name,
+    message.staff_full_name,
+  ];
+  if (nameIndicators.some((value) => typeof value === "string" && value.trim().length)) {
+    return true;
+  }
+
+  if (authorId !== null && authorId !== undefined && ticketOwnerId !== null && ticketOwnerId !== undefined) {
+    if (String(authorId) !== String(ticketOwnerId)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function normalizeTicketMessage(message = {}, ticketOwnerId = null, userInfo = {}) {
+  const timestamp = message.created_at || new Date().toISOString();
+  const content = message.message || message.content || "";
+  const authorId = extractMessageAuthorId(message);
+  const note = isMessageNote(message);
+  const isSupport = !note && isSupportAuthor(message, ticketOwnerId, authorId);
+
+  let author = "user";
+  if (note) {
+    author = "note";
+  } else if (isSupport) {
+    author = "admin";
+  }
+
+  const authorName = author === "admin" ? "admin" : userInfo?.name || "کاربر";
+
+  return {
+    author,
+    authorName,
+    timestamp,
+    content,
+    attachments: ensureArray(message.attachments).map((file) => ({
+      name: file?.name || file?.filename || "فایل",
+      size: file?.size || file?.filesize || "",
+      url: file?.url || file?.path || null,
+    })),
+  };
+}
+
+function getUserDisplayName(user = {}) {
+  if (!user) {
+    return "کاربر ناشناس";
+  }
+
+  const nameCandidates = [user.name, user.full_name, user.fullName, user.display_name, user.displayName, user.username];
+  const resolvedName = nameCandidates.find((value) => typeof value === "string" && value.trim().length);
+  if (resolvedName) {
+    return resolvedName;
+  }
+
+  if (user.id !== null && user.id !== undefined) {
+    return `کاربر ${user.id}`;
+  }
+
+  return "کاربر ناشناس";
+}
+
 const elements = {
   list: document.querySelector("[data-ticket-list]"),
   detail: document.querySelector("[data-ticket-detail]"),
@@ -267,12 +515,18 @@ async function submitTicketReply(ticket, messageText, { asNote = false, closeAft
 function normalizePostedMessage(rawMessage, fallback = {}) {
   const timestamp = rawMessage?.created_at || fallback.timestamp || new Date().toISOString();
   const content = rawMessage?.message ?? fallback.content ?? "";
+  const author = fallback.author || "admin";
+  const authorName = author === "admin" ? "admin" : fallback.authorName || "کاربر";
   return {
-    author: fallback.author || "admin",
-    authorName: fallback.authorName || "مدیر سامانه",
+    author,
+    authorName,
     timestamp,
     content,
-    attachments: [],
+    attachments: ensureArray(rawMessage?.attachments || fallback.attachments || []).map((file) => ({
+      name: file?.name || file?.filename || "فایل",
+      size: file?.size || file?.filesize || "",
+      url: file?.url || file?.path || null,
+    })),
   };
 }
 
@@ -361,38 +615,70 @@ function extractTickets(payload) {
 }
 
 function normalizeTicket(raw = {}) {
-  const messages = Array.isArray(raw.messages)
-    ? raw.messages.map((message) => ({
-        author: "user",
-        authorName: "کاربر",
-        timestamp: message.created_at || new Date().toISOString(),
-        content: message.message || "",
-        attachments: [],
-      }))
-    : [];
+  const userInfo = extractUserInfo(raw);
+  const ownerId = userInfo?.id ?? null;
+  const rawMessages = Array.isArray(raw.messages) ? raw.messages : [];
+  const messages = rawMessages.map((message) => normalizeTicketMessage(message, ownerId, userInfo));
 
-  const status = raw.status === "open" ? "new" : raw.status || "new";
+  const statusCandidate = (raw.status || raw.state || "new").toString().toLowerCase();
+  const status = statusCandidate === "open" ? "new" : statusCandidate;
+
+  const priorityCandidate = (raw.priority || raw.importance || "medium").toString().toLowerCase();
+  const priority = priorityDictionary[priorityCandidate]
+    ? priorityCandidate
+    : priorityCandidate || "medium";
+
+  const channelCandidate = (raw.channel || raw.category || raw.topic || "website").toString().toLowerCase();
+  const channel = channelDictionary[channelCandidate]
+    ? channelCandidate
+    : channelCandidate || "website";
+
+  const createdAt = raw.created_at || raw.createdAt || raw.created || new Date().toISOString();
+  const updatedAt = raw.updated_at || raw.updatedAt || raw.modified_at || createdAt;
+  const slaDue = raw.sla_due || raw.slaDue || null;
+
+  const watchers = ensureArray(raw.watchers || raw.assignees || []).map((watcher) => {
+    if (typeof watcher === "string") {
+      return watcher;
+    }
+    if (watcher && typeof watcher === "object") {
+      return watcher.full_name || watcher.display_name || watcher.name || watcher.username || "";
+    }
+    return "";
+  });
+
+  const metrics = {
+    totalMessages: messages.length,
+    firstResponseAt: raw.first_response_at || raw.firstResponseAt || null,
+    lastPublicReply: raw.last_public_reply || raw.lastPublicReply || null,
+  };
+
+  if (!metrics.firstResponseAt) {
+    const firstAdminMessage = messages.find((message) => message.author === "admin");
+    metrics.firstResponseAt = firstAdminMessage?.timestamp || null;
+  }
+
+  if (!metrics.lastPublicReply) {
+    const lastAdminMessage = [...messages].reverse().find((message) => message.author === "admin");
+    metrics.lastPublicReply = lastAdminMessage?.timestamp || null;
+  }
 
   return {
-    id: String(raw.id ?? ""),
-    subject: raw.title || "بدون عنوان",
-    status: status,
-    priority: "medium",
-    channel: "website",
-    createdAt: raw.created_at || new Date().toISOString(),
-    updatedAt: raw.created_at || new Date().toISOString(),
-    slaDue: null,
-    unread: false,
-    csat: null,
-    assignedTo: null,
-    watchers: [],
-    user: raw.user ? { name: `کاربر ${raw.user}`, id: raw.user } : { name: "کاربر ناشناس" },
-    tags: [],
-    metrics: {
-      totalMessages: messages.length,
-      firstResponseAt: null,
-      lastPublicReply: null,
-    },
+    id: String(raw.id ?? raw.ticket_number ?? raw.reference_code ?? ""),
+    subject: raw.title || raw.subject || "بدون عنوان",
+    status,
+    priority,
+    channel,
+    createdAt,
+    updatedAt,
+    slaDue,
+    unread: Boolean(raw.unread || raw.has_unread || false),
+    csat: raw.csat ?? raw.rating ?? null,
+    assignedTo: raw.assigned_to || raw.assignee || null,
+    watchers: watchers.filter(Boolean),
+    user: userInfo,
+    tags: ensureArray(raw.tags || raw.labels || []),
+    metrics,
     messages,
   };
 }
@@ -521,13 +807,13 @@ function renderTicketItem(ticket) {
     <button class="ticket-item ${
       ticket.id === state.activeTicketId ? "is-active" : ""
     }" data-ticket-id="${ticket.id}" role="listitem">
-      <span class="ticket-avatar" aria-hidden="true">${getInitials(ticket.user?.name)}</span>
+      <span class="ticket-avatar" aria-hidden="true">${getInitials(getUserDisplayName(ticket.user))}</span>
       <div class="ticket-item__header">
         <span class="ticket-subject">${ticket.subject}</span>
         <span class="status-badge ${badgeClass}">${statusInfo.label}</span>
       </div>
       <div class="ticket-item__meta">
-        <span>${ticket.user?.name || "کاربر"}</span>
+        <span>${getUserDisplayName(ticket.user)}</span>
         <span>${ticket.id}</span>
         <span>${formatRelativeTime(ticket.updatedAt)}</span>
         ${unreadDot}
@@ -543,18 +829,75 @@ function renderTicketItem(ticket) {
   `;
 }
 
+function groupTicketsByUser(tickets) {
+  const groups = new Map();
+
+  tickets.forEach((ticket) => {
+    const user = ticket.user || {};
+    const keyCandidate =
+      normalizeIdForComparison(user.id) ||
+      (typeof user.username === "string" && user.username.trim()) ||
+      (typeof user.email === "string" && user.email.trim()) ||
+      (typeof user.phone === "string" && user.phone.trim()) ||
+      (typeof user.name === "string" && user.name.trim()) ||
+      `ticket-${ticket.id}`;
+
+    const key = String(keyCandidate);
+
+    if (!groups.has(key)) {
+      groups.set(key, { key, user: user, tickets: [] });
+    }
+
+    const group = groups.get(key);
+    if (!group.user || Object.keys(group.user).length === 0) {
+      group.user = user;
+    }
+    group.tickets.push(ticket);
+  });
+
+  return Array.from(groups.values()).sort((a, b) => {
+    return getUserDisplayName(a.user).localeCompare(getUserDisplayName(b.user), "fa", {
+      sensitivity: "base",
+    });
+  });
+}
+
+function renderTicketGroup(group) {
+  const groupName = getUserDisplayName(group.user);
+  const groupInitials = getInitials(groupName);
+  const items = group.tickets.map(renderTicketItem).join("");
+
+  return `
+    <section class="ticket-group" data-ticket-group="${group.key}" role="group" aria-label="${groupName}">
+      <header class="ticket-group__header">
+        <div class="ticket-group__identity">
+          <span class="ticket-group__avatar" aria-hidden="true">${groupInitials}</span>
+          <div class="ticket-group__meta">
+            <span class="ticket-group__name">${groupName}</span>
+            <span class="ticket-group__caption">${group.tickets.length} تیکت فعال</span>
+          </div>
+        </div>
+      </header>
+      <div class="ticket-items" role="list">
+        ${items}
+      </div>
+    </section>
+  `;
+}
+
 function renderTicketsList(tickets) {
   if (!elements.list) return;
   state.replyMode = "reply";
 
-  const items = tickets.map(renderTicketItem).join("");
+  const groupedTickets = groupTicketsByUser(tickets);
+  const groupsMarkup = groupedTickets.map(renderTicketGroup).join("");
 
   elements.list.innerHTML = `
     <div class="tickets-list__header">
       ${tickets.length} تیکت پیدا شد
     </div>
-    <div class="ticket-items" role="list">
-      ${items}
+    <div class="ticket-groups">
+      ${groupsMarkup}
     </div>
   `;
 
@@ -898,12 +1241,7 @@ function bindDetailEvents(ticket) {
     const isNote = state.replyMode === "note";
     const shouldClose = closeAfterSend?.checked ?? false;
     const fallbackTimestamp = new Date().toISOString();
-    const adminName =
-      state.adminUser?.full_name ||
-      state.adminUser?.fullName ||
-      state.adminUser?.name ||
-      state.adminUser?.username ||
-      "مدیر سامانه";
+    const adminName = "admin";
     const fallback = {
       author: isNote ? "note" : "admin",
       authorName: adminName,
