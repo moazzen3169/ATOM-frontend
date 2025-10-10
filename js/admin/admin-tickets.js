@@ -1,12 +1,13 @@
-import { API_BASE_URL } from "../config.js";
+import { API_BASE_URL as CONFIG_API_BASE_URL } from "../config.js";
 import { ensureAdminAccess, handleUnauthorizedAccess } from "./admin-auth.js";
 
 const CONFIGURED_API_BASE_URL = normalizeBaseUrl(CONFIG_API_BASE_URL);
 const META_API_BASE_URL = normalizeBaseUrl(getMetaContent("api-base-url"));
-const API_BASE_URL = META_API_BASE_URL || CONFIGURED_API_BASE_URL;
+const RESOLVED_API_BASE_URL = META_API_BASE_URL || CONFIGURED_API_BASE_URL;
 const TICKETS_ENDPOINT = resolveTicketsEndpoint();
 const REQUEST_TIMEOUT = 12000;
-const DEFAULT_TICKETS_PATH = "api/support/tickets/";
+const DEFAULT_API_NAMESPACE = "api";
+const DEFAULT_TICKETS_SUBPATH = "support/tickets/";
 
 const state = {
   adminUser: null,
@@ -104,7 +105,16 @@ function resolveTicketsEndpoint() {
   if (directEndpoint) {
     return toAbsoluteUrl(directEndpoint);
   }
-  return toAbsoluteUrl(DEFAULT_TICKETS_PATH);
+  const base = RESOLVED_API_BASE_URL || "";
+  if (base) {
+    const baseIncludesNamespace = new RegExp(`(^|/)${DEFAULT_API_NAMESPACE}$`, "i").test(base);
+    if (baseIncludesNamespace) {
+      return joinUrlSegments(base, DEFAULT_TICKETS_SUBPATH);
+    }
+    const namespacedPath = joinUrlSegments(DEFAULT_API_NAMESPACE, DEFAULT_TICKETS_SUBPATH);
+    return joinUrlSegments(base, namespacedPath);
+  }
+  return joinUrlSegments(`/${DEFAULT_API_NAMESPACE}`, DEFAULT_TICKETS_SUBPATH);
 }
 
 function joinUrlSegments(base, path) {
@@ -124,8 +134,146 @@ function toAbsoluteUrl(path) {
   if (/^https?:\/\//i.test(path)) {
     return path;
   }
-  const base = API_BASE_URL || CONFIGURED_API_BASE_URL || "";
-  return joinUrlSegments(base || "", path);
+  if (path.startsWith("/")) {
+    return path;
+  }
+  const base = RESOLVED_API_BASE_URL || "";
+  return joinUrlSegments(base, path);
+}
+
+function buildTicketUrl(ticketId) {
+  const normalizedId = String(ticketId ?? "").trim();
+  if (!normalizedId) {
+    return TICKETS_ENDPOINT;
+  }
+  return joinUrlSegments(TICKETS_ENDPOINT, `${normalizedId}/`);
+}
+
+function buildTicketMessagesUrl(ticketId) {
+  return joinUrlSegments(buildTicketUrl(ticketId), "messages/");
+}
+
+async function fetchWithAuth(url, options = {}) {
+  const headers = new Headers(options.headers || {});
+  if (!headers.has("Accept")) {
+    headers.set("Accept", "application/json");
+  }
+  if (options.body && !headers.has("Content-Type")) {
+    headers.set("Content-Type", "application/json");
+  }
+
+  try {
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      headers.set("Authorization", `Bearer ${token}`);
+    }
+  } catch (storageError) {
+    console.warn("Cannot access access_token from storage", storageError);
+  }
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (response.status === 401 || response.status === 403) {
+    handleUnauthorizedAccess("نشست شما منقضی شده است. لطفا دوباره وارد شوید.");
+  }
+
+  if (!response.ok) {
+    let detailMessage = `کد ${response.status}`;
+    try {
+      const data = await response.json();
+      if (data) {
+        if (typeof data.detail === "string") {
+          detailMessage = data.detail;
+        } else if (typeof data === "string") {
+          detailMessage = data;
+        } else {
+          detailMessage = JSON.stringify(data);
+        }
+      }
+    } catch (parseError) {
+      // ignore parsing errors for non-JSON responses
+    }
+    const error = new Error(`درخواست با خطا مواجه شد: ${detailMessage}`);
+    error.response = response;
+    throw error;
+  }
+
+  return response;
+}
+
+async function persistTicketUpdate(ticketId, updates = {}) {
+  if (!updates || typeof updates !== "object") {
+    return null;
+  }
+
+  const entries = Object.entries(updates).filter(([, value]) => value !== undefined);
+  if (!entries.length) {
+    return null;
+  }
+
+  const payload = Object.fromEntries(entries);
+  const url = buildTicketUrl(ticketId);
+
+  const response = await fetchWithAuth(url, {
+    method: "PATCH",
+    body: JSON.stringify(payload),
+  });
+
+  try {
+    return await response.json();
+  } catch (parseError) {
+    return null;
+  }
+}
+
+async function submitTicketReply(ticket, messageText, { asNote = false, closeAfterSend = false, timestamp } = {}) {
+  const fallbackPayload = {
+    message: messageText,
+    created_at: timestamp || new Date().toISOString(),
+  };
+
+  if (asNote) {
+    return { payload: fallbackPayload, status: null };
+  }
+
+  const numericId = Number.parseInt(ticket.id, 10);
+  const resolvedTicketId = Number.isNaN(numericId) ? ticket.id : numericId;
+  const response = await fetchWithAuth(buildTicketMessagesUrl(ticket.id), {
+    method: "POST",
+    body: JSON.stringify({
+      ticket: resolvedTicketId,
+      message: messageText,
+    }),
+  });
+
+  let payload = fallbackPayload;
+  try {
+    payload = await response.json();
+  } catch (parseError) {
+    console.warn("Failed to parse reply response", parseError);
+  }
+
+  const nextStatus = closeAfterSend ? "resolved" : "answered";
+
+  try {
+    await persistTicketUpdate(ticket.id, { status: nextStatus });
+  } catch (statusError) {
+    console.warn("Failed to persist ticket status", statusError);
+  }
+
+  return { payload, status: nextStatus };
+}
+
+function normalizePostedMessage(rawMessage, fallback = {}) {
+  const timestamp = rawMessage?.created_at || fallback.timestamp || new Date().toISOString();
+  const content = rawMessage?.message ?? fallback.content ?? "";
+  return {
+    author: fallback.author || "admin",
+    authorName: fallback.authorName || "مدیر سامانه",
+    timestamp,
+    content,
+    attachments: [],
+  };
 }
 
 function showFeedback(message, type = "success") {
@@ -751,7 +899,7 @@ function bindDetailEvents(ticket) {
     }
   });
 
-  replyForm?.addEventListener("submit", (event) => {
+  replyForm?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const messageText = replyTextarea?.value.trim();
     if (!messageText) {
@@ -759,44 +907,89 @@ function bindDetailEvents(ticket) {
       return;
     }
 
-    const newMessage = {
-      author: state.replyMode === "note" ? "note" : "admin",
-      authorName: "مدیر سامانه",
-      timestamp: new Date().toISOString(),
+    const isNote = state.replyMode === "note";
+    const shouldClose = closeAfterSend?.checked ?? false;
+    const fallbackTimestamp = new Date().toISOString();
+    const adminName =
+      state.adminUser?.full_name ||
+      state.adminUser?.fullName ||
+      state.adminUser?.name ||
+      state.adminUser?.username ||
+      "مدیر سامانه";
+    const fallback = {
+      author: isNote ? "note" : "admin",
+      authorName: adminName,
       content: messageText,
+      timestamp: fallbackTimestamp,
     };
 
-    ticket.messages.push(newMessage);
-    ticket.updatedAt = newMessage.timestamp;
+    if (replyTextarea) {
+      replyTextarea.disabled = true;
+    }
+    const submitButton = replyForm.querySelector('[type="submit"]');
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
+    if (closeAfterSend && !isNote) {
+      closeAfterSend.disabled = true;
+    }
 
-    const metrics = ticket.metrics || (ticket.metrics = {});
-    metrics.totalMessages = ticket.messages.length;
-    if (state.replyMode !== "note") {
-      metrics.lastPublicReply = newMessage.timestamp;
-      if (!metrics.firstResponseAt) {
-        metrics.firstResponseAt = newMessage.timestamp;
+    try {
+      const { payload, status: nextStatus } = await submitTicketReply(ticket, messageText, {
+        asNote: isNote,
+        closeAfterSend: shouldClose,
+        timestamp: fallbackTimestamp,
+      });
+
+      const normalizedMessage = normalizePostedMessage(payload, fallback);
+      ticket.messages.push(normalizedMessage);
+      ticket.updatedAt = normalizedMessage.timestamp;
+
+      const metrics = ticket.metrics || (ticket.metrics = {});
+      metrics.totalMessages = ticket.messages.length;
+      if (!isNote) {
+        metrics.lastPublicReply = normalizedMessage.timestamp;
+        if (!metrics.firstResponseAt) {
+          metrics.firstResponseAt = normalizedMessage.timestamp;
+        }
+        if (nextStatus) {
+          ticket.status = nextStatus;
+        }
+      }
+
+      if (replyTextarea) {
+        replyTextarea.value = "";
+      }
+      if (closeAfterSend) {
+        closeAfterSend.checked = false;
+      }
+
+      const threadContainer = elements.detail.querySelector("[data-ticket-thread]");
+      if (threadContainer) {
+        threadContainer.innerHTML = ticket.messages.map(renderMessage).join("");
+      }
+
+      showFeedback("پیام با موفقیت ثبت شد.");
+      renderTicketList();
+
+      if (!isNote) {
+        state.activeTicketId = ticket.id;
+        await loadTickets();
+      }
+    } catch (error) {
+      console.error("Failed to submit ticket reply", error);
+      showFeedback(error.message || "خطا در ارسال پیام.", "error");
+    } finally {
+      if (replyTextarea) {
+        replyTextarea.disabled = false;
+      }
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
+      if (closeAfterSend) {
+        closeAfterSend.disabled = isNote;
       }
     }
-
-    if (state.replyMode !== "note") {
-      const shouldClose = closeAfterSend?.checked ?? false;
-      ticket.status = shouldClose ? "resolved" : "answered";
-    }
-
-    if (replyTextarea) {
-      replyTextarea.value = "";
-    }
-    if (closeAfterSend) {
-      closeAfterSend.checked = false;
-    }
-
-    const threadContainer = elements.detail.querySelector("[data-ticket-thread]");
-    if (threadContainer) {
-      threadContainer.innerHTML = ticket.messages.map(renderMessage).join("");
-    }
-
-    showFeedback("پیام با موفقیت ثبت شد.");
-    renderTicketList();
   });
 }
 
