@@ -1,4 +1,8 @@
-import { ensureAdminAccess, getAdminUser } from "./admin/admin-auth.js";
+import {
+  ensureAdminAccess,
+  getAdminUser,
+  onAdminUserChange,
+} from "./admin/admin-auth.js";
 
 const NAV_ITEMS = [
   {
@@ -24,13 +28,10 @@ async function initSidebar() {
     return;
   }
 
-  const adminUser = getAdminUser();
-  sidebar.innerHTML = renderSidebar(adminUser);
-
-  const logoutButton = sidebar.querySelector("[data-action=admin-logout]");
-  if (logoutButton) {
-    logoutButton.addEventListener("click", handleLogout);
-  }
+  renderSidebarContent(sidebar, getAdminUser());
+  onAdminUserChange((user) => {
+    renderSidebarContent(sidebar, user || getAdminUser());
+  });
 }
 
 function renderSidebar(user) {
@@ -120,7 +121,33 @@ function handleLogout() {
   localStorage.removeItem("access_token");
   localStorage.removeItem("refresh_token");
   localStorage.removeItem("user_data");
+  localStorage.removeItem("profile_picture");
+  try {
+    const event = new CustomEvent("atom:admin-user-changed", {
+      detail: { user: null },
+    });
+    window.dispatchEvent(event);
+  } catch (error) {
+    try {
+      const fallbackEvent = document.createEvent("CustomEvent");
+      fallbackEvent.initCustomEvent("atom:admin-user-changed", false, false, {
+        user: null,
+      });
+      window.dispatchEvent(fallbackEvent);
+    } catch (dispatchError) {
+      console.warn("Failed to dispatch admin logout event", dispatchError);
+    }
+  }
   window.location.href = "/register/login.html";
+}
+
+function renderSidebarContent(sidebar, user) {
+  sidebar.innerHTML = renderSidebar(user);
+
+  const logoutButton = sidebar.querySelector("[data-action=admin-logout]");
+  if (logoutButton) {
+    logoutButton.addEventListener("click", handleLogout, { once: true });
+  }
 }
 
 if (document.readyState === "loading") {
