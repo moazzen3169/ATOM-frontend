@@ -167,7 +167,7 @@ class UserTickets {
             return `
             <div class="ticket_item ${statusClass} ${isSelected ? 'selected' : ''}" role="listitem" data-ticket-id="${ticket.id}">
                 <div class="ticket_title" title="${this.escapeHtml(ticket.title || '')}">${this.escapeHtml(ticket.title || 'بدون عنوان')}</div>
-                <div class="ticket_status ${statusClass}">${this.getStatusText(normalizedStatus)}</div>
+                <div class="ticket_status badge ${statusClass}">${this.getStatusText(normalizedStatus)}</div>
                 <div class="ticket_last_message">${this.getLastMessagePreview(ticket)}</div>
                 <div class="ticket_add_date">${this.formatDate(ticket.created_at)}</div>
             </div>
@@ -204,7 +204,10 @@ class UserTickets {
             }
 
             const response = await this.apiCall(`${this.ticketsEndpoint}${ticketId}/`, 'GET');
-            this.selectedTicket = response;
+            this.selectedTicket = {
+                ...response,
+                messages: this.sortMessages(response?.messages)
+            };
 
             this.showConversation();
             await this.loadTicketMessages(ticketId);
@@ -264,7 +267,8 @@ class UserTickets {
         try {
             const response = await this.apiCall(`${this.ticketsEndpoint}${ticketId}/messages/`, 'GET');
             if (this.selectedTicket) {
-                this.selectedTicket.messages = Array.isArray(response) ? response : [];
+                const messages = Array.isArray(response) ? response : [];
+                this.selectedTicket.messages = this.sortMessages(messages);
                 this.renderMessages();
             }
         } catch (error) {
@@ -295,14 +299,58 @@ class UserTickets {
         this.messagesContainer.dataset.empty = 'false';
         const currentUserId = this.currentUser ? this.currentUser.id : null;
 
-        this.messagesContainer.innerHTML = messages.map(message => `
-            <div class="message ${message.user === currentUserId ? 'user_message' : 'support_message'}">
-                <p>${this.formatMessageBody(message.message)}</p>
-                <span class="message-time">${this.formatTime(message.created_at)}</span>
-            </div>
-        `).join('');
+        const sortedMessages = this.sortMessages(messages);
+
+        this.messagesContainer.innerHTML = sortedMessages.map(message => {
+            const isUserMessage = message.user === currentUserId;
+            const messageClasses = `message ${isUserMessage ? 'user_message' : 'support_message'}`;
+            const senderLabel = this.getMessageSenderLabel(message, isUserMessage);
+            const dateTime = this.formatDateTime(message.created_at);
+            const dateTimeAttr = this.escapeAttribute(message.created_at || '');
+
+            return `
+            <article class="${messageClasses}" role="listitem">
+                <header class="message_header">
+                    <span class="message_sender">${senderLabel}</span>
+                    <time class="message_time" datetime="${dateTimeAttr}">${dateTime}</time>
+                </header>
+                <p class="message_body">${this.formatMessageBody(message.message)}</p>
+            </article>
+            `;
+        }).join('');
 
         this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
+    }
+
+    sortMessages(messages) {
+        if (!Array.isArray(messages)) {
+            return [];
+        }
+
+        return [...messages].sort((a, b) => {
+            const dateA = new Date(a?.created_at || 0).getTime();
+            const dateB = new Date(b?.created_at || 0).getTime();
+            return dateA - dateB;
+        });
+    }
+
+    getMessageSenderLabel(message, isUserMessage) {
+        if (isUserMessage) {
+            return 'شما';
+        }
+
+        const possibleNames = [
+            message?.support_name,
+            message?.support_display_name,
+            message?.support_full_name,
+            message?.staff_name,
+            message?.staff_full_name,
+            message?.user_full_name,
+            message?.user_display_name
+        ];
+
+        const name = possibleNames.find(value => typeof value === 'string' && value.trim().length);
+        return this.escapeHtml(name || 'پشتیبانی اتم');
     }
 
     normalizeStatus(status) {
@@ -336,7 +384,8 @@ class UserTickets {
             return 'هنوز پیامی ارسال نشده است...';
         }
 
-        const lastMessage = ticket.messages[ticket.messages.length - 1].message || '';
+        const sortedMessages = this.sortMessages(ticket.messages);
+        const lastMessage = sortedMessages.length ? sortedMessages[sortedMessages.length - 1].message || '' : '';
         const preview = lastMessage.length > 50 ? `${lastMessage.substring(0, 50)}...` : lastMessage;
         return this.escapeHtml(preview);
     }
@@ -766,6 +815,13 @@ class UserTickets {
             "'": '&#39;'
         };
         return text.replace(/[&<>"']/g, (char) => map[char] || char);
+    }
+
+    escapeAttribute(value) {
+        if (value == null) {
+            return '';
+        }
+        return this.escapeHtml(String(value));
     }
 
     handleKeyDown(event) {
