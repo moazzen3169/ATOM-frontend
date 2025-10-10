@@ -136,14 +136,14 @@
 .teams_list {
   display: grid;
   gap: 16px;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  grid-template-columns: 1fr
 }
 
 .team_card {
   position: relative;
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
+  border-radius: 10px;
   padding: 18px;
   display: flex;
   flex-direction: column;
@@ -286,7 +286,7 @@
 .teams_panel {
   background: rgba(15, 23, 42, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: 16px;
+  border-radius: 10px;
   padding: 18px;
   display: flex;
   flex-direction: column;
@@ -320,7 +320,7 @@
 .mini_card {
   padding: 12px;
   background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.05);
   display: flex;
   flex-direction: column;
@@ -380,7 +380,7 @@
 
 .empty_state {
   padding: 18px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px dashed rgba(255, 255, 255, 0.1);
   text-align: center;
   color: var(--gray-color);
@@ -406,12 +406,14 @@
 .modal__dialog {
   width: min(500px, 100%);
   background: var(--card-color);
-  border-radius: 20px;
+  border-radius: 10px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  color: var(--white-color);
+
 }
 
 .modal__header {
@@ -422,10 +424,11 @@
   gap: 12px;
 }
 
+
+
 .modal__header h2 {
   margin: 0;
   font-size: 18px;
-  color: var(--white-color);
 }
 
 .modal__close {
@@ -483,6 +486,10 @@
   outline: none;
   border-color: rgba(0, 245, 255, 0.6);
   box-shadow: 0 0 0 3px rgba(0, 245, 255, 0.18);
+}
+
+#edit_team_picture button {
+  background-color: #965151;
 }
 
 .form_hint {
