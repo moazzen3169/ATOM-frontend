@@ -138,20 +138,23 @@ function setPageTitle() {
     const path = window.location.pathname;
     let title = 'داشبورد'; // پیش‌فرض
 
-    if (path.includes('tickets')) {
-        title = 'تیکت‌ها';
-    } else if (path.includes('wallet')) {
-        title = 'کیف پول';
-    } else if (path.includes('profile')) {
-        title = 'پروفایل';
-    } else if (path.includes('teams')) {
-        title = 'تیم‌ها';
-    } else if (path.includes('tournaments')) {
-        title = 'تورنومنت‌ها';
-    } else if (path.includes('games')) {
-        title = 'بازی‌ها';
-    } else if (path.includes('lobby')) {
-        title = 'لابی';
+    const titleMap = [
+        { keyword: 'tickets', value: 'تیکت‌ها' },
+        { keyword: 'wallet', value: 'کیف پول' },
+        { keyword: 'profile', value: 'پروفایل' },
+        { keyword: 'teams', value: 'تیم‌ها' },
+        { keyword: 'tournaments', value: 'تورنومنت‌ها' },
+        { keyword: 'verification', value: 'احراز هویت' },
+        { keyword: 'chat', value: 'پیام‌ها' },
+        { keyword: 'games', value: 'بازی‌ها' },
+        { keyword: 'lobby', value: 'لابی' }
+    ];
+
+    for (const item of titleMap) {
+        if (path.includes(item.keyword)) {
+            title = item.value;
+            break;
+        }
     }
 
     if (document.getElementById("page_title_text")) {
@@ -165,6 +168,7 @@ function displayUserProfile(data, teamsCount, tournamentsCount) {
 
     // اطلاعات اصلی کاربر
     const username = data.username || 'کاربر';
+    localStorage.setItem("username", username);
     if (document.getElementById("header_user_name")) {
         document.getElementById("header_user_name").textContent = username;
     }
@@ -195,22 +199,16 @@ function displayUserProfile(data, teamsCount, tournamentsCount) {
     }
 
     // آواتار کاربر
-    if (data.profile_picture) {
-        if (document.getElementById("header_user_avatar")) {
-            document.getElementById("header_user_avatar").src = data.profile_picture;
-        }
-        if (document.getElementById("user_avatar")) {
-            document.getElementById("user_avatar").src = data.profile_picture;
-        }
-    } else {
-        // اگر profile_picture null است، از تصویر پیش‌فرض استفاده کنیم
-        if (document.getElementById("header_user_avatar")) {
-            document.getElementById("header_user_avatar").src = "../img/default-avatar.png";
-        }
-        if (document.getElementById("user_avatar")) {
-            document.getElementById("user_avatar").src = "../img/default-avatar.png";
-        }
+    const avatarSrc = data.profile_picture || "../img/profile.jpg";
+    localStorage.setItem("profile_picture", avatarSrc);
+    if (document.getElementById("header_user_avatar")) {
+        document.getElementById("header_user_avatar").src = avatarSrc;
     }
+    if (document.getElementById("user_avatar")) {
+        document.getElementById("user_avatar").src = avatarSrc;
+    }
+
+    updateHeaderUserInfoFromLocalStorage();
 }
 
 
@@ -327,35 +325,31 @@ function displayTournamentHistory(matches) {
 
 // تابع برای بروزرسانی اطلاعات کاربر در هدر از localStorage
 function updateHeaderUserInfoFromLocalStorage() {
-    const username = localStorage.getItem("username");
-    const profilePicture = localStorage.getItem("profile_picture");
+    const username = localStorage.getItem("username") || "کاربر";
+    const profilePicture = localStorage.getItem("profile_picture") || "../img/profile.jpg";
 
     // بروزرسانی نام کاربر در هدر داشبورد
-    if (username) {
-        const headerUserName = document.getElementById("header_user_name");
-        if (headerUserName) {
-            headerUserName.textContent = username;
-        }
+    const headerUserName = document.getElementById("header_user_name");
+    if (headerUserName) {
+        headerUserName.textContent = username;
+    }
 
-        // بروزرسانی نام کاربر در سایدبار موبایل
-        const mobileUserName = document.querySelector(".user_info_name");
-        if (mobileUserName) {
-            mobileUserName.textContent = username;
-        }
+    // بروزرسانی نام کاربر در سایدبار موبایل
+    const mobileUserName = document.querySelector(".user_info_name");
+    if (mobileUserName) {
+        mobileUserName.textContent = username;
     }
 
     // بروزرسانی تصویر پروفایل در هدر داشبورد
-    if (profilePicture) {
-        const headerUserAvatar = document.getElementById("header_user_avatar");
-        if (headerUserAvatar) {
-            headerUserAvatar.src = profilePicture;
-        }
+    const headerUserAvatar = document.getElementById("header_user_avatar");
+    if (headerUserAvatar) {
+        headerUserAvatar.src = profilePicture;
+    }
 
-        // بروزرسانی تصویر پروفایل در سایدبار موبایل
-        const mobileUserAvatar = document.querySelector(".user_profile img");
-        if (mobileUserAvatar) {
-            mobileUserAvatar.src = profilePicture;
-        }
+    // بروزرسانی تصویر پروفایل در سایدبار موبایل
+    const mobileUserAvatar = document.querySelector(".user_profile img");
+    if (mobileUserAvatar) {
+        mobileUserAvatar.src = profilePicture;
     }
 }
 
@@ -370,6 +364,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
                     // Header content loaded, update user info
                     updateHeaderUserInfoFromLocalStorage();
+                    setPageTitle();
                     observer.disconnect();
                     break;
                 }
@@ -379,9 +374,12 @@ document.addEventListener("DOMContentLoaded", () => {
     } else {
         // If no dynamic header, update immediately
         updateHeaderUserInfoFromLocalStorage();
+        setPageTitle();
     }
 
-    loadDashboardData();
+    loadDashboardData().then(() => {
+        setPageTitle();
+    });
 
     // تغییر دکمه ایجاد تیم به لینک صفحه تیم‌ها
     const createTeamLink = document.querySelector('.creat_team_link');
