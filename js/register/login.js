@@ -19,7 +19,6 @@ sendOtpForm.addEventListener('submit', async function(e) {
         const data = await response.json();
 
         if (response.ok) {
-            sessionStorage.setItem('identifier', identifier);
             showMessage('کد تایید ارسال شد. در حال انتقال...', 'success');
             setTimeout(() => {
                 window.location.href = `otp.html?purpose=login&identifier=${encodeURIComponent(identifier)}`;
@@ -38,7 +37,35 @@ function showMessage(msg, type) {
     messageDiv.style.display = 'block';
 }
 
-// اگر قبلا لاگین شده، مستقیماً به داشبورد برود
-if (localStorage.getItem('access_token')) {
+const STORED_ACCESS = localStorage.getItem('access_token');
+if (isValidJwtToken(STORED_ACCESS) && !isJwtExpired(STORED_ACCESS)) {
     window.location.href = '/index.html';
+} else if (typeof STORED_ACCESS === 'string' && STORED_ACCESS.trim()) {
+    // مقدار نامعتبر را پاکسازی کن تا منطق ورود به اشتباه فعال نشود
+    clearStoredTokens();
+}
+
+function isValidJwtToken(token) {
+    if (typeof token !== 'string') return false;
+    const trimmed = token.trim();
+    if (!trimmed || trimmed === 'undefined' || trimmed === 'null') return false;
+    const parts = trimmed.split('.');
+    return parts.length === 3 && parts.every(Boolean);
+}
+
+function isJwtExpired(token) {
+    try {
+        const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (!payload || typeof payload.exp !== 'number') return false;
+        const nowInSeconds = Math.floor(Date.now() / 1000);
+        return payload.exp <= nowInSeconds;
+    } catch (err) {
+        // اگر نتوانستیم پارس کنیم، آن را نامعتبر در نظر می‌گیریم
+        return true;
+    }
+}
+
+function clearStoredTokens() {
+    localStorage.removeItem('access_token');
+    localStorage.removeItem('refresh_token');
 }
