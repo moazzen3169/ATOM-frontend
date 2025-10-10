@@ -17,6 +17,26 @@ const ADMIN_ROLE_KEYWORDS = [
   "مدیر",
   "پشتیبان",
 ];
+const ADMIN_CONTEXT_KEYWORDS = [
+  "admin",
+  "superuser",
+  "staff",
+  "manager",
+  "support",
+  "moderator",
+  "operator",
+  "permission",
+  "permissions",
+  "privilege",
+  "privileges",
+  "scope",
+  "scopes",
+  "access",
+  "level",
+  "panel",
+  "dashboard",
+  "control",
+];
 let redirectInProgress = false;
 let cachedStoredUser;
 let hasCachedStoredUser = false;
@@ -278,6 +298,17 @@ function hasAdminPrivileges(profile) {
 
   if (profile.is_admin || profile.is_superuser || profile.is_staff) return true;
 
+  if (typeof profile.admin === "boolean" && profile.admin) return true;
+
+  if (typeof profile.admin_level === "number" && profile.admin_level > 0) return true;
+
+  if (typeof profile.admin_level === "string" && profile.admin_level.trim() !== "") {
+    const parsedAdminLevel = Number.parseInt(profile.admin_level, 10);
+    if (Number.isFinite(parsedAdminLevel) && parsedAdminLevel > 0) {
+      return true;
+    }
+  }
+
   if (typeof profile.role === "string" && isAdminRole(profile.role)) return true;
 
   if (Array.isArray(profile.role) && profile.role.some(isAdminRole)) return true;
@@ -288,18 +319,56 @@ function hasAdminPrivileges(profile) {
 
   if (Array.isArray(profile.groups) && profile.groups.some(isAdminRole)) return true;
 
-  if (Array.isArray(profile.permissions)) {
-    return profile.permissions.some((permission) =>
-      isAdminRole(typeof permission === "string" ? permission : permission?.name)
-    );
+  if (
+    hasAnyAdminEntry(profile.permissions, { treatAnyTruthy: true }, "permissions")
+  ) {
+    return true;
   }
 
-  for (const key of Object.keys(profile)) {
-    if (key.startsWith("is_")) {
-      const value = profile[key];
-      if (value === true && ADMIN_ROLE_KEYWORDS.some((keyword) => key.includes(keyword))) {
+  const adminRelated = [
+    ["admin_permissions", profile.admin_permissions],
+    ["admin_roles", profile.admin_roles],
+    ["admin_groups", profile.admin_groups],
+    ["permissions_map", profile.permissions_map],
+    ["privileges", profile.privileges],
+    ["admin_privileges", profile.admin_privileges],
+    ["scopes", profile.scopes],
+    ["admin_scopes", profile.admin_scopes],
+    ["admin_access", profile.admin_access],
+  ];
+
+  for (const [keyPath, value] of adminRelated) {
+    if (hasAnyAdminEntry(value, { treatAnyTruthy: true }, keyPath)) {
+      return true;
+    }
+  }
+
+  const adminAccessCandidates = [
+    ["access", profile.access],
+    ["access_level", profile.access_level],
+  ];
+
+  for (const [keyPath, value] of adminAccessCandidates) {
+    if (hasAnyAdminEntry(value, { treatAnyTruthy: false }, keyPath)) {
+      return true;
+    }
+  }
+
+  for (const [key, value] of Object.entries(profile)) {
+    if (typeof value === "boolean") {
+      if (
+        value === true &&
+        (key.startsWith("is_")
+          ? ADMIN_ROLE_KEYWORDS.some((keyword) => key.toLowerCase().includes(keyword))
+          : keyMatchesAdminContext(key))
+      ) {
         return true;
       }
+      continue;
+    }
+
+    if (hasAnyAdminEntry(value, { treatAnyTruthy: false }, key.toLowerCase())) {
+      return true;
     }
   }
 
@@ -318,6 +387,94 @@ function isAdminRole(value) {
   if (!label) return false;
 
   return ADMIN_ROLE_KEYWORDS.some((keyword) => label.includes(keyword));
+}
+
+function hasAnyAdminEntry(value, options = {}, keyPath = "") {
+  if (!value) return false;
+
+  const normalizedKeyPath = keyPath ? keyPath.toString().toLowerCase() : "";
+  const contextTreatAnyTruthy =
+    normalizedKeyPath && keyMatchesAdminContext(normalizedKeyPath);
+  const treatAnyTruthy = options.treatAnyTruthy || contextTreatAnyTruthy;
+  const treatAnyTruthyExplicit = Boolean(options.treatAnyTruthy);
+
+  if (typeof value === "string") {
+    const normalizedValue = value.toString().trim().toLowerCase();
+    if (!normalizedValue) return false;
+
+    const allowRoleMatch =
+      treatAnyTruthyExplicit ||
+      contextTreatAnyTruthy ||
+      (normalizedKeyPath && /(role|group|type)/.test(normalizedKeyPath));
+
+    if (allowRoleMatch && !isNameLikeKey(normalizedKeyPath) && isAdminRole(normalizedValue)) {
+      return true;
+    }
+
+    if (!treatAnyTruthy) {
+      return false;
+    }
+
+    if (!treatAnyTruthyExplicit && contextTreatAnyTruthy) {
+      const numericCandidate = Number.parseFloat(normalizedValue);
+      if (Number.isFinite(numericCandidate) && numericCandidate > 0) {
+        return true;
+      }
+
+      return isAdminRole(normalizedValue);
+    }
+
+    if (
+      normalizedValue === "0" ||
+      normalizedValue === "false" ||
+      normalizedValue === "no" ||
+      normalizedValue === "none"
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  if (typeof value === "boolean") {
+    return value === true && treatAnyTruthy;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) && value > 0 && treatAnyTruthy;
+  }
+
+  if (Array.isArray(value)) {
+    if (!value.length) return false;
+    return value.some((item) =>
+      hasAnyAdminEntry(item, { treatAnyTruthy }, normalizedKeyPath)
+    );
+  }
+
+  if (typeof value === "object") {
+    return Object.entries(value).some(([childKey, childValue]) => {
+      const nextKeyPath = normalizedKeyPath
+        ? `${normalizedKeyPath}_${childKey}`.toLowerCase()
+        : childKey.toLowerCase();
+      return hasAnyAdminEntry(childValue, { treatAnyTruthy }, nextKeyPath);
+    });
+  }
+
+  return false;
+}
+
+function keyMatchesAdminContext(key) {
+  if (!key) return false;
+  const normalized = key.toString().toLowerCase();
+  return ADMIN_CONTEXT_KEYWORDS.some((keyword) => normalized.includes(keyword));
+}
+
+function isNameLikeKey(key) {
+  if (!key) return false;
+  if (key.includes("admin")) return false;
+  return /(username|user_name|display_name|nickname|nick_name|full_name|first_name|last_name|family_name|given_name)/i.test(
+    key
+  );
 }
 
 function getProfilePicture(user) {
