@@ -6,7 +6,7 @@
     <title>پنل ادمین - مدیریت تیکت‌ها</title>
 
     <meta name="api-base-url" content="/api">
-    <meta name="tickets-endpoint" content="/api/support/tickets/index.json">
+    <meta name="tickets-endpoint" content="/api/support/tickets/">
 
     <link rel="stylesheet" href="../css/colors.css">
     <link rel="stylesheet" href="../css/admin-dashboard.css">
@@ -28,6 +28,23 @@
                     });
             </script>
         </header>
+
+        <section class="page-heading" aria-label="راهنمای مدیریت تیکت‌ها">
+            <div class="page-heading__info">
+                <h1>مدیریت تیکت‌های پشتیبانی</h1>
+                <p>تمام درخواست‌های کاربران در این بخش قابل رصد، پاسخ‌دهی و پیگیری هستند. با استفاده از فیلترها و میانبرهای سریع می‌توانید در کمترین زمان به درخواست‌های مهم رسیدگی کنید.</p>
+            </div>
+            <div class="page-heading__actions">
+                <button type="button" class="admin-button admin-button--ghost" data-action="reset-filters">
+                    <span aria-hidden="true">🧹</span>
+                    <span>پاکسازی فیلترها</span>
+                </button>
+                <button type="button" class="admin-button admin-button--primary" data-action="refresh">
+                    <span aria-hidden="true">🔄</span>
+                    <span>به‌روزرسانی داده‌ها</span>
+                </button>
+            </div>
+        </section>
 
         <section class="tickets-analytics" aria-label="آمار کلی تیکت‌ها">
             <article class="analytics-card">
@@ -65,12 +82,30 @@
         </section>
 
         <section class="tickets-panel" aria-label="مدیریت و بررسی تیکت‌ها">
+            <header class="tickets-panel__header">
+                <div class="tickets-panel__title">
+                    <h2>فهرست درخواست‌های پشتیبانی</h2>
+                    <p>با تمرکز بر وضعیت و اولویت، رسیدگی به تیکت‌ها سریع‌تر و هدفمندتر انجام می‌شود.</p>
+                </div>
+                <div class="tickets-panel__actions">
+                    <button type="button" class="admin-button admin-button--ghost" data-action="refresh">
+                        <span aria-hidden="true">↻</span>
+                        <span>به‌روزرسانی</span>
+                    </button>
+                    <button type="button" class="admin-button admin-button--primary" data-action="export">
+                        <span aria-hidden="true">📄</span>
+                        <span>گزارش‌گیری</span>
+                    </button>
+                </div>
+            </header>
+
             <div class="tickets-feedback" data-feedback></div>
 
-            <div class="tickets-toolbar" role="group" aria-label="ابزارهای فیلتر و جستجو">
-                <div class="toolbar-group toolbar-group--primary">
-                    <label class="toolbar-field search-field">
-                        <span class="sr-only">جستجو در تیکت‌ها</span>
+            <div class="tickets-panel__body">
+                <div class="tickets-toolbar" role="group" aria-label="ابزارهای فیلتر و جستجو">
+                    <div class="toolbar-group toolbar-group--primary">
+                        <label class="toolbar-field search-field">
+                            <span class="sr-only">جستجو در تیکت‌ها</span>
                         <input type="search" data-action="search" placeholder="جستجوی شناسه، موضوع یا نام کاربر">
                     </label>
                     <label class="toolbar-field">
@@ -119,31 +154,31 @@
                     <button type="button" class="toolbar-chip" data-quick="high">اولویت بالا</button>
                     <button type="button" class="toolbar-chip" data-quick="overdue">نزدیک به ددلاین</button>
                     <button type="button" class="toolbar-chip" data-quick="unassigned">بدون مسئول</button>
-                    <button type="button" class="toolbar-action" data-action="export">گزارش‌گیری</button>
                 </div>
-            </div>
+                </div>
 
-            <div class="tickets-content">
-                <aside class="tickets-list" data-ticket-list aria-label="فهرست تیکت‌ها"></aside>
+                <div class="tickets-content">
+                    <aside class="tickets-list" data-ticket-list aria-label="فهرست تیکت‌ها"></aside>
 
-                <section class="ticket-detail" data-ticket-detail aria-live="polite">
-                    <div class="ticket-placeholder">
-                        <h3>یک تیکت را انتخاب کنید</h3>
-                        <p>برای مشاهده جزئیات گفتگو، پاسخ‌دهی و مدیریت وضعیت، از فهرست سمت راست یک تیکت را انتخاب کنید.</p>
-                        <ul>
-                            <li>نمایش تاریخچه کامل پیام‌ها</li>
-                            <li>به‌روزرسانی سریع وضعیت و اولویت</li>
-                            <li>ثبت پاسخ عمومی یا یادداشت داخلی</li>
-                        </ul>
-                    </div>
-                </section>
+                    <section class="ticket-detail" data-ticket-detail aria-live="polite">
+                        <div class="ticket-placeholder">
+                            <h3>یک تیکت را انتخاب کنید</h3>
+                            <p>برای مشاهده جزئیات گفتگو، پاسخ‌دهی و مدیریت وضعیت، از فهرست سمت راست یک تیکت را انتخاب کنید.</p>
+                            <ul>
+                                <li>نمایش تاریخچه کامل پیام‌ها</li>
+                                <li>به‌روزرسانی سریع وضعیت و اولویت</li>
+                                <li>ثبت پاسخ عمومی یا یادداشت داخلی</li>
+                            </ul>
+                        </div>
+                    </section>
+                </div>
             </div>
         </section>
     </main>
 </div>
 
-<script src="/js/admin-sidebar.js"></script>
-<script src="/js/admin-dashboard.js"></script>
+<script type="module" src="/js/admin-sidebar.js"></script>
+<script type="module" src="/js/admin-dashboard.js"></script>
 <script type="module" src="/js/admin/admin-tickets.js"></script>
 </body>
 </html>
