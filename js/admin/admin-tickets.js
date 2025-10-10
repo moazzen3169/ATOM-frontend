@@ -1,4 +1,4 @@
-import { API_BASE_URL as CONFIG_API_BASE_URL } from "../config.js";
+import { API_BASE_URL } from "../config.js";
 import { ensureAdminAccess, handleUnauthorizedAccess } from "./admin-auth.js";
 
 const CONFIGURED_API_BASE_URL = normalizeBaseUrl(CONFIG_API_BASE_URL);
@@ -25,6 +25,7 @@ const state = {
   replyMode: "reply",
   isLoading: true,
   error: null,
+  lastFetch: null,
 };
 
 const statusDictionary = {
@@ -59,6 +60,16 @@ const elements = {
     overdue: document.querySelector("[data-stat=overdue]"),
     csat: document.querySelector("[data-stat=csat]"),
   },
+  searchInput: document.querySelector("[data-action=search]"),
+  statusFilter: document.querySelector("[data-filter=status]"),
+  priorityFilter: document.querySelector("[data-filter=priority]"),
+  channelFilter: document.querySelector("[data-filter=channel]"),
+  fromFilter: document.querySelector("[data-filter=from]"),
+  toFilter: document.querySelector("[data-filter=to]"),
+  quickButtons: document.querySelectorAll("[data-quick]"),
+  refreshButtons: document.querySelectorAll("[data-action=refresh]"),
+  resetFiltersButtons: document.querySelectorAll("[data-action=reset-filters]"),
+  exportButton: document.querySelector("[data-action=export]"),
 };
 
 const adminReady = ensureAdminAccess()
@@ -70,6 +81,14 @@ const adminReady = ensureAdminAccess()
     console.error("Admin verification failed", error);
     return null;
   });
+
+function debounce(func, delay) {
+  let timeoutId;
+  return function (...args) {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => func.apply(this, args), delay);
+  };
+}
 
 function getMetaContent(name) {
   return document.querySelector(`meta[name="${name}"]`)?.content?.trim() || "";
@@ -317,87 +336,82 @@ function markTicketAsRead(ticketId) {
   }
 }
 
-function renderTicketList() {
+function renderLoadingState() {
   if (!elements.list) return;
+  elements.list.innerHTML = `
+    <div class="tickets-list__state" role="status">
+      <span class="tickets-list__spinner" aria-hidden="true"></span>
+      <span>در حال بارگذاری تیکت‌ها...</span>
+    </div>
+  `;
+  renderTicketDetail(null, "loading");
+}
 
-  if (state.isLoading) {
-    elements.list.innerHTML = `
-      <div class="tickets-list__state" role="status">
-        <span class="tickets-list__spinner" aria-hidden="true"></span>
-        <span>در حال بارگذاری تیکت‌ها...</span>
+function renderErrorState() {
+  if (!elements.list) return;
+  elements.list.innerHTML = `
+    <div class="tickets-list__state is-error">
+      <span>امکان دریافت فهرست تیکت‌ها وجود ندارد.</span>
+      <button type="button" class="tickets-list__retry" data-action="retry-fetch">تلاش مجدد</button>
+    </div>
+  `;
+  elements.list
+    .querySelector("[data-action=retry-fetch]")
+    ?.addEventListener("click", () => {
+      void loadTickets({ showLoader: true });
+    });
+  renderTicketDetail(null, "error");
+}
+
+function renderEmptyState() {
+  if (!elements.list) return;
+  elements.list.innerHTML = `
+    <div class="tickets-list__state">
+      <span>هیچ تیکتی با فیلترهای انتخابی یافت نشد.</span>
+    </div>
+  `;
+  renderTicketDetail(null);
+  updateStatistics();
+}
+
+function renderTicketItem(ticket) {
+  const statusInfo = statusDictionary[ticket.status] || statusDictionary.new;
+  const badgeClass = statusInfo?.badge || "";
+  const unreadDot = ticket.unread ? '<span class="unread-dot" aria-hidden="true"></span>' : "";
+  const priorityTag = `tag-chip tag-chip--priority-${ticket.priority}`;
+  const channelTag = `tag-chip tag-chip--channel-${ticket.channel}`;
+
+  return `
+    <button class="ticket-item ${
+      ticket.id === state.activeTicketId ? "is-active" : ""
+    }" data-ticket-id="${ticket.id}" role="listitem">
+      <span class="ticket-avatar" aria-hidden="true">${getInitials(ticket.user?.name)}</span>
+      <div class="ticket-item__header">
+        <span class="ticket-subject">${ticket.subject}</span>
+        <span class="status-badge ${badgeClass}">${statusInfo.label}</span>
       </div>
-    `;
-    renderTicketDetail(null, "loading");
-    return;
-  }
-
-  if (state.error) {
-    elements.list.innerHTML = `
-      <div class="tickets-list__state is-error">
-        <span>امکان دریافت فهرست تیکت‌ها وجود ندارد.</span>
-        <button type="button" class="tickets-list__retry" data-action="retry-fetch">تلاش مجدد</button>
+      <div class="ticket-item__meta">
+        <span>${ticket.user?.name || "کاربر"}</span>
+        <span>${ticket.id}</span>
+        <span>${formatRelativeTime(ticket.updatedAt)}</span>
+        ${unreadDot}
       </div>
-    `;
-    elements.list
-      .querySelector("[data-action=retry-fetch]")
-      ?.addEventListener("click", () => {
-        void loadTickets({ showLoader: true });
-      });
-    renderTicketDetail(null, "error");
-    return;
-  }
-
-  const tickets = applyFilters();
-  state.filteredTickets = tickets;
-  ensureActiveTicket(tickets);
-
-  if (!tickets.length) {
-    elements.list.innerHTML = `
-      <div class="tickets-list__state">
-        <span>هیچ تیکتی با فیلترهای انتخابی یافت نشد.</span>
+      <div class="ticket-item__tags">
+        <span class="${priorityTag}">${priorityDictionary[ticket.priority] || ticket.priority}</span>
+        <span class="${channelTag}">${channelDictionary[ticket.channel] || ticket.channel}</span>
+        ${(ticket.tags || [])
+          .map((tag) => `<span class="tag-chip">${tag}</span>`)
+          .join("")}
       </div>
-    `;
-    renderTicketDetail(null);
-    updateStatistics();
-    return;
-  }
+    </button>
+  `;
+}
 
+function renderTicketsList(tickets) {
+  if (!elements.list) return;
   state.replyMode = "reply";
 
-  const items = tickets
-    .map((ticket) => {
-      const statusInfo = statusDictionary[ticket.status] || statusDictionary.new;
-      const badgeClass = statusInfo?.badge || "";
-      const unreadDot = ticket.unread ? '<span class="unread-dot" aria-hidden="true"></span>' : "";
-      const priorityTag = `tag-chip tag-chip--priority-${ticket.priority}`;
-      const channelTag = `tag-chip tag-chip--channel-${ticket.channel}`;
-
-      return `
-        <button class="ticket-item ${
-          ticket.id === state.activeTicketId ? "is-active" : ""
-        }" data-ticket-id="${ticket.id}" role="listitem">
-          <span class="ticket-avatar" aria-hidden="true">${getInitials(ticket.user?.name)}</span>
-          <div class="ticket-item__header">
-            <span class="ticket-subject">${ticket.subject}</span>
-            <span class="status-badge ${badgeClass}">${statusInfo.label}</span>
-          </div>
-          <div class="ticket-item__meta">
-            <span>${ticket.user?.name || "کاربر"}</span>
-            <span>${ticket.id}</span>
-            <span>${formatRelativeTime(ticket.updatedAt)}</span>
-            ${unreadDot}
-          </div>
-          <div class="ticket-item__tags">
-            <span class="${priorityTag}">${priorityDictionary[ticket.priority] || ticket.priority}</span>
-            <span class="${channelTag}">${channelDictionary[ticket.channel] || ticket.channel}</span>
-            ${(ticket.tags || [])
-              .map((tag) => `<span class="tag-chip">${tag}</span>`)
-              .join("")}
-          </div>
-        </button>
-      `;
-    })
-    .join("");
+  const items = tickets.map(renderTicketItem).join("");
 
   elements.list.innerHTML = `
     <div class="tickets-list__header">
@@ -420,43 +434,68 @@ function renderTicketList() {
   updateStatistics();
 }
 
-function renderTicketDetail(ticket, mode = "default") {
+function renderTicketList() {
+  if (!elements.list) return;
+
+  if (state.isLoading) {
+    renderLoadingState();
+    return;
+  }
+
+  if (state.error) {
+    renderErrorState();
+    return;
+  }
+
+  const tickets = applyFilters();
+  state.filteredTickets = tickets;
+  ensureActiveTicket(tickets);
+
+  if (!tickets.length) {
+    renderEmptyState();
+    return;
+  }
+
+  renderTicketsList(tickets);
+}
+
+function renderDetailLoading() {
   if (!elements.detail) return;
+  elements.detail.innerHTML = `
+    <div class="ticket-placeholder ticket-placeholder--loading">
+      <span class="ticket-placeholder__spinner" aria-hidden="true"></span>
+      <p>در حال آماده‌سازی جزئیات تیکت...</p>
+    </div>
+  `;
+}
 
-  if (mode === "loading") {
-    elements.detail.innerHTML = `
-      <div class="ticket-placeholder ticket-placeholder--loading">
-        <span class="ticket-placeholder__spinner" aria-hidden="true"></span>
-        <p>در حال آماده‌سازی جزئیات تیکت...</p>
-      </div>
-    `;
-    return;
-  }
+function renderDetailError() {
+  if (!elements.detail) return;
+  elements.detail.innerHTML = `
+    <div class="ticket-placeholder ticket-placeholder--error">
+      <h3>خطا در دریافت تیکت</h3>
+      <p>برای تلاش مجدد از فهرست تیکت‌ها دکمه «تلاش مجدد» را انتخاب کنید.</p>
+    </div>
+  `;
+}
 
-  if (mode === "error") {
-    elements.detail.innerHTML = `
-      <div class="ticket-placeholder ticket-placeholder--error">
-        <h3>خطا در دریافت تیکت</h3>
-        <p>برای تلاش مجدد از فهرست تیکت‌ها دکمه «تلاش مجدد» را انتخاب کنید.</p>
-      </div>
-    `;
-    return;
-  }
+function renderDetailPlaceholder() {
+  if (!elements.detail) return;
+  elements.detail.innerHTML = `
+    <div class="ticket-placeholder">
+      <h3>یک تیکت را انتخاب کنید</h3>
+      <p>برای مشاهده جزئیات گفتگو، پاسخ‌دهی و مدیریت وضعیت، از فهرست سمت راست یک تیکت را انتخاب کنید.</p>
+      <ul>
+        <li>نمایش تاریخچه کامل پیام‌ها</li>
+        <li>به‌روزرسانی سریع وضعیت و اولویت</li>
+        <li>ثبت پاسخ عمومی یا یادداشت داخلی</li>
+      </ul>
+    </div>
+  `;
+}
 
-  if (!ticket) {
-    elements.detail.innerHTML = `
-      <div class="ticket-placeholder">
-        <h3>یک تیکت را انتخاب کنید</h3>
-        <p>برای مشاهده جزئیات گفتگو، پاسخ‌دهی و مدیریت وضعیت، از فهرست سمت راست یک تیکت را انتخاب کنید.</p>
-        <ul>
-          <li>نمایش تاریخچه کامل پیام‌ها</li>
-          <li>به‌روزرسانی سریع وضعیت و اولویت</li>
-          <li>ثبت پاسخ عمومی یا یادداشت داخلی</li>
-        </ul>
-      </div>
-    `;
-    return;
-  }
+function renderDetailContent(ticket) {
+  if (!elements.detail) return;
 
   const statusOptions = Object.entries(statusDictionary)
     .map(
@@ -578,6 +617,27 @@ function renderTicketDetail(ticket, mode = "default") {
   `;
 
   bindDetailEvents(ticket);
+}
+
+function renderTicketDetail(ticket, mode = "default") {
+  if (!elements.detail) return;
+
+  if (mode === "loading") {
+    renderDetailLoading();
+    return;
+  }
+
+  if (mode === "error") {
+    renderDetailError();
+    return;
+  }
+
+  if (!ticket) {
+    renderDetailPlaceholder();
+    return;
+  }
+
+  renderDetailContent(ticket);
 }
 
 function renderMessage(message) {
@@ -794,43 +854,47 @@ function updateStatistics() {
 }
 
 function bindFilters() {
-  document.querySelector("[data-action=search]")?.addEventListener("input", (event) => {
-    state.filters.search = event.target.value;
+  const debouncedSearch = debounce((value) => {
+    state.filters.search = value;
     renderTicketList();
+  }, 300);
+
+  elements.searchInput?.addEventListener("input", (event) => {
+    debouncedSearch(event.target.value);
   });
 
-  document.querySelectorAll("[data-filter]").forEach((element) => {
-    element.addEventListener("change", () => {
-      const filterName = element.dataset.filter;
-      state.filters[filterName] = element.value || null;
-      renderTicketList();
-    });
+  [elements.statusFilter, elements.priorityFilter, elements.channelFilter, elements.fromFilter, elements.toFilter].forEach((element) => {
+    if (element) {
+      element.addEventListener("change", () => {
+        const filterName = element.dataset.filter;
+        state.filters[filterName] = element.value || null;
+        renderTicketList();
+      });
+    }
   });
 
-  document.querySelectorAll("[data-quick]").forEach((button) => {
+  elements.quickButtons.forEach((button) => {
     button.addEventListener("click", () => {
       state.filters.quick = button.dataset.quick;
-      document
-        .querySelectorAll("[data-quick]")
-        .forEach((btn) => btn.classList.toggle("is-active", btn === button));
+      elements.quickButtons.forEach((btn) => btn.classList.toggle("is-active", btn === button));
       renderTicketList();
     });
   });
 
-  document.querySelectorAll("[data-action=refresh]").forEach((button) => {
+  elements.refreshButtons.forEach((button) => {
     button.addEventListener("click", () => {
       void loadTickets({ showLoader: true, showSuccess: true });
     });
   });
 
-  document.querySelectorAll("[data-action=reset-filters]").forEach((button) => {
+  elements.resetFiltersButtons.forEach((button) => {
     button.addEventListener("click", () => {
       resetFilters();
       showFeedback("فیلترها بازنشانی شدند.");
     });
   });
 
-  document.querySelector("[data-action=export]")?.addEventListener("click", () => {
+  elements.exportButton?.addEventListener("click", () => {
     showFeedback("گزارش وضعیت تیکت‌ها آماده و برای دانلود در دسترس قرار گرفت.");
   });
 }
@@ -844,21 +908,22 @@ function resetFilters() {
   state.filters.to = null;
   state.filters.quick = "all";
 
-  const searchInput = document.querySelector("[data-action=search]");
-  if (searchInput) {
-    searchInput.value = "";
+  if (elements.searchInput) {
+    elements.searchInput.value = "";
   }
 
-  document.querySelectorAll("[data-filter]").forEach((element) => {
-    const filterName = element.dataset.filter;
-    if (filterName === "from" || filterName === "to") {
-      element.value = "";
-    } else {
-      element.value = "all";
+  [elements.statusFilter, elements.priorityFilter, elements.channelFilter, elements.fromFilter, elements.toFilter].forEach((element) => {
+    if (element) {
+      const filterName = element.dataset.filter;
+      if (filterName === "from" || filterName === "to") {
+        element.value = "";
+      } else {
+        element.value = "all";
+      }
     }
   });
 
-  document.querySelectorAll("[data-quick]").forEach((button) => {
+  elements.quickButtons.forEach((button) => {
     button.classList.toggle("is-active", button.dataset.quick === "all");
   });
 
@@ -899,10 +964,34 @@ async function loadTickets({ showLoader = false, showSuccess = false } = {}) {
       return;
     }
     if (!response.ok) {
-      throw new Error(`وضعیت پاسخ نامعتبر بود (${response.status})`);
+      let errorMsg = `وضعیت پاسخ نامعتبر بود (${response.status})`;
+      if (response.status === 404) {
+        errorMsg = "فهرست تیکت‌ها یافت نشد.";
+      } else if (response.status >= 500) {
+        errorMsg = "خطای سرور رخ داده است. لطفاً بعداً تلاش کنید.";
+      } else if (response.status >= 400 && response.status < 500) {
+        errorMsg = "درخواست نامعتبر است. تنظیمات را بررسی کنید.";
+      }
+      throw new Error(errorMsg);
     }
-    const payload = await response.json();
-    const normalizedTickets = extractTickets(payload).map(normalizeTicket);
+
+    let payload;
+    try {
+      payload = await response.json();
+    } catch (parseError) {
+      throw new Error("پاسخ سرور نامعتبر است. لطفاً دوباره تلاش کنید.");
+    }
+
+    if (!payload || typeof payload !== 'object') {
+      throw new Error("داده‌های دریافتی نامعتبر است.");
+    }
+
+    const rawTickets = extractTickets(payload);
+    if (!Array.isArray(rawTickets)) {
+      throw new Error("فرمت داده‌های تیکت‌ها نامعتبر است.");
+    }
+
+    const normalizedTickets = rawTickets.map(normalizeTicket);
     state.tickets = normalizedTickets;
     state.error = null;
     ensureActiveTicket(state.tickets);
@@ -910,13 +999,17 @@ async function loadTickets({ showLoader = false, showSuccess = false } = {}) {
       showFeedback("فهرست تیکت‌ها به‌روزرسانی شد.");
     }
   } catch (error) {
-    console.error("خطا در دریافت تیکت‌ها", error);
-    state.error = error?.message || "خطا در دریافت اطلاعات.";
-    if (!state.tickets.length) {
-      showFeedback("بارگذاری اطلاعات تیکت‌ها با خطا مواجه شد.", "error");
-    }
-    if (error?.name === "AbortError") {
-      showFeedback("ارتباط با سرور زمان‌بر شد. لطفا دوباره تلاش کنید.", "warning");
+    console.error("خطا در دریافت تیکت‌ها:", error);
+    state.error = error.message || "خطای نامشخص در دریافت اطلاعات.";
+
+    if (error.name === "TypeError" && error.message.includes("Failed to fetch")) {
+      showFeedback("خطای شبکه. لطفاً اتصال اینترنت خود را بررسی کنید.", "error");
+    } else if (error.name === "AbortError") {
+      showFeedback("درخواست زمان‌بر شد. لطفاً دوباره تلاش کنید.", "warning");
+    } else if (!state.tickets.length) {
+      showFeedback(`${state.error} بارگذاری با خطا مواجه شد.`, "error");
+    } else {
+      showFeedback("خطایی رخ داد. داده‌های فعلی نمایش داده می‌شود.", "warning");
     }
   } finally {
     window.clearTimeout(timeoutId);
