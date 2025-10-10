@@ -1,8 +1,15 @@
-const API_BASE_URL = normalizeBaseUrl(getMetaContent("api-base-url"));
+import { API_BASE_URL as CONFIG_API_BASE_URL } from "../config.js";
+import { ensureAdminAccess, handleUnauthorizedAccess } from "./admin-auth.js";
+
+const CONFIGURED_API_BASE_URL = normalizeBaseUrl(CONFIG_API_BASE_URL);
+const META_API_BASE_URL = normalizeBaseUrl(getMetaContent("api-base-url"));
+const API_BASE_URL = META_API_BASE_URL || CONFIGURED_API_BASE_URL;
 const TICKETS_ENDPOINT = resolveTicketsEndpoint();
 const REQUEST_TIMEOUT = 12000;
+const DEFAULT_TICKETS_PATH = "api/support/tickets/";
 
 const state = {
+  adminUser: null,
   tickets: [],
   filteredTickets: [],
   filters: {
@@ -54,6 +61,16 @@ const elements = {
   },
 };
 
+const adminReady = ensureAdminAccess()
+  .then((adminUser) => {
+    state.adminUser = adminUser;
+    return adminUser;
+  })
+  .catch((error) => {
+    console.error("Admin verification failed", error);
+    return null;
+  });
+
 function getMetaContent(name) {
   return document.querySelector(`meta[name="${name}"]`)?.content?.trim() || "";
 }
@@ -66,10 +83,9 @@ function normalizeBaseUrl(base) {
 function resolveTicketsEndpoint() {
   const directEndpoint = getMetaContent("tickets-endpoint");
   if (directEndpoint) {
-    return directEndpoint;
+    return toAbsoluteUrl(directEndpoint);
   }
-  const base = API_BASE_URL || "/api";
-  return joinUrlSegments(base, "support/tickets/");
+  return toAbsoluteUrl(DEFAULT_TICKETS_PATH);
 }
 
 function joinUrlSegments(base, path) {
@@ -82,6 +98,15 @@ function joinUrlSegments(base, path) {
     return normalizedBase;
   }
   return `${normalizedBase}/${normalizedPath}`;
+}
+
+function toAbsoluteUrl(path) {
+  if (!path) return "";
+  if (/^https?:\/\//i.test(path)) {
+    return path;
+  }
+  const base = API_BASE_URL || CONFIGURED_API_BASE_URL || "";
+  return joinUrlSegments(base || "", path);
 }
 
 function showFeedback(message, type = "success") {
@@ -792,12 +817,63 @@ function bindFilters() {
     });
   });
 
+  document.querySelectorAll("[data-action=refresh]").forEach((button) => {
+    button.addEventListener("click", () => {
+      void loadTickets({ showLoader: true, showSuccess: true });
+    });
+  });
+
+  document.querySelectorAll("[data-action=reset-filters]").forEach((button) => {
+    button.addEventListener("click", () => {
+      resetFilters();
+      showFeedback("فیلترها بازنشانی شدند.");
+    });
+  });
+
   document.querySelector("[data-action=export]")?.addEventListener("click", () => {
     showFeedback("گزارش وضعیت تیکت‌ها آماده و برای دانلود در دسترس قرار گرفت.");
   });
 }
 
-async function loadTickets({ showLoader = false } = {}) {
+function resetFilters() {
+  state.filters.search = "";
+  state.filters.status = "all";
+  state.filters.priority = "all";
+  state.filters.channel = "all";
+  state.filters.from = null;
+  state.filters.to = null;
+  state.filters.quick = "all";
+
+  const searchInput = document.querySelector("[data-action=search]");
+  if (searchInput) {
+    searchInput.value = "";
+  }
+
+  document.querySelectorAll("[data-filter]").forEach((element) => {
+    const filterName = element.dataset.filter;
+    if (filterName === "from" || filterName === "to") {
+      element.value = "";
+    } else {
+      element.value = "all";
+    }
+  });
+
+  document.querySelectorAll("[data-quick]").forEach((button) => {
+    button.classList.toggle("is-active", button.dataset.quick === "all");
+  });
+
+  renderTicketList();
+}
+
+async function loadTickets({ showLoader = false, showSuccess = false } = {}) {
+  const adminUser = await adminReady;
+  if (!adminUser) {
+    state.isLoading = false;
+    state.error = "برای مشاهده تیکت‌ها نیاز به حساب ادمین دارید.";
+    renderTicketList();
+    return;
+  }
+
   if (showLoader) {
     state.isLoading = true;
     state.error = null;
@@ -808,10 +884,20 @@ async function loadTickets({ showLoader = false } = {}) {
   const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
 
   try {
+    const headers = { Accept: "application/json" };
+    const token = localStorage.getItem("access_token");
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
     const response = await fetch(TICKETS_ENDPOINT, {
-      headers: { Accept: "application/json" },
+      headers,
       signal: controller.signal,
     });
+    if (response.status === 401 || response.status === 403) {
+      handleUnauthorizedAccess("نشست شما منقضی شده است. لطفا دوباره وارد شوید.");
+      return;
+    }
     if (!response.ok) {
       throw new Error(`وضعیت پاسخ نامعتبر بود (${response.status})`);
     }
@@ -820,11 +906,17 @@ async function loadTickets({ showLoader = false } = {}) {
     state.tickets = normalizedTickets;
     state.error = null;
     ensureActiveTicket(state.tickets);
+    if (showSuccess) {
+      showFeedback("فهرست تیکت‌ها به‌روزرسانی شد.");
+    }
   } catch (error) {
     console.error("خطا در دریافت تیکت‌ها", error);
     state.error = error?.message || "خطا در دریافت اطلاعات.";
     if (!state.tickets.length) {
       showFeedback("بارگذاری اطلاعات تیکت‌ها با خطا مواجه شد.", "error");
+    }
+    if (error?.name === "AbortError") {
+      showFeedback("ارتباط با سرور زمان‌بر شد. لطفا دوباره تلاش کنید.", "warning");
     }
   } finally {
     window.clearTimeout(timeoutId);
@@ -852,8 +944,19 @@ function getInitials(name) {
   return (parts[0][0] || "") + (parts[parts.length - 1][0] || "");
 }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init);
-} else {
-  init();
+async function bootstrapTicketsModule() {
+  const adminUser = await adminReady;
+  if (!adminUser) {
+    return;
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      init();
+    });
+  } else {
+    init();
+  }
 }
+
+void bootstrapTicketsModule();
