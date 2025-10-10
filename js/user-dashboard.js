@@ -277,23 +277,77 @@ async function loadDashboardData() {
 
 function displayUserTeams(teams) {
     const container = document.getElementById('teams_container');
-    container.innerHTML = ''; // Clear existing content
+    if (!container) return;
 
-    if (teams.length === 0) {
+    container.innerHTML = '';
+
+    if (!teams || teams.length === 0) {
         container.innerHTML = '<p>هیچ تیمی یافت نشد.</p>';
         return;
     }
 
     teams.forEach(team => {
-        const teamCard = document.createElement('div');
-        teamCard.className = 'team_card'; // Assuming CSS class exists
-        teamCard.innerHTML = `
-            <img src="${team.team_picture || '../img/default-team.png'}" alt="${team.name}" class="team_image">
-            <h3>${team.name}</h3>
-            <p>کاپیتان: ${team.captain || 'نامشخص'}</p>
-            <p>اعضا: ${team.members ? team.members.length : 0}</p>
-        `;
-        container.appendChild(teamCard);
+        const teamItem = document.createElement('div');
+        teamItem.className = 'team_item';
+
+        const teamInfo = document.createElement('div');
+        teamInfo.className = 'team_info';
+
+        const pictureWrapper = document.createElement('div');
+        pictureWrapper.className = 'team_picturse';
+
+        const picture = document.createElement('img');
+        picture.src = team.team_picture || '../img/profile.jpg';
+        picture.alt = team.name || 'تصویر تیم';
+        pictureWrapper.appendChild(picture);
+
+        const teamDetail = document.createElement('div');
+        teamDetail.className = 'team_detail';
+
+        const teamName = document.createElement('p');
+        teamName.textContent = team.name || 'بدون نام';
+        teamDetail.appendChild(teamName);
+
+        const memberCount = document.createElement('div');
+        memberCount.className = 'team_member_count';
+
+        const memberLabel = document.createElement('span');
+        memberLabel.textContent = 'اعضا';
+        const memberValue = document.createElement('span');
+        const membersLength = Array.isArray(team.members) ? team.members.length : (team.members_count || 0);
+        memberValue.textContent = membersLength;
+
+        memberCount.appendChild(memberLabel);
+        memberCount.appendChild(memberValue);
+        teamDetail.appendChild(memberCount);
+
+        teamInfo.appendChild(pictureWrapper);
+        teamInfo.appendChild(teamDetail);
+
+        const teamButtons = document.createElement('div');
+        teamButtons.className = 'team_buttons';
+
+        const viewButton = document.createElement('button');
+        viewButton.type = 'button';
+        viewButton.className = 'team_btn';
+        viewButton.title = 'مشاهده تیم';
+        viewButton.setAttribute('aria-label', 'مشاهده تیم');
+        viewButton.textContent = '👁';
+
+        const manageButton = document.createElement('button');
+        manageButton.type = 'button';
+        manageButton.className = 'team_btn';
+        manageButton.title = 'مدیریت تیم';
+        manageButton.setAttribute('aria-label', 'مدیریت تیم');
+        manageButton.textContent = '⚙';
+
+        teamButtons.appendChild(viewButton);
+        teamButtons.appendChild(manageButton);
+
+        teamItem.appendChild(teamInfo);
+        teamItem.appendChild(teamButtons);
+
+        container.appendChild(teamItem);
     });
 }
 
