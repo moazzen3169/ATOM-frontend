@@ -106,8 +106,8 @@
       </div>
       <div class="form_control">
         <label for="create_team_picture">تصویر تیم (اختیاری)</label>
-        <input type="url" id="create_team_picture" name="team_picture" placeholder="https://example.com/team.png">
-        <span class="form_hint">در صورت عدم انتخاب، تصویر پیش‌فرض استفاده می‌شود.</span>
+        <input type="file" id="create_team_picture" name="team_picture" accept="image/*">
+        <span class="form_hint">می‌توانید تصویری از دستگاه خود انتخاب کنید. در صورت عدم انتخاب، تصویر پیش‌فرض استفاده می‌شود.</span>
       </div>
       <div class="modal_actions">
         <button type="button" class="btn btn--ghost" data-close-modal>انصراف</button>
@@ -132,7 +132,8 @@
       </div>
       <div class="form_control">
         <label for="edit_team_picture">تصویر تیم (اختیاری)</label>
-        <input type="url" id="edit_team_picture" name="team_picture" placeholder="https://example.com/team.png">
+        <input type="file" id="edit_team_picture" name="team_picture" accept="image/*">
+        <span class="form_hint" id="edit_team_picture_hint">برای تغییر تصویر تیم، فایل جدیدی از دستگاه خود انتخاب کنید.</span>
       </div>
       <div class="modal_actions">
         <button type="button" class="btn btn--ghost" data-close-modal>انصراف</button>

@@ -42,28 +42,115 @@ function extractListFromObject(source, keys) {
 
 function extractUserDisplayName(user) {
     if (!user) return '';
-    if (typeof user === 'string') return user;
-    if (typeof user === 'number') return String(user);
-    return user.username || user.full_name || user.display_name || user.email || String(user.id || 'کاربر');
+
+    if (typeof user === 'string') {
+        return user;
+    }
+
+    const objectsToInspect = [];
+
+    if (typeof user === 'object') {
+        objectsToInspect.push(user);
+
+        const nestedKeys = [
+            'user',
+            'member',
+            'player',
+            'profile',
+            'account',
+            'participant',
+            'owner',
+            'captain',
+            'inviter',
+            'invitee'
+        ];
+
+        nestedKeys.forEach((key) => {
+            const value = user[key];
+            if (value && typeof value === 'object') {
+                objectsToInspect.push(value);
+            }
+        });
+    }
+
+    for (const candidate of objectsToInspect) {
+        const nameFields = [
+            'username',
+            'user_name',
+            'gamer_tag',
+            'gamerTag',
+            'full_name',
+            'display_name',
+            'nickname',
+            'name'
+        ];
+
+        for (const field of nameFields) {
+            const value = candidate[field];
+            if (value) {
+                return String(value);
+            }
+        }
+
+        if (candidate.email) {
+            return String(candidate.email);
+        }
+    }
+
+    if (typeof user === 'number') {
+        if (currentUserId !== null && String(user) === String(currentUserId) && currentUsername) {
+            return currentUsername;
+        }
+        return 'کاربر';
+    }
+
+    if (typeof user === 'object') {
+        if (user.id && currentUserId !== null && String(user.id) === String(currentUserId) && currentUsername) {
+            return currentUsername;
+        }
+        if (user.id) {
+            return 'کاربر';
+        }
+    }
+
+    return '';
 }
 
 function getTeamMembersMeta(team) {
     const membersList = team.members_detail || team.members_info || team.members_data || team.members;
+    const supplementalNames = Array.isArray(team.members_usernames)
+        ? team.members_usernames
+        : Array.isArray(team.member_usernames)
+            ? team.member_usernames
+            : Array.isArray(team.members_names)
+                ? team.members_names
+                : [];
+
     const memberCount = typeof team.members_count === 'number'
         ? team.members_count
         : Array.isArray(membersList)
             ? membersList.length
-            : Array.isArray(team.members)
-                ? team.members.length
-                : 0;
+            : supplementalNames.length
+                ? supplementalNames.length
+                : Array.isArray(team.members)
+                    ? team.members.length
+                    : 0;
 
-    if (!Array.isArray(membersList)) {
-        return { count: memberCount, chips: '' };
+    let memberNames = [];
+
+    if (Array.isArray(membersList)) {
+        memberNames = membersList
+            .map(member => extractUserDisplayName(member))
+            .filter(Boolean);
     }
 
-    const memberNames = membersList
-        .map(member => extractUserDisplayName(member))
-        .filter(Boolean);
+    if (!memberNames.length && supplementalNames.length) {
+        memberNames = supplementalNames.map(name => String(name)).filter(Boolean);
+    }
+
+    if (!memberNames.length) {
+        return { count: memberCount, chips: '' };
+    }
 
     const previewNames = memberNames.slice(0, 5);
     let chips = previewNames
@@ -1156,7 +1243,23 @@ function openEditTeamModal(teamId) {
     const pictureField = document.getElementById('edit_team_picture');
     if (idField) idField.value = team.id;
     if (nameField) nameField.value = team.name || '';
-    if (pictureField) pictureField.value = team.team_picture || '';
+    if (pictureField) {
+        if (pictureField.type === 'file') {
+            pictureField.value = '';
+            pictureField.dataset.currentImage = team.team_picture || '';
+        } else {
+            pictureField.value = team.team_picture || '';
+        }
+    }
+
+    const pictureHint = document.getElementById('edit_team_picture_hint');
+    if (pictureHint) {
+        const baseHint = 'برای تغییر تصویر تیم، فایل جدیدی از دستگاه خود انتخاب کنید.';
+        const currentImage = team.team_picture || '';
+        pictureHint.textContent = currentImage
+            ? `${baseHint} تصویر فعلی: ${currentImage}`
+            : baseHint;
+    }
 
     openModal('edit_team_modal');
 }
@@ -1199,16 +1302,18 @@ async function handleCreateTeam(event) {
     const form = event.target;
     const formData = new FormData(form);
     const name = (formData.get('name') || '').toString().trim();
-    const teamPicture = (formData.get('team_picture') || '').toString().trim();
+    const teamPicture = formData.get('team_picture');
 
     if (!name) {
         showError('نام تیم را وارد کنید.');
         return;
     }
 
-    const payload = { name };
-    if (teamPicture) {
-        payload.team_picture = teamPicture;
+    const payload = new FormData();
+    payload.append('name', name);
+
+    if (teamPicture instanceof File && teamPicture.size > 0) {
+        payload.append('team_picture', teamPicture);
     }
 
     const submitButton = form.querySelector('button[type="submit"]');
@@ -1217,7 +1322,7 @@ async function handleCreateTeam(event) {
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/api/users/teams/`, {
             method: 'POST',
-            body: JSON.stringify(payload)
+            body: payload
         });
 
         if (!response.ok) {
@@ -1243,7 +1348,7 @@ async function handleEditTeam(event) {
     const formData = new FormData(form);
     const teamId = formData.get('team_id');
     const name = (formData.get('name') || '').toString().trim();
-    const teamPicture = (formData.get('team_picture') || '').toString().trim();
+    const teamPicture = formData.get('team_picture');
 
     if (!teamId) {
         showError('تیم معتبر نیست.');
@@ -1255,9 +1360,11 @@ async function handleEditTeam(event) {
         return;
     }
 
-    const payload = { name };
-    if (teamPicture) {
-        payload.team_picture = teamPicture;
+    const payload = new FormData();
+    payload.append('name', name);
+
+    if (teamPicture instanceof File && teamPicture.size > 0) {
+        payload.append('team_picture', teamPicture);
     }
 
     const submitButton = form.querySelector('button[type="submit"]');
@@ -1266,7 +1373,7 @@ async function handleEditTeam(event) {
     try {
         const response = await fetchWithAuth(`${API_BASE_URL}/api/users/teams/${teamId}/`, {
             method: 'PATCH',
-            body: JSON.stringify(payload)
+            body: payload
         });
 
         if (!response.ok) {
