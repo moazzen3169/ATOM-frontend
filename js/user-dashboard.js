@@ -2,6 +2,8 @@ import { API_BASE_URL } from "../js/config.js";
 
 let authTokenCache = null;
 let currentUserId = null;
+let currentUsername = '';
+let currentUserEmail = '';
 let teamsState = [];
 let incomingInvitationsState = [];
 let outgoingInvitationsState = [];
@@ -82,6 +84,208 @@ function getCaptainName(team) {
     return extractUserDisplayName(
         team.captain_detail || team.captain_info || team.captain_user || team.captain_username || team.captain
     );
+}
+
+function getTeamIdentifier(item) {
+    if (!item) return null;
+    if (typeof item === 'number') return item;
+    if (typeof item === 'string') return item;
+
+    const possibleKeys = ['team_id', 'teamId', 'teamID'];
+    for (const key of possibleKeys) {
+        if (typeof item[key] !== 'undefined' && item[key] !== null) {
+            return item[key];
+        }
+    }
+
+    if (typeof item.id !== 'undefined' && item.id !== null) {
+        return item.id;
+    }
+
+    const nestedKeys = ['team', 'team_info', 'team_detail', 'team_data'];
+    for (const key of nestedKeys) {
+        if (item[key]) {
+            const nestedId = getTeamIdentifier(item[key]);
+            if (nestedId !== null) {
+                return nestedId;
+            }
+        }
+    }
+
+    return null;
+}
+
+function doesMemberMatchCurrentUser(member) {
+    if (!member) return false;
+    const idCandidates = [
+        member.id,
+        member.user,
+        member.user_id,
+        member.member_id,
+        member.player_id,
+        member.player?.id,
+        member.user?.id,
+        member.profile?.id
+    ];
+
+    if (typeof member === 'number' || typeof member === 'string') {
+        idCandidates.push(member);
+    }
+
+    const normalizedCurrentId = currentUserId !== null && typeof currentUserId !== 'undefined'
+        ? String(currentUserId)
+        : null;
+
+    for (const candidate of idCandidates) {
+        if (candidate === null || typeof candidate === 'undefined') continue;
+        if (normalizedCurrentId !== null && String(candidate) === normalizedCurrentId) {
+            return true;
+        }
+    }
+
+    const usernameCandidates = [
+        member.username,
+        member.user?.username,
+        member.player?.username,
+        member.member?.username,
+        member.profile?.username
+    ];
+
+    const normalizedCurrentUsername = currentUsername ? currentUsername.toLowerCase() : '';
+    for (const candidate of usernameCandidates) {
+        if (candidate && normalizedCurrentUsername && candidate.toLowerCase() === normalizedCurrentUsername) {
+            return true;
+        }
+    }
+
+    const emailCandidates = [
+        member.email,
+        member.user?.email,
+        member.player?.email,
+        member.member?.email,
+        member.profile?.email
+    ];
+
+    const normalizedCurrentEmail = currentUserEmail ? currentUserEmail.toLowerCase() : '';
+    for (const candidate of emailCandidates) {
+        if (candidate && normalizedCurrentEmail && candidate.toLowerCase() === normalizedCurrentEmail) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function isUserMemberOfTeam(team) {
+    if (!team) return false;
+
+    const truthyFlags = ['is_member', 'is_joined', 'joined', 'belongs_to_user', 'is_owner'];
+    for (const key of truthyFlags) {
+        if (team[key]) {
+            return true;
+        }
+    }
+
+    const membershipObjects = ['membership', 'user_membership', 'membership_info'];
+    for (const key of membershipObjects) {
+        const membership = team[key];
+        if (membership && typeof membership === 'object') {
+            if (doesMemberMatchCurrentUser(membership)) {
+                return true;
+            }
+        }
+    }
+
+    const memberLists = [
+        'members_detail',
+        'members_info',
+        'members_data',
+        'members',
+        'team_members',
+        'players',
+        'team_members_detail'
+    ];
+
+    for (const key of memberLists) {
+        const list = team[key];
+        if (Array.isArray(list) && list.some(doesMemberMatchCurrentUser)) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function getTeamStatusForUser(team) {
+    const statusKeys = [
+        'membership_status',
+        'user_status',
+        'user_membership_status',
+        'membership_state',
+        'relation_status',
+        'status'
+    ];
+
+    for (const key of statusKeys) {
+        const value = team[key];
+        if (value) {
+            return String(value).toLowerCase();
+        }
+    }
+
+    if (team.membership && typeof team.membership === 'object' && team.membership.status) {
+        return String(team.membership.status).toLowerCase();
+    }
+
+    return '';
+}
+
+function hasPendingInvitationFromTeam(teamId) {
+    if (!teamId) return false;
+    const stringId = String(teamId);
+    return incomingInvitationsState.some(invitation => {
+        const directTeamId = invitation && typeof invitation === 'object' ? getTeamIdentifier(invitation.team) : null;
+        const invitationTeamId = directTeamId !== null ? directTeamId : getTeamIdentifier(invitation);
+        return invitationTeamId !== null && String(invitationTeamId) === stringId;
+    });
+}
+
+function filterTeamsForUser(teams) {
+    if (!Array.isArray(teams)) return [];
+
+    return teams.filter(team => {
+        if (!team) return false;
+
+        if (isTeamCaptain(team)) {
+            return true;
+        }
+
+        if (isUserMemberOfTeam(team)) {
+            return true;
+        }
+
+        const teamId = getTeamIdentifier(team);
+        if (teamId !== null && hasPendingInvitationFromTeam(teamId)) {
+            return true;
+        }
+
+        const status = getTeamStatusForUser(team);
+        if (status) {
+            const allowedStatuses = ['invited', 'pending', 'requested', 'waiting', 'accepted', 'approved'];
+            if (allowedStatuses.includes(status)) {
+                return true;
+            }
+        }
+
+        const invitationFlags = ['has_invitation', 'is_invited', 'pending_invitation'];
+        for (const key of invitationFlags) {
+            if (team[key]) {
+                return true;
+            }
+        }
+
+        return false;
+    });
 }
 
 function getInvitationStatus(invitation) {
@@ -420,6 +624,8 @@ function displayUserProfile(data, teamsCount, tournamentsCount) {
     if (data && typeof data.id !== 'undefined') {
         currentUserId = data.id;
     }
+    currentUsername = username || '';
+    currentUserEmail = data.email || '';
     localStorage.setItem("username", username);
     if (document.getElementById("header_user_name")) {
         document.getElementById("header_user_name").textContent = username;
@@ -565,21 +771,7 @@ function displayUserTeams(teamsInput) {
 
     const teams = toTeamArray(teamsInput);
     teamsState = teams;
-
-    container.innerHTML = '';
-    updateTeamsCounter(teams.length);
-
-    if (teams.length === 0) {
-        container.innerHTML = '<div class="empty_state">تیمی برای نمایش وجود ندارد. با دکمه بالا یک تیم جدید بسازید.</div>';
-        return;
-    }
-
-    const fragment = document.createDocumentFragment();
-    teams.forEach(team => {
-        fragment.appendChild(createTeamCard(team));
-    });
-
-    container.appendChild(fragment);
+    renderTeamsList();
 }
 
 function updateTeamsCounter(count) {
@@ -587,6 +779,28 @@ function updateTeamsCounter(count) {
     if (counter) {
         counter.textContent = `${count} تیم`;
     }
+}
+
+function renderTeamsList() {
+    const container = document.getElementById('teams_container');
+    if (!container) return;
+
+    const relevantTeams = filterTeamsForUser(teamsState);
+
+    container.innerHTML = '';
+    updateTeamsCounter(relevantTeams.length);
+
+    if (relevantTeams.length === 0) {
+        container.innerHTML = '<div class="empty_state">تیمی برای نمایش وجود ندارد. با دکمه بالا یک تیم جدید بسازید.</div>';
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    relevantTeams.forEach(team => {
+        fragment.appendChild(createTeamCard(team));
+    });
+
+    container.appendChild(fragment);
 }
 
 function createTeamCard(team) {
@@ -679,6 +893,7 @@ function handleTeamExtrasFromDashboard(dashboardData) {
     displayIncomingInvitations(incomingInvitationsState);
     displayJoinRequests(joinRequestsState);
     displayOutgoingInvitations(outgoingInvitationsState);
+    renderTeamsList();
 }
 
 function displayIncomingInvitations(invitations) {
