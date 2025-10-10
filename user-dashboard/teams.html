@@ -10,23 +10,15 @@
     <link rel="stylesheet" href="../css/user-sidebar.css">
     <link rel="stylesheet" href="../css/user-teams.css">
     <link rel="stylesheet" href="../fonts/fonts.css">
-
-
-
 </head>
 <body>
-    
-
-
-    
-
 <div class="body_container">
     <!-- سایدبار -->
     <aside id="sidebar" class="sidebar"></aside>
-  
+
     <!-- محتوای اصلی -->
     <main class="main_content">
-      
+
     <!-- هدر -->
     <header class="dashboard_header" id="dashboard_header">
       <script>
@@ -39,40 +31,158 @@
       </script>
     </header>
 
-
-
     <!-- تیم‌ها -->
-    <section class="user_teams_creat">
-      <div class="user_teams_creat">
-        <div class="team_title">
-          <span>تیم‌های شما</span>
-          <a href="#" class="creat_team_link">ایجاد تیم +</a>
+    <section class="user_teams_page">
+      <div class="teams_toolbar">
+        <div class="teams_toolbar__title">
+          <span>مدیریت تیم‌ها</span>
+          <h1>تیم‌های شما</h1>
         </div>
-        <div class="teams_container" id="teams_container">
-          <!-- تیم‌ها اینجا با JS پر می‌شوند -->
+        <div class="teams_toolbar__actions">
+          <a href="#" class="btn btn--primary creat_team_link">ایجاد تیم جدید</a>
         </div>
+      </div>
+
+      <div class="teams_grid">
+        <div class="teams_list_wrapper">
+          <div class="teams_list_header">
+            <h2>لیست تیم‌ها</h2>
+            <span id="teams_counter" aria-live="polite">0 تیم</span>
+          </div>
+          <div class="teams_list" id="teams_container" aria-live="polite">
+            <div class="empty_state">در حال بارگذاری تیم‌ها...</div>
+          </div>
+        </div>
+
+        <aside class="teams_sidebar" aria-label="مدیریت درخواست‌ها">
+          <section class="teams_panel">
+            <header>
+              <h3>دعوت‌نامه‌های دریافتی</h3>
+              <p>پاسخ به دعوت‌ها برای پیوستن به تیم‌های دیگر</p>
+            </header>
+            <div class="teams_panel__body" id="incoming_invitations_container" role="list">
+              <div class="empty_state">دعوت‌نامه فعالی وجود ندارد.</div>
+            </div>
+          </section>
+
+          <section class="teams_panel">
+            <header>
+              <h3>درخواست‌های پیوستن به تیم‌های من</h3>
+              <p>درخواست‌هایی که دیگر کاربران ارسال کرده‌اند</p>
+            </header>
+            <div class="teams_panel__body" id="team_join_requests_container" role="list">
+              <div class="empty_state">درخواستی ثبت نشده است.</div>
+            </div>
+          </section>
+
+          <section class="teams_panel">
+            <header>
+              <h3>دعوت‌های ارسال‌شده</h3>
+              <p>پیگیری وضعیت دعوت‌هایی که ارسال کرده‌اید</p>
+            </header>
+            <div class="teams_panel__body" id="outgoing_invitations_container" role="list">
+              <div class="empty_state">تا کنون دعوتی ارسال نشده است.</div>
+            </div>
+          </section>
+        </aside>
       </div>
     </section>
 
-
-    
- 
-</main>
+    </main>
 </div>
 
+<!-- مودال ایجاد تیم -->
+<div class="modal" id="create_team_modal" aria-hidden="true">
+  <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="create_team_modal_title">
+    <div class="modal__header">
+      <h2 id="create_team_modal_title">ایجاد تیم جدید</h2>
+      <button type="button" class="modal__close" data-close-modal aria-label="بستن">&times;</button>
+    </div>
+    <form class="modal__body modal_form" id="create_team_form">
+      <div class="form_control">
+        <label for="create_team_name">نام تیم</label>
+        <input type="text" id="create_team_name" name="name" required maxlength="100" data-autofocus>
+        <span class="form_hint">نامی یکتا برای تیم خود انتخاب کنید.</span>
+      </div>
+      <div class="form_control">
+        <label for="create_team_picture">تصویر تیم (اختیاری)</label>
+        <input type="url" id="create_team_picture" name="team_picture" placeholder="https://example.com/team.png">
+        <span class="form_hint">در صورت عدم انتخاب، تصویر پیش‌فرض استفاده می‌شود.</span>
+      </div>
+      <div class="modal_actions">
+        <button type="button" class="btn btn--ghost" data-close-modal>انصراف</button>
+        <button type="submit" class="btn btn--primary">ایجاد تیم</button>
+      </div>
+    </form>
+  </div>
+</div>
 
+<!-- مودال ویرایش تیم -->
+<div class="modal" id="edit_team_modal" aria-hidden="true">
+  <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="edit_team_modal_title">
+    <div class="modal__header">
+      <h2 id="edit_team_modal_title">ویرایش اطلاعات تیم</h2>
+      <button type="button" class="modal__close" data-close-modal aria-label="بستن">&times;</button>
+    </div>
+    <form class="modal__body modal_form" id="edit_team_form">
+      <input type="hidden" id="edit_team_id" name="team_id">
+      <div class="form_control">
+        <label for="edit_team_name">نام تیم</label>
+        <input type="text" id="edit_team_name" name="name" required maxlength="100">
+      </div>
+      <div class="form_control">
+        <label for="edit_team_picture">تصویر تیم (اختیاری)</label>
+        <input type="url" id="edit_team_picture" name="team_picture" placeholder="https://example.com/team.png">
+      </div>
+      <div class="modal_actions">
+        <button type="button" class="btn btn--ghost" data-close-modal>انصراف</button>
+        <button type="submit" class="btn btn--primary">ذخیره تغییرات</button>
+      </div>
+    </form>
+  </div>
+</div>
 
+<!-- مودال دعوت عضو -->
+<div class="modal" id="invite_member_modal" aria-hidden="true">
+  <div class="modal__dialog" role="dialog" aria-modal="true" aria-labelledby="invite_member_modal_title">
+    <div class="modal__header">
+      <h2 id="invite_member_modal_title">دعوت عضو جدید</h2>
+      <button type="button" class="modal__close" data-close-modal aria-label="بستن">&times;</button>
+    </div>
+    <form class="modal__body modal_form" id="invite_member_form">
+      <input type="hidden" id="invite_team_id" name="team_id">
+      <div class="form_control">
+        <label for="invite_username">نام کاربری کاربر</label>
+        <input type="text" id="invite_username" name="username" required placeholder="atom_player">
+        <span class="form_hint">نام کاربری دقیقی که کاربر در سایت ثبت کرده است را وارد کنید.</span>
+      </div>
+      <div class="modal_actions">
+        <button type="button" class="btn btn--ghost" data-close-modal>انصراف</button>
+        <button type="submit" class="btn btn--primary">ارسال دعوت</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-
-
-
+<!-- مودال تایید عمومی -->
+<div class="modal" id="confirm_modal" aria-hidden="true">
+  <div class="modal__dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirm_modal_title">
+    <div class="modal__header">
+      <h2 id="confirm_modal_title">تایید عملیات</h2>
+      <button type="button" class="modal__close" data-close-modal aria-label="بستن">&times;</button>
+    </div>
+    <div class="modal__body" id="confirm_modal_message">
+      آیا از انجام این عملیات اطمینان دارید؟
+    </div>
+    <div class="modal__footer">
+      <button type="button" class="btn btn--ghost" data-close-modal>انصراف</button>
+      <button type="button" class="btn btn--danger" id="confirm_modal_confirm">تایید</button>
+    </div>
+  </div>
+</div>
 
 <script src="../js/sidebar.js"></script>
+<script src="../js/alert.js"></script>
 <script type="module" src="../js/user-dashboard.js"></script>
-
-
 </body>
 </html>
-
-
-
