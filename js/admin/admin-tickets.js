@@ -1,301 +1,10 @@
-const ticketsData = [
-  {
-    id: "TK-1092",
-    subject: "عدم دریافت جایزه تورنمنت هفته قبل",
-    status: "waiting",
-    priority: "high",
-    channel: "tournament",
-    createdAt: "2024-09-15T08:20:00+03:30",
-    updatedAt: "2024-09-17T10:35:00+03:30",
-    slaDue: "2024-09-17T12:00:00+03:30",
-    unread: true,
-    csat: null,
-    assignedTo: "علیرضا شریف",
-    watchers: ["سارا فیاضی", "رضا عباسی"],
-    user: {
-      name: "محدثه محمدی",
-      gamerTag: "MahdiMM",
-    },
-    tags: ["جایزه", "مالی"],
-    metrics: {
-      totalMessages: 4,
-      firstResponseAt: "2024-09-15T09:10:00+03:30",
-      lastPublicReply: "2024-09-16T16:30:00+03:30",
-    },
-    messages: [
-      {
-        author: "user",
-        authorName: "محدثه محمدی",
-        timestamp: "2024-09-15T08:20:00+03:30",
-        content:
-          "سلام. من در تورنمنت آخر قهرمان شدم ولی هنوز جم‌های جایزه به حسابم نیومده. لطفا پیگیری کنید.",
-      },
-      {
-        author: "admin",
-        authorName: "علیرضا شریف",
-        timestamp: "2024-09-15T09:10:00+03:30",
-        content:
-          "سلام محدثه عزیز. جایزه شما در صف پرداخت قرار گرفته بود. وضعیت رو بررسی کردیم و برای تیم مالی ارجاع دادیم. در اسرع وقت اطلاع می‌دیم.",
-      },
-      {
-        author: "note",
-        authorName: "علیرضا شریف",
-        timestamp: "2024-09-15T09:12:00+03:30",
-        content: "ارجاع به مالی - اولویت بالا به دلیل بازیکن VIP.",
-      },
-      {
-        author: "user",
-        authorName: "محدثه محمدی",
-        timestamp: "2024-09-17T10:30:00+03:30",
-        content: "سلام مجدد. هنوز جایزه واریز نشده. لطفا سریع‌تر بررسی کنید.",
-      },
-    ],
-  },
-  {
-    id: "TK-1054",
-    subject: "خطای پرداخت هنگام خرید جم",
-    status: "answered",
-    priority: "urgent",
-    channel: "payment",
-    createdAt: "2024-09-14T12:05:00+03:30",
-    updatedAt: "2024-09-14T18:42:00+03:30",
-    slaDue: "2024-09-14T16:05:00+03:30",
-    unread: false,
-    csat: 88,
-    assignedTo: "نسرین احمدی",
-    watchers: ["هادی بنی اسد"],
-    user: {
-      name: "پارسا نادری",
-      gamerTag: "ParsaLegend",
-    },
-    tags: ["پرداخت", "خطای بانکی"],
-    metrics: {
-      totalMessages: 5,
-      firstResponseAt: "2024-09-14T12:20:00+03:30",
-      lastPublicReply: "2024-09-14T18:40:00+03:30",
-    },
-    messages: [
-      {
-        author: "user",
-        authorName: "پارسا نادری",
-        timestamp: "2024-09-14T12:05:00+03:30",
-        content:
-          "سلام. موقع خرید جم خطای تراکنش می‌گیرم. مبلغ از حسابم کم می‌شه ولی جم اضافه نمی‌شه.",
-      },
-      {
-        author: "admin",
-        authorName: "نسرین احمدی",
-        timestamp: "2024-09-14T12:20:00+03:30",
-        content:
-          "درود پارسا. لاگ تراکنش شما بررسی شد. مبلغ به‌صورت معلق در بانک باقی مونده و حداکثر تا ۷۲ ساعت برمی‌گرده. در صورت عدم بازگشت اطلاع دهید.",
-        attachments: [
-          {
-            name: "TransactionLog-1054.pdf",
-            size: "245KB",
-          },
-        ],
-      },
-      {
-        author: "note",
-        authorName: "نسرین احمدی",
-        timestamp: "2024-09-14T12:32:00+03:30",
-        content: "برای مانیتورینگ تراکنش در تسویه فردا یادآوری تنظیم شد.",
-      },
-      {
-        author: "user",
-        authorName: "پارسا نادری",
-        timestamp: "2024-09-14T18:35:00+03:30",
-        content: "مبلغ برگشت خورد. تشکر از پیگیری.",
-      },
-      {
-        author: "admin",
-        authorName: "نسرین احمدی",
-        timestamp: "2024-09-14T18:40:00+03:30",
-        content: "خوشحالیم که مشکل حل شد. اگر مورد دیگری بود اطلاع بدید.",
-      },
-    ],
-  },
-  {
-    id: "TK-1120",
-    subject: "عدم امکان ورود دو مرحله‌ای",
-    status: "new",
-    priority: "medium",
-    channel: "account",
-    createdAt: "2024-09-17T19:10:00+03:30",
-    updatedAt: "2024-09-17T19:10:00+03:30",
-    slaDue: "2024-09-18T19:10:00+03:30",
-    unread: true,
-    csat: null,
-    assignedTo: null,
-    watchers: [],
-    user: {
-      name: "یگانه نیازی",
-      gamerTag: "YeganehNX",
-    },
-    tags: ["حساب کاربری", "امنیت"],
-    metrics: {
-      totalMessages: 1,
-      firstResponseAt: null,
-      lastPublicReply: null,
-    },
-    messages: [
-      {
-        author: "user",
-        authorName: "یگانه نیازی",
-        timestamp: "2024-09-17T19:10:00+03:30",
-        content:
-          "سلام. پیامک ورود دو مرحله‌ای برای من ارسال نمی‌شه و نمی‌تونم وارد حسابم بشم.",
-      },
-    ],
-  },
-  {
-    id: "TK-1018",
-    subject: "پیشنهاد برای بهبود سیستم کلن",
-    status: "resolved",
-    priority: "low",
-    channel: "website",
-    createdAt: "2024-09-10T09:00:00+03:30",
-    updatedAt: "2024-09-13T17:40:00+03:30",
-    slaDue: "2024-09-12T09:00:00+03:30",
-    unread: false,
-    csat: 92,
-    assignedTo: "کسری سادات",
-    watchers: ["نسرین احمدی"],
-    user: {
-      name: "مانی حق‌شناس",
-      gamerTag: "ManiHS",
-    },
-    tags: ["پیشنهاد", "کلن"],
-    metrics: {
-      totalMessages: 3,
-      firstResponseAt: "2024-09-10T10:00:00+03:30",
-      lastPublicReply: "2024-09-13T17:40:00+03:30",
-    },
-    messages: [
-      {
-        author: "user",
-        authorName: "مانی حق‌شناس",
-        timestamp: "2024-09-10T09:00:00+03:30",
-        content:
-          "سلام. پیشنهاد می‌کنم امکان زمان‌بندی رویداد برای کلن‌ها اضافه بشه تا بتونیم برنامه‌ریزی کنیم.",
-      },
-      {
-        author: "admin",
-        authorName: "کسری سادات",
-        timestamp: "2024-09-10T10:00:00+03:30",
-        content:
-          "مانی عزیز ممنون از پیشنهاد خوبت. درخواست رو به تیم محصول منتقل کردیم و در به‌روزرسانی بعدی بررسی می‌شه.",
-      },
-      {
-        author: "admin",
-        authorName: "کسری سادات",
-        timestamp: "2024-09-13T17:40:00+03:30",
-        content: "به‌روزرسانی: این قابلیت در نقشه‌راه سه‌ماهه اضافه شد.",
-      },
-    ],
-  },
-  {
-    id: "TK-1112",
-    subject: "باگ در نمایش رتبه لیدربرد",
-    status: "waiting",
-    priority: "urgent",
-    channel: "website",
-    createdAt: "2024-09-16T22:45:00+03:30",
-    updatedAt: "2024-09-17T08:15:00+03:30",
-    slaDue: "2024-09-17T10:45:00+03:30",
-    unread: false,
-    csat: null,
-    assignedTo: "سحر موحد",
-    watchers: ["نسرین احمدی", "تیم فنی"],
-    user: {
-      name: "پرهام صالحی",
-      gamerTag: "ParhamPro",
-    },
-    tags: ["باگ", "لیدربرد"],
-    metrics: {
-      totalMessages: 6,
-      firstResponseAt: "2024-09-16T22:55:00+03:30",
-      lastPublicReply: "2024-09-17T08:10:00+03:30",
-    },
-    messages: [
-      {
-        author: "user",
-        authorName: "پرهام صالحی",
-        timestamp: "2024-09-16T22:45:00+03:30",
-        content:
-          "سلام. رتبه من در لیدربرد درست نمایش داده نمی‌شه و ۵ تا جایگاه افتاده پایین‌تر.",
-      },
-      {
-        author: "admin",
-        authorName: "سحر موحد",
-        timestamp: "2024-09-16T22:55:00+03:30",
-        content:
-          "پرهام عزیز، مشکل شما در حال بررسیه. به نظر می‌رسه کش سرویس به‌روزرسانی نشده. پس از رفع، اطلاع می‌دیم.",
-      },
-      {
-        author: "note",
-        authorName: "سحر موحد",
-        timestamp: "2024-09-16T23:10:00+03:30",
-        content: "منتظر پاسخ تیم بک‌اند. اگر تا صبح حل نشد ارجاع به سطح دو.",
-      },
-      {
-        author: "admin",
-        authorName: "سحر موحد",
-        timestamp: "2024-09-17T08:10:00+03:30",
-        content: "در حال نهایی‌سازی اصلاح کش هستیم. در اولین فرصت نتیجه رو اطلاع می‌دیم.",
-      },
-    ],
-  },
-  {
-    id: "TK-1101",
-    subject: "تقاضای انتقال مالکیت تیم",
-    status: "answered",
-    priority: "medium",
-    channel: "tournament",
-    createdAt: "2024-09-12T15:30:00+03:30",
-    updatedAt: "2024-09-13T09:20:00+03:30",
-    slaDue: "2024-09-14T15:30:00+03:30",
-    unread: false,
-    csat: 96,
-    assignedTo: "علیرضا شریف",
-    watchers: [],
-    user: {
-      name: "سمانه خدابنده",
-      gamerTag: "SamanehX",
-    },
-    tags: ["تیم", "مالکیت"],
-    metrics: {
-      totalMessages: 3,
-      firstResponseAt: "2024-09-12T15:50:00+03:30",
-      lastPublicReply: "2024-09-13T09:18:00+03:30",
-    },
-    messages: [
-      {
-        author: "user",
-        authorName: "سمانه خدابنده",
-        timestamp: "2024-09-12T15:30:00+03:30",
-        content:
-          "سلام. می‌خوام مالکیت تیم رو به یکی از هم‌تیمی‌ها منتقل کنم. روندش چطوریه؟",
-      },
-      {
-        author: "admin",
-        authorName: "علیرضا شریف",
-        timestamp: "2024-09-12T15:50:00+03:30",
-        content:
-          "سلام سمانه. لینک تایید برای مالک فعلی و مالک جدید ارسال شد. بعد از تایید دوطرف مالکیت منتقل می‌شه.",
-      },
-      {
-        author: "admin",
-        authorName: "علیرضا شریف",
-        timestamp: "2024-09-13T09:18:00+03:30",
-        content: "مالکیت با موفقیت منتقل شد و درخواست بسته شد.",
-      },
-    ],
-  },
-];
+const API_BASE_URL = normalizeBaseUrl(getMetaContent("api-base-url"));
+const TICKETS_ENDPOINT = resolveTicketsEndpoint();
+const REQUEST_TIMEOUT = 12000;
 
 const state = {
-  tickets: typeof structuredClone === "function" ? structuredClone(ticketsData) : JSON.parse(JSON.stringify(ticketsData)),
+  tickets: [],
+  filteredTickets: [],
   filters: {
     search: "",
     status: "all",
@@ -307,6 +16,8 @@ const state = {
   },
   activeTicketId: null,
   replyMode: "reply",
+  isLoading: true,
+  error: null,
 };
 
 const statusDictionary = {
@@ -343,10 +54,40 @@ const elements = {
   },
 };
 
+function getMetaContent(name) {
+  return document.querySelector(`meta[name="${name}"]`)?.content?.trim() || "";
+}
+
+function normalizeBaseUrl(base) {
+  if (!base) return "";
+  return base.replace(/\/+$/, "");
+}
+
+function resolveTicketsEndpoint() {
+  const directEndpoint = getMetaContent("tickets-endpoint");
+  if (directEndpoint) {
+    return directEndpoint;
+  }
+  const base = API_BASE_URL || "/api";
+  return joinUrlSegments(base, "support/tickets/");
+}
+
+function joinUrlSegments(base, path) {
+  const normalizedBase = base.replace(/\/+$/, "");
+  const normalizedPath = path.replace(/^\/+/, "");
+  if (!normalizedBase) {
+    return `/${normalizedPath}`;
+  }
+  if (!normalizedPath) {
+    return normalizedBase;
+  }
+  return `${normalizedBase}/${normalizedPath}`;
+}
+
 function showFeedback(message, type = "success") {
   if (!elements.feedback) return;
   elements.feedback.innerHTML = `<div class="feedback feedback--${type}">${message}</div>`;
-  setTimeout(() => {
+  window.setTimeout(() => {
     if (elements.feedback) {
       elements.feedback.innerHTML = "";
     }
@@ -356,6 +97,7 @@ function showFeedback(message, type = "success") {
 function formatRelativeTime(dateLike) {
   if (!dateLike) return "نامشخص";
   const date = new Date(dateLike);
+  if (Number.isNaN(date.getTime())) return "نامشخص";
   const now = new Date();
   const diffMs = date.getTime() - now.getTime();
   const diffSec = Math.round(diffMs / 1000);
@@ -381,15 +123,18 @@ function formatRelativeTime(dateLike) {
 
 function formatDateTime(dateLike) {
   if (!dateLike) return "نامشخص";
+  const date = new Date(dateLike);
+  if (Number.isNaN(date.getTime())) return "نامشخص";
   return new Intl.DateTimeFormat("fa-IR", {
     dateStyle: "medium",
     timeStyle: "short",
-  }).format(new Date(dateLike));
+  }).format(date);
 }
 
 function formatTimeRemaining(ticket) {
   if (!ticket.slaDue) return "-";
   const due = new Date(ticket.slaDue);
+  if (Number.isNaN(due.getTime())) return "-";
   const now = new Date();
   if (due < now) {
     return "منقضی شده";
@@ -402,44 +147,122 @@ function formatTimeRemaining(ticket) {
 
 function isOverdue(ticket) {
   if (!ticket.slaDue) return false;
-  return new Date(ticket.slaDue) < new Date();
+  const due = new Date(ticket.slaDue);
+  if (Number.isNaN(due.getTime())) return false;
+  return due < new Date();
+}
+
+function extractTickets(payload) {
+  if (Array.isArray(payload)) {
+    return payload;
+  }
+  if (payload?.results && Array.isArray(payload.results)) {
+    return payload.results;
+  }
+  if (payload?.data && Array.isArray(payload.data)) {
+    return payload.data;
+  }
+  if (payload?.tickets && Array.isArray(payload.tickets)) {
+    return payload.tickets;
+  }
+  return [];
+}
+
+function normalizeTicket(raw = {}) {
+  const messages = Array.isArray(raw.messages)
+    ? raw.messages.map((message) => ({
+        author: message.author || "user",
+        authorName: message.authorName || raw.user?.name || "کاربر",
+        timestamp: message.timestamp || raw.updatedAt || raw.createdAt || new Date().toISOString(),
+        content: message.content || "",
+        attachments: Array.isArray(message.attachments)
+          ? message.attachments.map((file) => ({
+              name: file.name || "بدون نام",
+              size: file.size || "",
+            }))
+          : [],
+      }))
+    : [];
+
+  const metrics = raw.metrics || {};
+  const tags = Array.isArray(raw.tags) ? raw.tags.filter(Boolean) : [];
+  const watchers = Array.isArray(raw.watchers) ? raw.watchers.filter(Boolean) : [];
+
+  return {
+    id: String(raw.id ?? ""),
+    subject: raw.subject || "بدون عنوان",
+    status: raw.status || "new",
+    priority: raw.priority || "medium",
+    channel: raw.channel || "website",
+    createdAt: raw.createdAt || new Date().toISOString(),
+    updatedAt: raw.updatedAt || raw.createdAt || new Date().toISOString(),
+    slaDue: raw.slaDue || null,
+    unread: Boolean(raw.unread),
+    csat:
+      typeof raw.csat === "number"
+        ? raw.csat
+        : raw.csat == null
+        ? null
+        : Number.parseInt(raw.csat, 10) || null,
+    assignedTo: raw.assignedTo || null,
+    watchers,
+    user: raw.user ? { ...raw.user } : null,
+    tags,
+    metrics: {
+      totalMessages: metrics.totalMessages ?? messages.length,
+      firstResponseAt: metrics.firstResponseAt || null,
+      lastPublicReply: metrics.lastPublicReply || null,
+    },
+    messages,
+  };
+}
+
+function ensureActiveTicket(tickets) {
+  if (!tickets.length) {
+    state.activeTicketId = null;
+    return;
+  }
+  if (!state.activeTicketId || !tickets.some((ticket) => ticket.id === state.activeTicketId)) {
+    state.activeTicketId = tickets[0].id;
+  }
 }
 
 function applyFilters() {
   const { search, status, priority, channel, from, to, quick } = state.filters;
   const term = search.trim().toLowerCase();
+
   return state.tickets
     .filter((ticket) => {
       const created = new Date(ticket.createdAt);
+      const tagsText = Array.isArray(ticket.tags) ? ticket.tags.join(" ") : "";
       const matchesSearch =
         term.length === 0 ||
-        [
-          ticket.id,
-          ticket.subject,
-          ticket.user?.name,
-          ticket.user?.gamerTag,
-          ticket.tags.join(" "),
-        ]
+        [ticket.id, ticket.subject, ticket.user?.name, ticket.user?.gamerTag, tagsText]
+          .filter(Boolean)
           .join(" ")
           .toLowerCase()
           .includes(term);
 
       if (!matchesSearch) return false;
+      if (status !== "all" && ticket.status !== status) return false;
+      if (priority !== "all" && ticket.priority !== priority) return false;
+      if (channel !== "all" && ticket.channel !== channel) return false;
 
-      const matchesStatus = status === "all" || ticket.status === status;
-      if (!matchesStatus) return false;
+      if (from) {
+        const fromDate = new Date(from);
+        if (!Number.isNaN(fromDate.getTime()) && created < fromDate) {
+          return false;
+        }
+      }
 
-      const matchesPriority = priority === "all" || ticket.priority === priority;
-      if (!matchesPriority) return false;
-
-      const matchesChannel = channel === "all" || ticket.channel === channel;
-      if (!matchesChannel) return false;
-
-      if (from && created < new Date(from)) return false;
       if (to) {
         const toDate = new Date(to);
-        toDate.setHours(23, 59, 59, 999);
-        if (created > toDate) return false;
+        if (!Number.isNaN(toDate.getTime())) {
+          toDate.setHours(23, 59, 59, 999);
+          if (created > toDate) {
+            return false;
+          }
+        }
       }
 
       switch (quick) {
@@ -458,34 +281,63 @@ function applyFilters() {
     .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt));
 }
 
-function getInitials(name) {
-  if (!name) return "؟";
-  const parts = name.trim().split(" ");
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2);
+function findTicketById(id) {
+  return state.tickets.find((ticket) => ticket.id === id) || null;
+}
+
+function markTicketAsRead(ticketId) {
+  const ticket = findTicketById(ticketId);
+  if (ticket) {
+    ticket.unread = false;
   }
-  return (parts[0][0] || "") + (parts[parts.length - 1][0] || "");
 }
 
 function renderTicketList() {
   if (!elements.list) return;
+
+  if (state.isLoading) {
+    elements.list.innerHTML = `
+      <div class="tickets-list__state" role="status">
+        <span class="tickets-list__spinner" aria-hidden="true"></span>
+        <span>در حال بارگذاری تیکت‌ها...</span>
+      </div>
+    `;
+    renderTicketDetail(null, "loading");
+    return;
+  }
+
+  if (state.error) {
+    elements.list.innerHTML = `
+      <div class="tickets-list__state is-error">
+        <span>امکان دریافت فهرست تیکت‌ها وجود ندارد.</span>
+        <button type="button" class="tickets-list__retry" data-action="retry-fetch">تلاش مجدد</button>
+      </div>
+    `;
+    elements.list
+      .querySelector("[data-action=retry-fetch]")
+      ?.addEventListener("click", () => {
+        void loadTickets({ showLoader: true });
+      });
+    renderTicketDetail(null, "error");
+    return;
+  }
+
   const tickets = applyFilters();
   state.filteredTickets = tickets;
+  ensureActiveTicket(tickets);
 
-  if (tickets.length === 0) {
+  if (!tickets.length) {
     elements.list.innerHTML = `
-      <div class="tickets-list__header">هیچ تیکتی با فیلترهای انتخابی یافت نشد.</div>
+      <div class="tickets-list__state">
+        <span>هیچ تیکتی با فیلترهای انتخابی یافت نشد.</span>
+      </div>
     `;
     renderTicketDetail(null);
     updateStatistics();
     return;
   }
 
-  if (!tickets.some((ticket) => ticket.id === state.activeTicketId)) {
-    state.activeTicketId = tickets[0]?.id || null;
-  }
-
-  state.replyMode = 'reply';
+  state.replyMode = "reply";
 
   const items = tickets
     .map((ticket) => {
@@ -511,9 +363,9 @@ function renderTicketList() {
             ${unreadDot}
           </div>
           <div class="ticket-item__tags">
-            <span class="${priorityTag}">${priorityDictionary[ticket.priority]}</span>
-            <span class="${channelTag}">${channelDictionary[ticket.channel]}</span>
-            ${ticket.tags
+            <span class="${priorityTag}">${priorityDictionary[ticket.priority] || ticket.priority}</span>
+            <span class="${channelTag}">${channelDictionary[ticket.channel] || ticket.channel}</span>
+            ${(ticket.tags || [])
               .map((tag) => `<span class="tag-chip">${tag}</span>`)
               .join("")}
           </div>
@@ -543,24 +395,39 @@ function renderTicketList() {
   updateStatistics();
 }
 
-function findTicketById(id) {
-  return state.tickets.find((ticket) => ticket.id === id) || null;
-}
-
-function markTicketAsRead(ticketId) {
-  const ticket = findTicketById(ticketId);
-  if (ticket) {
-    ticket.unread = false;
-  }
-}
-
-function renderTicketDetail(ticket) {
+function renderTicketDetail(ticket, mode = "default") {
   if (!elements.detail) return;
+
+  if (mode === "loading") {
+    elements.detail.innerHTML = `
+      <div class="ticket-placeholder ticket-placeholder--loading">
+        <span class="ticket-placeholder__spinner" aria-hidden="true"></span>
+        <p>در حال آماده‌سازی جزئیات تیکت...</p>
+      </div>
+    `;
+    return;
+  }
+
+  if (mode === "error") {
+    elements.detail.innerHTML = `
+      <div class="ticket-placeholder ticket-placeholder--error">
+        <h3>خطا در دریافت تیکت</h3>
+        <p>برای تلاش مجدد از فهرست تیکت‌ها دکمه «تلاش مجدد» را انتخاب کنید.</p>
+      </div>
+    `;
+    return;
+  }
+
   if (!ticket) {
     elements.detail.innerHTML = `
       <div class="ticket-placeholder">
         <h3>یک تیکت را انتخاب کنید</h3>
-        <p>برای مشاهده گفتگو و پاسخ‌دهی، از فهرست تیکت‌ها مورد دلخواه را انتخاب کنید.</p>
+        <p>برای مشاهده جزئیات گفتگو، پاسخ‌دهی و مدیریت وضعیت، از فهرست سمت راست یک تیکت را انتخاب کنید.</p>
+        <ul>
+          <li>نمایش تاریخچه کامل پیام‌ها</li>
+          <li>به‌روزرسانی سریع وضعیت و اولویت</li>
+          <li>ثبت پاسخ عمومی یا یادداشت داخلی</li>
+        </ul>
       </div>
     `;
     return;
@@ -584,6 +451,8 @@ function renderTicketDetail(ticket) {
   const handlers = watchers.length
     ? watchers.map((watcher) => `<span>${watcher}</span>`).join("")
     : '<span>بدون ناظر</span>';
+
+  const tags = Array.isArray(ticket.tags) ? ticket.tags : [];
 
   elements.detail.innerHTML = `
     <header class="ticket-detail__header">
@@ -620,17 +489,29 @@ function renderTicketDetail(ticket) {
       </div>
       <div class="metric-card">
         <span>پاسخ اول</span>
-        <strong>${ticket.metrics.firstResponseAt ? formatRelativeTime(ticket.metrics.firstResponseAt) : "در انتظار"}</strong>
+        <strong>${
+          ticket.metrics.firstResponseAt
+            ? formatRelativeTime(ticket.metrics.firstResponseAt)
+            : "در انتظار"
+        }</strong>
       </div>
       <div class="metric-card">
         <span>آخرین پیام عمومی</span>
-        <strong>${ticket.metrics.lastPublicReply ? formatRelativeTime(ticket.metrics.lastPublicReply) : "هنوز ارسال نشده"}</strong>
+        <strong>${
+          ticket.metrics.lastPublicReply
+            ? formatRelativeTime(ticket.metrics.lastPublicReply)
+            : "هنوز ارسال نشده"
+        }</strong>
       </div>
     </div>
     <div class="ticket-tags">
-      <span class="tag-chip tag-chip--priority-${ticket.priority}">${priorityDictionary[ticket.priority]}</span>
-      <span class="tag-chip tag-chip--channel-${ticket.channel}">${channelDictionary[ticket.channel]}</span>
-      ${ticket.tags.map((tag) => `<span class="tag-chip">${tag}</span>`).join("")}
+      <span class="tag-chip tag-chip--priority-${ticket.priority}">${
+        priorityDictionary[ticket.priority] || ticket.priority
+      }</span>
+      <span class="tag-chip tag-chip--channel-${ticket.channel}">${
+        channelDictionary[ticket.channel] || ticket.channel
+      }</span>
+      ${tags.map((tag) => `<span class="tag-chip">${tag}</span>`).join("")}
     </div>
     <div class="ticket-watchers">
       <span>ناظران:</span>
@@ -641,30 +522,31 @@ function renderTicketDetail(ticket) {
     </section>
     <form class="ticket-reply" data-ticket-reply>
       <div class="reply-tabs">
-        <button type="button" class="reply-tab ${state.replyMode === "reply" ? "is-active" : ""}" data-reply-mode="reply">پاسخ به کاربر</button>
-        <button type="button" class="reply-tab ${state.replyMode === "note" ? "is-active" : ""}" data-reply-mode="note">یادداشت داخلی</button>
+        <button type="button" class="reply-tab is-active" data-reply-mode="reply">پاسخ</button>
+        <button type="button" class="reply-tab" data-reply-mode="note">یادداشت داخلی</button>
       </div>
-      <select data-reply-template>
-        <option value="">انتخاب پاسخ آماده...</option>
-        <option value="template-welcome">تشکر از کاربر</option>
-        <option value="template-delay">اطلاع از پیگیری</option>
-        <option value="template-closed">اطلاع از بستن تیکت</option>
-      </select>
-      <textarea data-reply-text placeholder="پیام خود را بنویسید..."></textarea>
       <div class="reply-toolbar">
-        <div class="reply-toolbar-left">
-          <label>
-            پیوست فایل
-            <input type="file" multiple data-reply-attachment>
-          </label>
-          <button type="button" data-action="insert-summary">خلاصه خودکار</button>
-        </div>
-        <div class="reply-toolbar-right">
-          <label class="inline-checkbox">
-            <input type="checkbox" data-close-after-send>
-            پس از ارسال تیکت بسته شود
-          </label>
+        <label>
+          <span class="sr-only">انتخاب قالب پاسخ</span>
+          <select data-reply-template>
+            <option value="">بدون قالب</option>
+            <option value="template-welcome">پاسخ اولیه</option>
+            <option value="template-delay">نیاز به زمان بیشتر</option>
+            <option value="template-closed">بستن تیکت</option>
+          </select>
+        </label>
+        <button type="button" data-action="insert-summary">افزودن خلاصه</button>
+      </div>
+      <label class="sr-only" for="reply-text">متن پاسخ</label>
+      <textarea id="reply-text" data-reply-text rows="6" placeholder="پاسخ خود را بنویسید..."></textarea>
+      <div class="reply-actions">
+        <label class="reply-option">
+          <input type="checkbox" data-close-after-send>
+          <span>پس از ارسال تیکت بسته شود</span>
+        </label>
+        <div class="reply-buttons">
           <button type="submit" class="primary-action">ارسال</button>
+          <button type="button" data-action="escalate">ارجاع</button>
         </div>
       </div>
     </form>
@@ -685,12 +567,14 @@ function renderMessage(message) {
       : message.author === "admin"
       ? "پاسخ پشتیبانی"
       : "پیام کاربر";
-  const attachments = (message.attachments || [])
-    .map(
-      (file) =>
-        `<span class="message-attachment">📎 ${file.name}<small> (${file.size})</small></span>`
-    )
-    .join("");
+  const attachments = Array.isArray(message.attachments)
+    ? message.attachments
+        .map(
+          (file) =>
+            `<span class="message-attachment">📎 ${file.name}<small> (${file.size})</small></span>`
+        )
+        .join("")
+    : "";
 
   return `
     <article class="${classes[message.author] || classes.user}">
@@ -743,14 +627,17 @@ function bindDetailEvents(ticket) {
     });
 
   elements.detail
-    .querySelector("[data-action=escalate]")
-    ?.addEventListener("click", () => {
-      showFeedback("تیکت برای تیم سطح بالاتر ارجاع شد.", "warning");
+    .querySelectorAll("[data-action=escalate]")
+    .forEach((button) => {
+      button.addEventListener("click", () => {
+        showFeedback("تیکت برای تیم سطح بالاتر ارجاع شد.", "warning");
+      });
     });
 
   elements.detail
     .querySelector("[data-action=insert-summary]")
     ?.addEventListener("click", () => {
+      if (!replyTextarea) return;
       const summary = buildAutoSummary(ticket);
       replyTextarea.value = summary;
       showFeedback("خلاصه گفتگو به متن اضافه شد.");
@@ -761,15 +648,18 @@ function bindDetailEvents(ticket) {
       state.replyMode = tab.dataset.replyMode;
       replyTabs.forEach((other) => other.classList.toggle("is-active", other === tab));
       if (state.replyMode === "note") {
-        closeAfterSend.checked = false;
-        closeAfterSend.disabled = true;
-      } else {
+        if (closeAfterSend) {
+          closeAfterSend.checked = false;
+          closeAfterSend.disabled = true;
+        }
+      } else if (closeAfterSend) {
         closeAfterSend.disabled = false;
       }
     });
   });
 
   replyTemplate?.addEventListener("change", (event) => {
+    if (!replyTextarea) return;
     const templateText = getTemplateText(event.target.value, ticket);
     if (templateText) {
       replyTextarea.value = templateText;
@@ -778,7 +668,7 @@ function bindDetailEvents(ticket) {
 
   replyForm?.addEventListener("submit", (event) => {
     event.preventDefault();
-    const messageText = replyTextarea.value.trim();
+    const messageText = replyTextarea?.value.trim();
     if (!messageText) {
       showFeedback("متن پیام نمی‌تواند خالی باشد.", "error");
       return;
@@ -793,23 +683,33 @@ function bindDetailEvents(ticket) {
 
     ticket.messages.push(newMessage);
     ticket.updatedAt = newMessage.timestamp;
-    ticket.metrics.totalMessages = ticket.messages.length;
+
+    const metrics = ticket.metrics || (ticket.metrics = {});
+    metrics.totalMessages = ticket.messages.length;
     if (state.replyMode !== "note") {
-      ticket.metrics.lastPublicReply = newMessage.timestamp;
-    }
-    if (!ticket.metrics.firstResponseAt && state.replyMode !== "note") {
-      ticket.metrics.firstResponseAt = newMessage.timestamp;
+      metrics.lastPublicReply = newMessage.timestamp;
+      if (!metrics.firstResponseAt) {
+        metrics.firstResponseAt = newMessage.timestamp;
+      }
     }
 
     if (state.replyMode !== "note") {
-      ticket.status = closeAfterSend?.checked ? "resolved" : "answered";
+      const shouldClose = closeAfterSend?.checked ?? false;
+      ticket.status = shouldClose ? "resolved" : "answered";
     }
 
-    replyTextarea.value = "";
-    closeAfterSend.checked = false;
-    elements.detail.querySelector("[data-ticket-thread]").innerHTML = ticket.messages
-      .map(renderMessage)
-      .join("");
+    if (replyTextarea) {
+      replyTextarea.value = "";
+    }
+    if (closeAfterSend) {
+      closeAfterSend.checked = false;
+    }
+
+    const threadContainer = elements.detail.querySelector("[data-ticket-thread]");
+    if (threadContainer) {
+      threadContainer.innerHTML = ticket.messages.map(renderMessage).join("");
+    }
+
     showFeedback("پیام با موفقیت ثبت شد.");
     renderTicketList();
   });
@@ -842,21 +742,22 @@ function getTemplateText(templateId, ticket) {
 }
 
 function updateTicketStatus(ticketId, status) {
+  if (!statusDictionary[status]) return;
   const ticket = findTicketById(ticketId);
   if (!ticket) return;
-  if (!statusDictionary[status]) return;
   ticket.status = status;
   ticket.updatedAt = new Date().toISOString();
 }
 
 function updateStatistics() {
   if (!elements.stats.total) return;
-  const total = state.tickets.length;
-  const waiting = state.tickets.filter((ticket) => ticket.status === "waiting" || ticket.status === "new").length;
-  const overdue = state.tickets.filter(isOverdue).length;
-  const csatValues = state.tickets
+  const dataset = state.tickets;
+  const total = dataset.length;
+  const waiting = dataset.filter((ticket) => ticket.status === "waiting" || ticket.status === "new").length;
+  const overdue = dataset.filter(isOverdue).length;
+  const csatValues = dataset
     .map((ticket) => ticket.csat)
-    .filter((value) => typeof value === "number");
+    .filter((value) => typeof value === "number" && !Number.isNaN(value));
   const csatAverage = csatValues.length
     ? Math.round(csatValues.reduce((sum, value) => sum + value, 0) / csatValues.length)
     : 0;
@@ -896,13 +797,59 @@ function bindFilters() {
   });
 }
 
+async function loadTickets({ showLoader = false } = {}) {
+  if (showLoader) {
+    state.isLoading = true;
+    state.error = null;
+    renderTicketList();
+  }
+
+  const controller = new AbortController();
+  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT);
+
+  try {
+    const response = await fetch(TICKETS_ENDPOINT, {
+      headers: { Accept: "application/json" },
+      signal: controller.signal,
+    });
+    if (!response.ok) {
+      throw new Error(`وضعیت پاسخ نامعتبر بود (${response.status})`);
+    }
+    const payload = await response.json();
+    const normalizedTickets = extractTickets(payload).map(normalizeTicket);
+    state.tickets = normalizedTickets;
+    state.error = null;
+    ensureActiveTicket(state.tickets);
+  } catch (error) {
+    console.error("خطا در دریافت تیکت‌ها", error);
+    state.error = error?.message || "خطا در دریافت اطلاعات.";
+    if (!state.tickets.length) {
+      showFeedback("بارگذاری اطلاعات تیکت‌ها با خطا مواجه شد.", "error");
+    }
+  } finally {
+    window.clearTimeout(timeoutId);
+    state.isLoading = false;
+    renderTicketList();
+    updateStatistics();
+  }
+}
+
 function init() {
   if (!elements.list || !elements.detail) {
     return;
   }
   bindFilters();
-  updateStatistics();
   renderTicketList();
+  void loadTickets({ showLoader: true });
+}
+
+function getInitials(name) {
+  if (!name) return "؟";
+  const parts = name.trim().split(/\s+/);
+  if (parts.length === 1) {
+    return parts[0].slice(0, 2);
+  }
+  return (parts[0][0] || "") + (parts[parts.length - 1][0] || "");
 }
 
 if (document.readyState === "loading") {
