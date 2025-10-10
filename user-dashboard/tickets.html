@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -47,52 +47,54 @@
       <!-- بخش اصلی تیکت ها -->
       <section class="tickets_container">
         <!-- لیست همه تیکت ها -->
-        <section class="tickets_list">
-
+        <section class="tickets_list" aria-labelledby="ticketsListTitle">
           <div class="tickets_list_head">
-            <div class="list_title">تیکت های شما</div>
-            <button class="creat_ticket_btn">+   ایجاد تیکت جدید</button>
+            <div class="list_title" id="ticketsListTitle">تیکت های شما</div>
+            <button class="creat_ticket_btn" type="button">+   ایجاد تیکت جدید</button>
           </div>
 
           <!-- status: new - pending - Resolved  -  Closed  -->
-          <div class="tickets_lists_container">
+          <div class="tickets_lists_container" role="list">
             <!-- لیست تیکت‌ها به صورت داینامیک با جاوااسکریپت بارگذاری می‌شود -->
           </div>
         </section>
 
-        <!-- قسمت مکالکه و ارسال پیام کاربر -->
-         <!-- این بخش 2حالت داره اگه تیکتی اتخاب شده بود C-open اگه نه no-open -->
-        <section class="tickets_conversation no-open" >
-
+        <!-- قسمت مکالمه و ارسال پیام کاربر -->
+         <!-- این بخش 2 حالت داره اگه تیکتی انتخاب شده بود C-open اگه نه no-open -->
+        <section class="tickets_conversation no-open" aria-live="polite">
           <div class="conversation_head">
             <div class="conversation_title">
               <span class="conversation_ticket_title">یک تیکت را انتخاب کنید</span>
-              <span class="conversation_ticket_status badge">-</span>
+              <span class="conversation_ticket_status badge" aria-label="وضعیت تیکت">-</span>
             </div>
             <div class="conversation_meta">
+              <span class="conversation_ticket_code">شناسه: -</span>
+              <span class="conversation_meta_divider" aria-hidden="true">•</span>
               <span class="conversation_ticket_date">-</span>
             </div>
           </div>
           <div class="conversation_container">
             <!-- محل نمایش پیام های دو طرف -->
-            <div class="show_message">
+            <div class="show_message" data-empty="true">
               <p class="no-messages">برای مشاهده گفتگو، یکی از تیکت‌های خود را انتخاب کنید.</p>
             </div>
             <!-- فرم پاسخگویی -->
             <div class="answer_form">
-              <form>
+              <form novalidate>
                 <div class="answer_input">
-                  <input type="text" name="resporn" id="resporn" placeholder="متن خود را وارد کنید">
+                  <textarea name="resporn" id="resporn" rows="3" placeholder="متن خود را وارد کنید"></textarea>
                 </div>
-                <label id="file_tag" for="file">
-                  <img src="/img/icons/file-input.svg" alt="file-input">
-                </label>
-                <input type="file" name="file" id="file" hidden>
-                <button type="submit">ارسال</button>
+                <div class="answer_actions">
+                  <label id="file_tag" for="file" class="file_button" title="افزودن فایل">
+                    <img src="/img/icons/file-input.svg" alt="افزودن فایل">
+                  </label>
+                  <input type="file" name="file" id="file" hidden>
+                  <button type="submit" class="send_button" title="ارسال پیام">ارسال</button>
+                </div>
+                <p class="answer_notice" hidden>وضعیت این تیکت اجازه ارسال پیام جدید را نمی‌دهد.</p>
               </form>
             </div>
           </div>
-
         </section>
 
       </section>
@@ -106,12 +108,9 @@
 
 
 
-  <div class="creat_ticket_modal_container hidden" >
-
-      <div class="creat_ticket_modal">
-        
+  <div class="creat_ticket_modal_container hidden" role="dialog" aria-modal="true" aria-labelledby="createTicketTitle">
+      <div class="creat_ticket_modal" role="document">
       </div>
-
   </div>
 
 

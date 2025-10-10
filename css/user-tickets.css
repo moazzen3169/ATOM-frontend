@@ -1,11 +1,12 @@
-
 *{
     padding: 0;
     margin: 0;
     box-sizing: border-box;
 }
+
 body{
-    overflow: hidden;
+    overflow-x: hidden;
+    background-color: var(--background-color);
 }
 
 .tickets_container{
@@ -15,47 +16,68 @@ body{
     display: grid;
     grid-template-columns: repeat(12 , 1fr);
     gap: 20px;
-
 }
+
 .tickets_list{
     grid-column: 1/5;
-    border-radius: 10px;
+    border-radius: 14px;
     background-color: var(--card-color);
-    padding: 20px 10px;
+    padding: 24px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 500px;
 }
+
 .tickets_conversation{
     grid-column: 5/13;
-    border-radius: 10px;
+    border-radius: 14px;
     background-color: var(--card-color);
-    padding: 20px;
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    min-height: 500px;
 }
 
-
-
-
 /* لسیت آیتم ها */
-
-
 .tickets_list_head{
     display: flex;
     align-items: center;
     justify-content: space-between;
+    gap: 12px;
 }
+
 .list_title{
     font-size: 16px;
     font-weight: normal;
     color: var(--white-color);
 }
+
 .creat_ticket_btn{
-    font-size: 12px;
-    font-weight: normal;
+    font-size: 13px;
+    font-weight: 500;
     color: var(--dark-color);
-    background-color: var(--color-primary); 
-    width: 130px;
-    height: 30px;
+    background-color: var(--color-primary);
+    min-width: 150px;
+    height: 36px;
     border: none;
-    border-radius: 5px;
+    border-radius: 10px;
     cursor: pointer;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.creat_ticket_btn:hover{
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+}
+
+.creat_ticket_btn:focus{
+    outline: 2px solid rgba(255,255,255,0.35);
+    outline-offset: 2px;
 }
 
 .tickets_lists_container{
@@ -67,34 +89,78 @@ body{
     width: 100%;
     overflow-y: scroll;
     padding: 10px;
+}
 
+.tickets_lists_container::-webkit-scrollbar{
+    width: 6px;
+}
+
+.tickets_lists_container::-webkit-scrollbar-thumb{
+    background-color: rgba(255,255,255,0.15);
+    border-radius: 999px;
+}
+
+.tickets_lists_container::-webkit-scrollbar-track{
+    background-color: transparent;
 }
 
 .ticket_item{
     cursor: pointer;
-    background-color: var(--background-color);
-    border-right: 2px solid var(--color-primary);
+    background-color: rgba(15, 17, 29, 0.45);
+    border: 1px solid transparent;
     width: 100%;
-    padding: 10px;
-    border-radius: 10px;
+    padding: 12px;
+    border-radius: 14px;
     display: grid;
     grid-template-columns: repeat(3 , 1fr);
     row-gap: 5px;
-    height: 130px;
-    transition: 0.3s ease;
-}
-.open{
-    border: 1px solid var(--color-primary);
-}
-.Closed{
-    border-right: 2px solid var(--color-primary);
+    min-height: 120px;
+    transition: 0.25s ease;
+    position: relative;
 }
 
 .ticket_item:hover{
-    width: 95%;
+    transform: translateX(-4px);
+    background-color: rgba(24, 29, 47, 0.65);
 }
 
+.ticket_item.selected{
+    border: 1px solid var(--color-primary);
+    box-shadow: 0 0 0 1px rgba(137, 97, 255, 0.35);
+    background-color: rgba(24, 29, 47, 0.9);
+}
 
+.ticket_item::before{
+    content: "";
+    position: absolute;
+    inset-inline-end: 0;
+    inset-block: 16px;
+    width: 3px;
+    border-radius: 999px;
+    background: transparent;
+    transition: background 0.3s ease;
+}
+
+.ticket_item.selected::before{
+    background: var(--color-primary);
+}
+
+.ticket_item.open::before,
+.ticket_item.new::before{
+    background: var(--color-primary);
+}
+
+.ticket_item.pending::before{
+    background: var(--yellow-color);
+}
+
+.ticket_item.Resolved::before{
+    background: var(--discord-bg);
+}
+
+.ticket_item.Closed::before{
+    background: var(--red-color);
+}
 
 .ticket_title{
     color: var(--white-color);
@@ -102,13 +168,12 @@ body{
     font-weight: 300;
     grid-column: 1/3;
     text-align: right;
-
-        /* برای یک سطر */
-    white-space: nowrap; 
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width:97%;
 }
+
 .ticket_status{
     grid-column: 3/4;
     height: 25px;
@@ -121,8 +186,9 @@ body{
     font-weight: 300;
     text-align: center;
     border-radius: 100px;
-    
+    border: 1px solid transparent;
 }
+
 .new .ticket_status{
     background-color: var(--color-primary);
  }
@@ -144,28 +210,46 @@ body{
     grid-column: 1/4;
     text-align: right;
     color: var(--white-color);
-    opacity: 50%;
+    opacity: 0.6;
     font-weight: 300;
-    font-size: 12px;
-    
-    /* برای یک سطر */
-    white-space: nowrap; 
+    font-size: 13px;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
     max-width:320px;
-    
-    
 }
+
 .ticket_add_date{
     grid-column: 1/4;
     text-align: right;
     color: var(--white-color);
-    opacity: 50%;
+    opacity: 0.4;
     font-weight: 300;
-    font-size: 10px;
-    
+    font-size: 11px;
 }
 
+.no-tickets-message{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    text-align: center;
+    color: rgba(255,255,255,0.8);
+    background: rgba(20, 23, 40, 0.7);
+    padding: 32px 16px;
+    border-radius: 16px;
+    border: 1px dashed rgba(255,255,255,0.15);
+}
+
+.no-tickets-message p{
+    font-size: 14px;
+    line-height: 1.7;
+}
+
+.no-tickets-message .creat_ticket_btn{
+    min-width: 180px;
+}
 
 /* قسمت نمایش جزییات تیکت انتخاب شده */
 /* زمانی که تیکتی انتخاب نشده */
@@ -175,29 +259,31 @@ body{
     justify-content: center;
     text-align: center;
     color: var(--white-color);
-
 }
+
 .no-open .conversation_head{
     display: none;
 }
+
 .no-open .conversation_container{
     display: none;
 }
+
 .no-open .show_message{
     display: none;
 }
+
 .no-open .answer_form{
     display: none;
 }
 
 /* زمانی که تیکتی انتخاب شده */
-
 .C-open{
     display: flex;
     flex-direction: column;
-    gap: 10px;
-
+    gap: 16px;
 }
+
 .C-open .conversation_head{
     width: 100%;
     display: flex;
@@ -208,6 +294,7 @@ body{
     text-align: right;
     direction: rtl;
 }
+
 .conversation_title{
     display: flex;
     align-items: center;
@@ -215,171 +302,428 @@ body{
     justify-content: flex-start;
     width: 100%;
 }
+
 .conversation_ticket_title{
     font-weight: 500;
 }
+
 .conversation_ticket_status{
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 4px 14px;
+    padding: 4px 16px;
     border-radius: 999px;
     font-size: 12px;
     font-weight: 400;
     background-color: var(--card-color);
     color: var(--white-color);
 }
+
 .conversation_ticket_status.open,
 .conversation_ticket_status.new{
     background-color: var(--color-primary);
 }
+
 .conversation_ticket_status.pending{
     background-color: var(--yellow-color);
     color: var(--dark-color);
 }
+
 .conversation_ticket_status.Resolved{
     background-color: var(--card-color);
 }
+
 .conversation_ticket_status.Closed{
     background-color: var(--red-color);
 }
+
+.conversation_meta{
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12px;
+    color: rgba(255,255,255,0.7);
+}
+
+.conversation_meta_divider{
+    color: rgba(255,255,255,0.25);
+}
+
 .conversation_ticket_date{
     font-size: 12px;
     color: var(--white-color);
     opacity: 0.7;
 }
+
 .C-open .conversation_container{
     display: flex;
     flex-direction: column;
     align-items: start;
-    gap: 10px;
+    gap: 16px;
     max-height: 100%;
     height: 100%;
     overflow-y: hidden;
 }
+
 .C-open .show_message{
     background-color: var(--dark-color);
     width: 100%;
-    height: 85%;
+    height: 100%;
     overflow-y: scroll;
     display: grid;
     align-items: start;
-    gap: 5px;
-    border-radius:10px;
+    gap: 12px;
+    border-radius:16px;
     padding: 20px;
     border: 5px solid var(--background-color);
     max-height: 450px;
 }
+
+.show_message[data-empty="true"]{
+    place-items: center;
+    text-align: center;
+    color: rgba(255,255,255,0.8);
+}
+
 .C-open .answer_form{
-    background-color: var(--dark-color);
+    background-color: rgba(16, 18, 30, 0.85);
     width: 100%;
-    height: 15%;
-    border-radius:10px;
-    padding: 0px 20px;
+    border-radius:16px;
+    padding: 14px 20px;
     justify-content: center;
     align-items: center;
     display: flex;
 }
+
 .answer_form form{
-    display: grid;
+    display: flex;
+    flex-direction: column;
     width: 100%;
-    grid-template-columns: repeat(12 , 1fr);
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
+    gap: 12px;
+}
+
+.answer_form.disabled form{
+    opacity: 0.6;
 }
 
 .answer_input{
-    grid-column: 1 / 11;
     align-items: center;
     justify-content: space-between;
     position: relative;
-    width: 250px; /* فقط برای نمونه */
-  }
-  
-  .answer_input input {
+}
+
+.answer_input textarea {
     width: 100%;
-    padding: 10px;
+    padding: 12px 14px;
     font-size: 14px;
     font-weight: 300;
     background-color: var(--card-color);
-    border: none;
-    border-radius: 5px;
+    border: 1px solid transparent;
+    border-radius: 12px;
     color: var(--white-color);
-  }
-  
-  .answer_input  {
-    width: 100%;
-    display: flex;align-items: center;
-    justify-content: center;
-  }
-    #file_tag{
-        grid-column: 11 / 12;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+    resize: vertical;
+    min-height: 72px;
+    line-height: 1.8;
+}
 
-    }
-  .answer_form button[type=submit]{
-    grid-column: 12 / 13;
-cursor: pointer;
+.answer_input textarea:focus{
+    outline: none;
+    border-color: rgba(137, 97, 255, 0.45);
+    box-shadow: 0 0 0 3px rgba(137, 97, 255, 0.15);
+}
+
+.answer_actions{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.file_button{
+    cursor: pointer;
+    width: 42px;
+    height: 42px;
+    background-color: rgba(30, 34, 58, 0.9);
+    border-radius: 12px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid transparent;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.file_button:hover{
+    background-color: rgba(45, 51, 82, 0.95);
+    transform: translateY(-1px);
+}
+
+.file_button:focus{
+    outline: 2px solid rgba(137, 97, 255, 0.4);
+    outline-offset: 2px;
+}
+
+.send_button{
+    cursor: pointer;
     background-color: var(--color-primary);
     border: none;
-    height: 40px;
-    width: 40px;
-    border-radius: 10px;
-  }
+    height: 42px;
+    padding: 0 24px;
+    border-radius: 12px;
+    font-weight: 500;
+    font-size: 14px;
+    color: var(--dark-color);
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
 
+.send_button:hover{
+    background-color: var(--color-primary-light, #ab8aff);
+    transform: translateY(-1px);
+}
+
+.send_button:disabled{
+    cursor: not-allowed;
+    background-color: rgba(255,255,255,0.15);
+    color: rgba(255,255,255,0.6);
+}
+
+.answer_notice{
+    font-size: 12px;
+    color: var(--yellow-color);
+    text-align: right;
+}
 
 /* استایل های پیام ها */
-
 .message{
-    
-    padding: 10px;
+    padding: 16px;
     font-size: 16px;
     color: var(--white-color);
     font-weight: normal;
     display: block;
     justify-self: flex-start;
-    
+    background: rgba(255,255,255,0.05);
 }
 
 .user_message{
     max-width: 90%;
     background-color: var(--discord-bg);
-    border-radius: 5px 5px 0px 5px;
+    border-radius: 12px 12px 0px 12px;
     justify-self: flex-start;
-    
 }
+
 .support_message{
     max-width: 90%;
     background-color: var(--card-color);
-    border-radius: 5px 5px 5px 0px;
+    border-radius: 12px 12px 12px 0px;
     justify-self: flex-end;
-    
-
 }
 
+.message p{
+    font-size: 14px;
+    line-height: 2;
+    white-space: pre-wrap;
+}
 
+.message-time{
+    display: inline-block;
+    margin-top: 6px;
+    font-size: 11px;
+    opacity: 0.6;
+}
 
-
+/* مودال ایجاد تیکت */
 .creat_ticket_modal_container{
-    position: absolute;
-    top: 0%;
-    left: 50%;
-    transform: translateX(-50%);
+    position: fixed;
+    inset: 0;
     width: 100%;
     height: 100%;
-    background-color: var(--overlay-color);
+    background: rgba(5, 7, 15, 0.7);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    z-index: 999;
 }
 
 .creat_ticket_modal{
-    width: 700px;
-    height: 500px;
-    background-color: var(--card-color);
-    border-radius: 10px;
-    margin: 100px auto;
+    width: min(500px, 100%);
+    background-color: rgba(26, 29, 49, 0.98);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.05);
 }
+
+.creat_ticket_modal .modal-content{
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    color: var(--white-color);
+}
+
+.creat_ticket_modal .modal-header{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.creat_ticket_modal .modal-header h3{
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.creat_ticket_modal .close-modal{
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,0.7);
+    font-size: 24px;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.creat_ticket_modal .close-modal:hover{
+    color: var(--white-color);
+}
+
+.creat_ticket_modal form{
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.creat_ticket_modal .form-group{
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.creat_ticket_modal label{
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+}
+
+.creat_ticket_modal input[type="text"],
+.creat_ticket_modal textarea{
+    width: 100%;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: rgba(14, 17, 31, 0.85);
+    padding: 12px 14px;
+    color: var(--white-color);
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.creat_ticket_modal input[type="text"]:focus,
+.creat_ticket_modal textarea:focus{
+    outline: none;
+    border-color: rgba(137, 97, 255, 0.45);
+    box-shadow: 0 0 0 3px rgba(137, 97, 255, 0.15);
+}
+
+.creat_ticket_modal textarea{
+    min-height: 140px;
+    resize: vertical;
+}
+
+.creat_ticket_modal .form-actions{
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.creat_ticket_modal .cancel-btn,
+.creat_ticket_modal .submit-btn{
+    border: none;
+    border-radius: 12px;
+    padding: 10px 18px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: transform 0.2s ease, background-color 0.2s ease;
+}
+
+.creat_ticket_modal .cancel-btn{
+    background: rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.8);
+}
+
+.creat_ticket_modal .cancel-btn:hover{
+    transform: translateY(-1px);
+    background: rgba(255,255,255,0.18);
+}
+
+.creat_ticket_modal .submit-btn{
+    background: var(--color-primary);
+    color: var(--dark-color);
+    font-weight: 600;
+}
+
+.creat_ticket_modal .submit-btn:hover{
+    transform: translateY(-1px);
+    background: var(--color-primary-light, #ab8aff);
+}
+
+.creat_ticket_modal .submit-btn:disabled{
+    cursor: not-allowed;
+    background: rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.6);
+}
+
 .hidden{
-    display: none;
+    display: none !important;
+}
+
+body.modal-open{
+    overflow: hidden;
+}
+
+@media screen and (max-width: 1200px){
+    .tickets_container{
+        grid-template-columns: 1fr;
+    }
+    .tickets_list{
+        grid-column: 1/-1;
+    }
+    .tickets_conversation{
+        grid-column: 1/-1;
+    }
+}
+
+@media screen and (max-width: 768px){
+    .tickets_container{
+        gap: 16px;
+    }
+    .tickets_list{
+        padding: 20px 16px;
+    }
+    .tickets_conversation{
+        padding: 20px 16px;
+    }
+    .ticket_item{
+        grid-template-columns: repeat(2,1fr);
+        min-height: 110px;
+    }
+    .ticket_status{
+        grid-column: 1/3;
+    }
+    .answer_actions{
+        justify-content: space-between;
+        width: 100%;
+    }
+    .send_button{
+        flex: 1;
+    }
+    .answer_form form{
+        align-items: stretch;
+    }
+}
+
+@media screen and (max-width: 480px){
+    .creat_ticket_modal{
+        padding: 18px;
+    }
+    .creat_ticket_modal .modal-header h3{
+        font-size: 16px;
+    }
 }
