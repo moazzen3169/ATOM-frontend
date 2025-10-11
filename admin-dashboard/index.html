@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل ادمین - داشبورد</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../css/admin-dashboard.css">
+    <link rel="stylesheet" href="../css/admin-sidebar.css">
+    <link rel="stylesheet" href="../css/admin-overview.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+</head>
+<body>
+<div class="body_container">
+    <aside id="sidebar" class="sidebar"></aside>
+
+    <main class="main_content">
+        <header class="dashboard_header" id="dashboard_header">
+            <script>
+                fetch('dashboard-header.html')
+                    .then(response => response.text())
+                    .then(html => {
+                        document.getElementById('dashboard_header').innerHTML = html;
+                    });
+            </script>
+        </header>
+
+        <section class="page-heading" aria-label="نمای کلی داشبورد">
+            <div class="page-heading__info">
+                <h1>مرکز کنترل مدیریت</h1>
+                <p>تمامی شاخص‌های کلیدی کسب‌وکار، وضعیت تورنومنت‌ها، عملکرد کاربران و جریان‌های مالی را در یک نگاه رصد کنید. این بخش به صورت لحظه‌ای با داده‌های سرویس به‌روزرسانی می‌شود.</p>
+            </div>
+            <div class="page-heading__actions">
+                <button type="button" class="admin-button admin-button--primary" data-action="refresh-dashboard">
+                    <i class="ti ti-refresh" aria-hidden="true"></i>
+                    <span>به‌روزرسانی داشبورد</span>
+                </button>
+                <button type="button" class="admin-button" data-action="download-report">
+                    <i class="ti ti-download" aria-hidden="true"></i>
+                    <span>دریافت گزارش تجمیعی</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="dashboard-metrics" aria-label="آمارهای کلیدی">
+            <article class="metric-card" data-metric="total-players">
+                <div class="metric-card__meta">
+                    <span class="metric-card__title">بازیکنان ثبت‌شده</span>
+                    <i class="ti ti-users" aria-hidden="true"></i>
+                </div>
+                <p class="metric-card__value" data-field="value">--</p>
+                <p class="metric-card__caption">مجموع بازیکنان فعال در اکوسیستم</p>
+            </article>
+            <article class="metric-card" data-metric="active-tournaments">
+                <div class="metric-card__meta">
+                    <span class="metric-card__title">تورنومنت‌های فعال</span>
+                    <i class="ti ti-tournament" aria-hidden="true"></i>
+                </div>
+                <p class="metric-card__value" data-field="value">--</p>
+                <p class="metric-card__caption">رویدادهایی که در حال ثبت‌نام یا اجرا هستند</p>
+            </article>
+            <article class="metric-card" data-metric="prize-pool">
+                <div class="metric-card__meta">
+                    <span class="metric-card__title">مجموع جوایز پرداخت‌شده</span>
+                    <i class="ti ti-currency-rial" aria-hidden="true"></i>
+                </div>
+                <p class="metric-card__value" data-field="value">--</p>
+                <p class="metric-card__caption">جمع پرداختی جوایز به بازیکنان (ریال)</p>
+            </article>
+            <article class="metric-card" data-metric="support-load">
+                <div class="metric-card__meta">
+                    <span class="metric-card__title">تیکت‌های باز</span>
+                    <i class="ti ti-life-buoy" aria-hidden="true"></i>
+                </div>
+                <p class="metric-card__value" data-field="value">--</p>
+                <p class="metric-card__caption">درخواست‌هایی که نیازمند اقدام پشتیبانی هستند</p>
+            </article>
+        </section>
+
+        <section class="dashboard-panels" aria-label="نمای تحلیلی">
+            <article class="panel-card" data-panel="revenue-trend">
+                <header class="panel-card__header">
+                    <div>
+                        <h2>گردش مالی اخیر</h2>
+                        <p>نمایش روند درآمد، برداشت‌ها و واریزها طی ۳۰ روز گذشته</p>
+                    </div>
+                    <button type="button" class="panel-card__action" data-action="export-revenue">
+                        <i class="ti ti-file-analytics" aria-hidden="true"></i>
+                        <span>گزارش مالی</span>
+                    </button>
+                </header>
+                <div class="panel-card__body">
+                    <div class="trend-chart" data-chart="revenue">
+                        <div class="trend-chart__placeholder">در حال بارگذاری نمودار...</div>
+                    </div>
+                    <ul class="trend-legend" data-role="revenue-legend">
+                        <li><span class="trend-legend__dot trend-legend__dot--income"></span> درآمد ناخالص</li>
+                        <li><span class="trend-legend__dot trend-legend__dot--withdraw"></span> برداشت کاربران</li>
+                        <li><span class="trend-legend__dot trend-legend__dot--prize"></span> جوایز پرداختی</li>
+                    </ul>
+                </div>
+            </article>
+
+            <article class="panel-card" data-panel="top-tournaments">
+                <header class="panel-card__header">
+                    <div>
+                        <h2>برترین تورنومنت‌ها</h2>
+                        <p>تورنومنت‌هایی با بالاترین جوایز و مشارکت</p>
+                    </div>
+                    <button type="button" class="panel-card__action" data-action="manage-tournaments">
+                        <i class="ti ti-adjustments" aria-hidden="true"></i>
+                        <span>مدیریت</span>
+                    </button>
+                </header>
+                <div class="panel-card__body">
+                    <ul class="tournament-list" data-list="top-tournaments"></ul>
+                </div>
+            </article>
+
+            <article class="panel-card" data-panel="player-performance">
+                <header class="panel-card__header">
+                    <div>
+                        <h2>ستارگان هفته</h2>
+                        <p>بازیکنانی که بیشترین امتیاز و رشد را داشته‌اند</p>
+                    </div>
+                    <button type="button" class="panel-card__action" data-action="view-leaderboard">
+                        <i class="ti ti-list-numbers" aria-hidden="true"></i>
+                        <span>مشاهده لیدربرد</span>
+                    </button>
+                </header>
+                <div class="panel-card__body">
+                    <ul class="players-list" data-list="top-players"></ul>
+                </div>
+            </article>
+
+            <article class="panel-card" data-panel="operations">
+                <header class="panel-card__header">
+                    <div>
+                        <h2>وظایف فوری</h2>
+                        <p>اقداماتی که برای حفظ پایداری سیستم توصیه می‌شوند</p>
+                    </div>
+                </header>
+                <div class="panel-card__body">
+                    <ul class="operations-list" data-role="operations-list">
+                        <li>در انتظار بررسی: <span data-field="pending-verifications">--</span> درخواست احراز هویت</li>
+                        <li>نیاز به پاسخ: <span data-field="pending-withdrawals">--</span> برداشت ثبت شده</li>
+                        <li>در صف برگزاری: <span data-field="upcoming-tournaments">--</span> تورنومنت فعال</li>
+                        <li>میانگین زمان پاسخ‌گویی: <span data-field="avg-response">--</span></li>
+                    </ul>
+                </div>
+            </article>
+        </section>
+    </main>
+</div>
+
+<script type="module" src="/js/admin/admin-sidebar.js"></script>
+<script type="module" src="/js/admin/admin-dashboard.js"></script>
+<script type="module" src="/js/admin/admin-overview.js"></script>
+</body>
+</html>
