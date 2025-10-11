@@ -2,7 +2,7 @@ import {
   ensureAdminAccess,
   getAdminUser,
   onAdminUserChange,
-} from "./admin/admin-auth.js";
+} from "./admin-auth.js";
 
 const MAX_HEADER_UPDATE_ATTEMPTS = 12;
 

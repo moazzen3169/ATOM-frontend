@@ -5,8 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>پنل ادمین - مدیریت تیکت‌ها</title>
 
-    <meta name="api-base-url" content="https://atom-game.ir">
-    <meta name="tickets-endpoint" content="https://atom-game.ir/api/support/tickets/    ">
+    <meta name="api-base-url" content="">
+    <meta name="tickets-endpoint" content="">
+    <script type="module">
+        import { API_BASE_URL } from '/js/config.js';
+        document.querySelector('meta[name="api-base-url"]').setAttribute('content', API_BASE_URL);
+        document.querySelector('meta[name="tickets-endpoint"]').setAttribute('content', API_BASE_URL + '/api/support/tickets/');
+    </script>
 
     <link rel="stylesheet" href="../css/colors.css">
     <link rel="stylesheet" href="../css/admin-dashboard.css">
@@ -142,8 +147,8 @@
     </main>
 </div>
 
-<script src="/js/admin-sidebar.js"></script>
-<script src="/js/admin-dashboard.js"></script>
+<script type="module" src="/js/admin/admin-sidebar.js"></script>
+<script src="/js/admin/admin-dashboard.js"></script>
 <script type="module" src="/js/admin/admin-tickets.js"></script>
 </body>
 </html>

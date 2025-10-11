@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل کاربری</title>
+    <!-- Tabler Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+
+</head>
+<body>
+    <div class="user_sidebar_container">
+        <div class="user_sidebar">
+            <div class="sidebar_logo">
+                <a href="../index.html"><img src="../img/logo.png" alt="logo"></a>
+            </div>
+            <div class="sidebar_links">
+                <a href="tickets-management.html" class="sidebar_link">
+                    <i class="ti ti-home"></i>
+                    <p>داشبورد</p>
+                </a>
+
+                <a href="accept-users-verification.html" class="sidebar_link">
+                    <i class="ti ti-users"></i>
+                    <p>مدیریت کاربران</p>
+                </a>
+
+                <a href="#" class="sidebar_link">
+                    <i class="ti ti-trophy"></i>
+                    <p>مدیریت تورنومنت ها</p>
+                </a>
+
+                <a href="#" class="sidebar_link">
+                    <i class="ti ti-wallet"></i>
+                    <p>مدیریت کیف پول</p>
+                </a>
+
+                <a href="tickets-management.html" class="sidebar_link">
+                    <i class="ti ti-ticket"></i>
+                    <p>مدیریت تیکت</p>
+                </a>
+
+                <a href="accept-users-verification.html" class="sidebar_link">
+                    <i class="ti ti-id"></i>
+                    <p>احراز هویت</p>
+                </a>
+
+                <a href="../user-dashboard/chat.html" class="sidebar_link">
+                    <i class="ti ti-message-circle"></i>
+                    <p>گفتگو</p>
+                </a>
+
+                <a href="#" class="sidebar_link exit">
+                    <i class="ti ti-logout"></i>
+                    <p>خروج از حساب</p>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // اضافه کردن event listener برای خروج از حساب
+        const exitLink = document.querySelector('.sidebar_link.exit');
+        if (exitLink) {
+            exitLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                // پاک کردن توکن‌ها از localStorage
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user_data');
+                // ریدایرکت به صفحه لاگین
+                window.location.href = '/register/login.html';
+            });
+        }
+    </script>
+</body>
+</html>
