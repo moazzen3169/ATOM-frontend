@@ -9,27 +9,29 @@
     direction: rtl;
     background-color: var(--background-color);
     font-family: inherit;
+    line-height: 1.6;
+    color: var(--white-color);
   }
-  
+
   /* ======= Layout Container ======= */
   .body_container {
     display: grid;
-    grid-template-columns:  repeat(12 , 1fr); /* دسکتاپ پیش‌فرض */
-    /* gap: 100px; */
-    max-width: 1500px;
-    margin: 0 auto 25px auto;
-    padding: 20px;
+    grid-template-columns: repeat(12, 1fr);
+    max-width: 1440px;
+    margin: 0 auto 32px;
+    padding: 24px;
+    gap: 24px;
   }
-  
+
   #sidebar {
-    grid-column: 1/3;
+    grid-column: 1 / 3;
   }
-  
-  main {
-    grid-column: 3/13;
+
+  .main_content {
+    grid-column: 3 / 13;
     display: grid;
     grid-template-columns: repeat(9, 1fr);
-    gap: 20px;
+    gap: 24px;
   }
   
   /* ======= Dashboard Header ======= */
@@ -66,12 +68,12 @@
 
   .user_profile_card {
     background: var(--card-color);
-    border-radius: 16px;
-    padding: 24px;
+    border-radius: 20px;
+    padding: 28px;
     display: flex;
     flex-direction: column;
     gap: 24px;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
   }
 
   .user_profile_header {
@@ -133,29 +135,46 @@
     background: var(--color-primary);
     color: var(--dark-color);
     border: none;
-    border-radius: 12px;
-    padding: 10px 16px;
-    font-size: 14px;
+    border-radius: 50%;
+    width: 44px;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     cursor: pointer;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
-    white-space: nowrap;
   }
 
   .edit_user_btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.2);
+    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+  }
+
+  .edit_user_btn__icon {
+    width: 22px;
+    height: 22px;
+    fill: currentColor;
   }
 
   .user_profile_details {
-    background: rgba(255, 255, 255, 0.02);
-    border-radius: 12px;
-    padding: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 16px;
+    padding: 18px;
   }
 
   .user_profile_list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px 18px;
+    gap: 14px 20px;
+  }
+
+  .user_profile_list > div {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 12px;
+    padding: 12px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
   }
 
   .user_profile_list dt {
@@ -166,22 +185,23 @@
   .user_profile_list dd {
     color: var(--white-color);
     font-size: 15px;
-    margin-top: 4px;
+    font-weight: 500;
   }
 
   .user_stats_grid {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
   }
 
   .user_stat_card {
-    background: rgba(255, 255, 255, 0.04);
-    border-radius: 12px;
-    padding: 16px;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+    border-radius: 16px;
+    padding: 18px;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
   }
 
   .user_stat_label {
@@ -193,6 +213,18 @@
     color: var(--white-color);
     font-size: 22px;
     font-weight: 600;
+  }
+
+  .visually_hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
   }
   
   /* ======= Teams Section ======= */
@@ -416,8 +448,9 @@
     grid-column: 1/10;
 
     background: var(--card-color);
-    border-radius: 10px;
-    padding: 20px;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
   }
   
   .user_history_title {
@@ -434,12 +467,17 @@
   }
   
   .user_history_filter button {
-    background: var(--background-color);
+    background: rgba(255, 255, 255, 0.08);
     color: var(--white-color);
     border: none;
-    padding: 5px 15px;
-    border-radius: 5px;
+    padding: 6px 16px;
+    border-radius: 10px;
     cursor: pointer;
+    transition: background 0.2s ease;
+  }
+
+  .user_history_filter button:hover {
+    background: rgba(255, 255, 255, 0.16);
   }
   
   .user_tournaments_history_table {
@@ -649,27 +687,25 @@
   }
 
   @media (max-width:1300px) {
-    
+
     #sidebar {
         grid-column: 1/2;
       }
-      
-      main {
+
+      .main_content {
         grid-column: 2/13;
-        display: grid;
-        /* grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); */
         gap: 20px;
       }
   }
 
-  
-  @media (max-width:1064px) { 
+
+  @media (max-width:1064px) {
 
     /* در اینجا باید منو داشبورد ظاهر بشه */
     #sidebar {
       display: none;
     }
-      main {
+      .main_content {
         grid-column: 1/13;
       }
 
@@ -708,7 +744,8 @@
     }
 
     .edit_user_btn {
-      width: 100%;
+      width: 48px;
+      height: 48px;
     }
 
     .user_profile_list {

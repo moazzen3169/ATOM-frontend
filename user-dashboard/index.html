@@ -46,8 +46,11 @@
               <span class="user_profile_badge user_profile_badge--muted" id="user_status">-</span>
             </div>
           </div>
-          <button class="edit_user_btn" type="button" data-action="edit-user">
-            ویرایش پروفایل
+          <button class="edit_user_btn" type="button" data-action="edit-user" aria-label="ویرایش پروفایل" title="ویرایش پروفایل">
+            <svg class="edit_user_btn__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+              <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zm2.92 2.5H5v-1.02l9.06-9.06 1.02 1.02-9.16 9.06zm13.71-12.13a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+            </svg>
+            <span class="visually_hidden">ویرایش پروفایل</span>
           </button>
         </header>
 
@@ -143,6 +146,7 @@
   </main>
 </div>
 
+<script src="../js/alert.js"></script>
 <script src="../js/sidebar.js"></script>
 <script type="module" src="../js/user-dashboard.js"></script>
 
