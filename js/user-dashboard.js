@@ -9,6 +9,9 @@ let incomingInvitationsState = [];
 let outgoingInvitationsState = [];
 let joinRequestsState = [];
 let pendingConfirmation = null;
+let currentUserProfile = {};
+let cachedTeamsCount = 0;
+let cachedTournamentsCount = 0;
 
 function escapeHTML(value) {
     if (value === null || value === undefined) return "";
@@ -472,6 +475,100 @@ function formatDate(dateString) {
     }
 }
 
+function setElementText(id, value) {
+    const element = document.getElementById(id);
+    if (element) {
+        element.textContent = value;
+    }
+}
+
+function setFieldValue(id, value) {
+    const field = document.getElementById(id);
+    if (field) {
+        field.value = value === null || typeof value === 'undefined' ? '' : String(value);
+    }
+}
+
+function buildFullName(user = {}) {
+    if (!user) return '';
+    if (user.full_name) return String(user.full_name);
+    const parts = [user.first_name, user.last_name].filter(Boolean);
+    if (parts.length) return parts.join(' ');
+    if (user.name) return String(user.name);
+    return '';
+}
+
+function getPhoneNumber(user = {}) {
+    return user.phone_number || user.phone || user.mobile || user.contact_number || '';
+}
+
+function translateUserStatus(status) {
+    const normalized = (status || '').toString().toLowerCase();
+    switch (normalized) {
+        case 'active':
+        case 'verified':
+        case 'approved':
+        case 'confirmed':
+            return 'فعال';
+        case 'pending':
+        case 'awaiting':
+        case 'processing':
+        case 'in_review':
+            return 'در انتظار بررسی';
+        case 'suspended':
+        case 'blocked':
+        case 'inactive':
+            return 'غیرفعال';
+        default:
+            return status || 'نامشخص';
+    }
+}
+
+function resolveUserStatus(user = {}) {
+    const statusCandidates = [
+        user.status,
+        user.account_status,
+        user.profile_status,
+        user.verification_status,
+        user.state
+    ].filter(Boolean);
+
+    if (statusCandidates.length) {
+        return translateUserStatus(statusCandidates[0]);
+    }
+    return 'نامشخص';
+}
+
+function resolveJoinDate(user = {}) {
+    const fields = ['date_joined', 'created_at', 'created', 'joined_at', 'registered_at'];
+    for (const field of fields) {
+        if (user[field]) {
+            return user[field];
+        }
+    }
+    return null;
+}
+
+function clearEditUserMessage() {
+    const messageEl = document.getElementById('edit_user_message');
+    if (messageEl) {
+        messageEl.textContent = '';
+        messageEl.classList.remove('is-error', 'is-success');
+    }
+}
+
+function setEditUserMessage(type, message) {
+    const messageEl = document.getElementById('edit_user_message');
+    if (!messageEl) return;
+    messageEl.textContent = message || '';
+    messageEl.classList.remove('is-error', 'is-success');
+    if (type === 'error') {
+        messageEl.classList.add('is-error');
+    } else if (type === 'success') {
+        messageEl.classList.add('is-success');
+    }
+}
+
 // تابع برای بررسی و تنظیم توکن
 function setupToken() {
     // بررسی انواع مختلف ذخیره‌سازی توکن
@@ -704,53 +801,62 @@ function setPageTitle() {
 
 // تابع برای نمایش اطلاعات کاربر
 function displayUserProfile(data, teamsCount, tournamentsCount) {
+    if (!data) return;
     console.log('نمایش داده‌ها:', data);
 
-    // اطلاعات اصلی کاربر
-    const username = data.username || 'کاربر';
-    if (data && typeof data.id !== 'undefined') {
+    currentUserProfile = data || {};
+    cachedTeamsCount = Number(teamsCount) || 0;
+    cachedTournamentsCount = Number(tournamentsCount) || 0;
+
+    const username = data.username || data.user_name || 'کاربر';
+    if (typeof data.id !== 'undefined') {
         currentUserId = data.id;
     }
     currentUsername = username || '';
     currentUserEmail = data.email || '';
     localStorage.setItem("username", username);
-    if (document.getElementById("header_user_name")) {
-        document.getElementById("header_user_name").textContent = username;
-    }
-    if (document.getElementById("user_name")) {
-        document.getElementById("user_name").textContent = username;
-    }
-    if (document.getElementById("user_email")) {
-        document.getElementById("user_email").textContent = data.email || "-";
-    }
-    if (document.getElementById("user_rank")) {
-        document.getElementById("user_rank").textContent = data.rank || "-";
-    }
-    if (document.getElementById("user_score")) {
-        document.getElementById("user_score").textContent = data.score || "0";
-    }
 
-    // اطلاعات آماری - از پارامترهای ورودی استفاده می‌کنیم
-    if (document.getElementById("user_tournaments_played")) {
-        document.getElementById("user_tournaments_played").textContent = tournamentsCount || "0";
-    }
-    if (document.getElementById("user_teams")) {
-        document.getElementById("user_teams").textContent = teamsCount || "0";
-    }
+    setElementText("header_user_name", username);
+    setElementText("user_name", username);
+    setElementText("user_username", username);
 
-    // تاریخ عضویت - در API موجود نیست
-    if (document.getElementById("user_add_date")) {
-        document.getElementById("user_add_date").textContent = "-";
-    }
+    const email = data.email || '-';
+    setElementText("user_email_primary", email);
+    setElementText("user_email_detail", email);
 
-    // آواتار کاربر
-    const avatarSrc = data.profile_picture || "../img/profile.jpg";
+    const rank = data.rank || data.level || '-';
+    setElementText("user_rank", rank || '-');
+
+    const statusLabel = resolveUserStatus(data);
+    setElementText("user_status", statusLabel);
+
+    const fullName = buildFullName(data) || '-';
+    setElementText("user_full_name", fullName);
+
+    const phoneNumber = getPhoneNumber(data) || 'ثبت نشده';
+    setElementText("user_phone", phoneNumber);
+
+    const joinDateRaw = resolveJoinDate(data);
+    const joinDateText = joinDateRaw ? formatDate(joinDateRaw) : '-';
+    setElementText("user_add_date", joinDateText);
+
+    const numberFormatter = new Intl.NumberFormat('fa-IR');
+    const rawScore = (typeof data.score === 'number' || typeof data.score === 'string') ? Number(data.score) : Number(data.points);
+    const scoreValue = Number.isFinite(rawScore) ? rawScore : 0;
+    setElementText("user_score", numberFormatter.format(scoreValue));
+
+    setElementText("user_tournaments_played", numberFormatter.format(cachedTournamentsCount));
+    setElementText("user_teams", numberFormatter.format(cachedTeamsCount));
+
+    const avatarSrc = data.profile_picture || data.avatar || "../img/profile.jpg";
     localStorage.setItem("profile_picture", avatarSrc);
-    if (document.getElementById("header_user_avatar")) {
-        document.getElementById("header_user_avatar").src = avatarSrc;
+    const headerAvatar = document.getElementById("header_user_avatar");
+    if (headerAvatar) {
+        headerAvatar.src = avatarSrc;
     }
-    if (document.getElementById("user_avatar")) {
-        document.getElementById("user_avatar").src = avatarSrc;
+    const profileAvatar = document.getElementById("user_avatar");
+    if (profileAvatar) {
+        profileAvatar.src = avatarSrc;
     }
 
     updateHeaderUserInfoFromLocalStorage();
@@ -864,7 +970,9 @@ function displayUserTeams(teamsInput) {
 function updateTeamsCounter(count) {
     const counter = document.getElementById('teams_counter');
     if (counter) {
-        counter.textContent = `${count} تیم`;
+        const formatter = new Intl.NumberFormat('fa-IR');
+        const label = count === 0 ? 'بدون تیم' : `${formatter.format(count)} تیم`;
+        counter.textContent = label;
     }
 }
 
@@ -873,21 +981,121 @@ function renderTeamsList() {
     if (!container) return;
 
     const relevantTeams = filterTeamsForUser(teamsState);
+    const overflowHint = document.getElementById('teams_overflow_hint');
+    const isTeamsPage = window.location.pathname.includes('teams');
+    const displayLimit = isTeamsPage ? relevantTeams.length : 3;
 
     container.innerHTML = '';
     updateTeamsCounter(relevantTeams.length);
 
+    if (overflowHint) {
+        overflowHint.textContent = '';
+    }
+
     if (relevantTeams.length === 0) {
-        container.innerHTML = '<div class="empty_state">تیمی برای نمایش وجود ندارد. با دکمه بالا یک تیم جدید بسازید.</div>';
+        const emptyMessage = isTeamsPage
+            ? 'هیچ تیمی ثبت نشده است. از دکمه ایجاد تیم جدید استفاده کنید.'
+            : 'تیمی برای نمایش وجود ندارد. از دکمه مدیریت تیم‌ها برای ساخت تیم جدید استفاده کنید.';
+        container.innerHTML = `<div class="empty_state">${emptyMessage}</div>`;
         return;
     }
 
     const fragment = document.createDocumentFragment();
-    relevantTeams.forEach(team => {
+    const teamsToDisplay = isTeamsPage ? relevantTeams : relevantTeams.slice(0, displayLimit);
+    teamsToDisplay.forEach(team => {
         fragment.appendChild(createTeamCard(team));
     });
 
     container.appendChild(fragment);
+
+    if (!isTeamsPage && overflowHint && relevantTeams.length > displayLimit) {
+        overflowHint.innerHTML = 'برای مشاهده تمام تیم‌ها به <a href="teams.html">صفحه تیم‌ها</a> بروید.';
+    }
+}
+
+function openEditUserModal() {
+    const form = document.getElementById('edit_user_form');
+    if (!form) return;
+
+    clearEditUserMessage();
+
+    const profile = currentUserProfile || {};
+    setFieldValue('edit_user_username', profile.username || profile.user_name || '');
+    setFieldValue('edit_user_first_name', profile.first_name || '');
+    setFieldValue('edit_user_last_name', profile.last_name || '');
+    setFieldValue('edit_user_email', profile.email || '');
+    setFieldValue('edit_user_phone', getPhoneNumber(profile) || '');
+    setFieldValue('edit_user_bio', profile.bio || profile.about || profile.description || '');
+
+    openModal('edit_user_modal');
+}
+
+async function handleEditUserSubmit(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formData = new FormData(form);
+
+    const username = (formData.get('username') || '').toString().trim();
+    const email = (formData.get('email') || '').toString().trim();
+    const firstName = (formData.get('first_name') || '').toString().trim();
+    const lastName = (formData.get('last_name') || '').toString().trim();
+    const phoneNumber = (formData.get('phone_number') || '').toString().trim();
+    const bio = (formData.get('bio') || '').toString().trim();
+
+    if (!username) {
+        setEditUserMessage('error', 'نام کاربری را وارد کنید.');
+        return;
+    }
+
+    if (!email) {
+        setEditUserMessage('error', 'ایمیل را وارد کنید.');
+        return;
+    }
+
+    const payload = { username, email };
+    if (firstName) payload.first_name = firstName;
+    if (lastName) payload.last_name = lastName;
+    if (phoneNumber) payload.phone_number = phoneNumber;
+    if (bio) payload.bio = bio;
+
+    const submitButton = form.querySelector('button[type="submit"]');
+    toggleButtonLoading(submitButton, true, 'در حال ذخیره...');
+    clearEditUserMessage();
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/auth/users/me/`, {
+            method: 'PATCH',
+            body: JSON.stringify(payload)
+        });
+
+        if (!response.ok) {
+            const message = await extractErrorMessage(response);
+            throw new Error(message);
+        }
+
+        let updatedProfile = null;
+        try {
+            updatedProfile = await response.json();
+        } catch (jsonError) {
+            updatedProfile = null;
+        }
+
+        showSuccess('پروفایل با موفقیت به‌روزرسانی شد.');
+        closeModal('edit_user_modal');
+
+        if (updatedProfile && Object.keys(updatedProfile).length) {
+            currentUserProfile = { ...currentUserProfile, ...updatedProfile };
+            displayUserProfile(currentUserProfile, cachedTeamsCount, cachedTournamentsCount);
+        } else {
+            await loadDashboardData();
+        }
+    } catch (error) {
+        console.error('خطا در بروزرسانی پروفایل:', error);
+        setEditUserMessage('error', error.message || 'خطا در بروزرسانی پروفایل');
+        showError(error.message || 'خطا در بروزرسانی پروفایل');
+    } finally {
+        toggleButtonLoading(submitButton, false);
+    }
 }
 
 function createTeamCard(team) {
@@ -1663,16 +1871,26 @@ document.addEventListener("DOMContentLoaded", () => {
         setPageTitle();
     });
 
-    // مدیریت دکمه ایجاد تیم
-    const createTeamLink = document.querySelector('.creat_team_link');
-    if (createTeamLink) {
-        createTeamLink.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (window.location.pathname.includes('teams')) {
-                openModal('create_team_modal');
-            } else {
-                window.location.href = 'teams.html';
-            }
-        });
+    const editUserButton = document.querySelector('[data-action="edit-user"]');
+    if (editUserButton) {
+        editUserButton.addEventListener('click', openEditUserModal);
     }
+
+    const editUserForm = document.getElementById('edit_user_form');
+    if (editUserForm) {
+        editUserForm.addEventListener('submit', handleEditUserSubmit);
+    }
+
+    const createTeamLinks = document.querySelectorAll('.creat_team_link');
+    createTeamLinks.forEach((link) => {
+        const isTeamsPage = window.location.pathname.includes('teams');
+        if (isTeamsPage) {
+            link.addEventListener('click', (event) => {
+                event.preventDefault();
+                openModal('create_team_modal');
+            });
+        } else if (!link.getAttribute('href')) {
+            link.setAttribute('href', 'teams.html');
+        }
+    });
 });
