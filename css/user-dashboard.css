@@ -73,7 +73,7 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 24px 48px var(--shadow-strong);
     min-height: 582px;
   }
 
@@ -122,13 +122,13 @@
     justify-content: center;
     padding: 4px 10px;
     border-radius: 999px;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--surface-tint-08);
     color: var(--white-color);
     font-size: 12px;
   }
 
   .user_profile_badge--muted {
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--surface-tint-04);
     color: var(--gray-color);
   }
 
@@ -149,7 +149,7 @@
 
   .edit_user_btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 22px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 10px 22px var(--shadow-strong);
   }
 
   .edit_user_btn__icon {
@@ -196,13 +196,13 @@
   }
 
   .user_stat_card {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+    background: linear-gradient(135deg, var(--surface-tint-08), var(--surface-tint-02));
     border-radius: 16px;
     padding: 18px;
     display: flex;
     flex-direction: column;
     gap: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--surface-tint-08);
   }
 
   .user_stat_label {
@@ -237,7 +237,7 @@
     background: var(--card-color);
     border-radius: 20px;
     padding: 24px;
-    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
+    box-shadow: 0 12px 35px var(--shadow-soft);
     display: flex;
     flex-direction: column;
     gap: 20px;
@@ -265,7 +265,7 @@
   }
 
   .creat_team_link {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface-tint-10);
     color: var(--white-color);
     padding: 8px 14px;
     border-radius: 10px;
@@ -274,7 +274,7 @@
   }
 
   .creat_team_link:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--surface-tint-18);
   }
 
   .teams_container {
@@ -299,7 +299,7 @@
     color: var(--gray-color);
     text-align: center;
     padding: 40px 0;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--surface-tint-02);
     border-radius: 12px;
   }
 
@@ -315,7 +315,7 @@
 
   .team_card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 14px 30px rgba(0, 0, 0, 0.18);
+    box-shadow: 0 14px 30px var(--shadow-medium);
   }
 
   .team_card__header {
@@ -329,7 +329,7 @@
     height: 52px;
     border-radius: 14px;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    border: 1px solid var(--surface-tint-10);
   }
 
   .team_avatar img {
@@ -351,7 +351,7 @@
 
   .team_badge {
     margin-right: auto;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--surface-tint-08);
     color: var(--white-color);
     border-radius: 999px;
     padding: 4px 12px;
@@ -393,7 +393,7 @@
   }
 
   .team_member_chip {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--surface-tint-08);
     color: var(--white-color);
     border-radius: 999px;
     padding: 4px 10px;
@@ -401,7 +401,7 @@
   }
 
   .team_member_chip--more {
-    background: rgba(255, 255, 255, 0.15);
+    background: var(--surface-tint-15);
   }
 
   .team_description {
@@ -428,12 +428,12 @@
     cursor: pointer;
     font-size: 13px;
     color: var(--white-color);
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface-tint-10);
     transition: background 0.2s ease;
   }
 
   .btn:hover {
-    background: rgba(255, 255, 255, 0.18);
+    background: var(--surface-tint-18);
   }
 
   .btn--primary {
@@ -442,16 +442,16 @@
   }
 
   .btn--primary:hover {
-    background: #ffcf6b;
+    background: var(--button-primary-hover);
   }
 
   .btn--danger {
-    background: rgba(255, 90, 90, 0.2);
-    color: #ff7d7d;
+    background: var(--danger-surface);
+    color: var(--danger-text);
   }
 
   .btn--danger:hover {
-    background: rgba(255, 90, 90, 0.32);
+    background: var(--danger-surface-hover);
   }
   
   /* ======= Tournament History ======= */
@@ -477,7 +477,7 @@
   }
   
   .user_history_filter button {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--surface-tint-08);
     color: var(--white-color);
     border: none;
     padding: 6px 16px;
@@ -487,7 +487,7 @@
   }
 
   .user_history_filter button:hover {
-    background: rgba(255, 255, 255, 0.16);
+    background: var(--surface-tint-16);
   }
   
   .user_tournaments_history_table {
@@ -522,7 +522,7 @@
   .modal {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.6);
+    background: var(--overlay-strong);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -542,7 +542,7 @@
     width: min(520px, 100%);
     background: var(--card-color);
     border-radius: 16px;
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.25);
+    box-shadow: 0 18px 48px var(--shadow-strong);
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -555,7 +555,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--surface-tint-02);
   }
 
   .modal__header h2 {
@@ -609,7 +609,13 @@
     flex-wrap: wrap;
     max-width: 100px;
     max-height: 100px;
-    
+
+  }
+
+  .modal_avatar_preview_wrapper {
+    position: relative;
+    display: inline-block;
+    cursor: pointer;
   }
 
   .modal_avatar_preview {
@@ -617,7 +623,7 @@
     height: 100px;
     border-radius: 50%;
     overflow: hidden;
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--surface-tint-08);
     flex-shrink: 0;
   }
 
@@ -625,6 +631,18 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  .avatar-edit-icon {
+    position: absolute;
+    bottom: 5px;
+    right: 5px;
+    width: 24px;
+    height: 24px;
+    background: var(--overlay-bold);
+    border-radius: 50%;
+    padding: 4px;
+    fill: var(--white-color);
   }
 
   .modal_avatar_actions {
@@ -644,7 +662,7 @@
   .modal_form_field textarea {
     background: var(--background-color);
     color: var(--white-color);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--surface-tint-08);
     border-radius: 10px;
     padding: 10px 12px;
     font-size: 14px;
@@ -655,6 +673,10 @@
     min-height: 90px;
   }
 
+  .input--hidden {
+    display: none;
+  }
+
   .modal_form_message {
     color: var(--gray-color);
     font-size: 13px;
@@ -662,11 +684,11 @@
   }
 
   .modal_form_message.is-error {
-    color: #ff8b8b;
+    color: var(--danger-text-strong);
   }
 
   .modal_form_message.is-success {
-    color: #7adfa6;
+    color: var(--success-text);
   }
 
   .modal_btn {
@@ -678,7 +700,7 @@
   }
 
   .modal_btn--secondary {
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--surface-tint-08);
     color: var(--white-color);
   }
 
@@ -811,7 +833,7 @@
     border-radius: 10px;
     padding: 12px 14px 12px 40px;
     position: relative;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    box-shadow: 0 6px 20px var(--shadow-elevated);
     direction: rtl;
   }
   .alert_title { font-weight: 700; margin-bottom: 6px; }
@@ -827,7 +849,7 @@
     cursor: pointer;
     text-decoration: none;
   }
-  .alert_btn:hover { background: rgba(255,255,255,0.05); }
+  .alert_btn:hover { background: var(--message-bg); }
 
   .alert_close {
     position: absolute;
@@ -841,8 +863,8 @@
   }
 
   /* وضعیت‌ها */
-  .alert-error   { border-right: 4px solid #e74c3c; }
-  .alert-success { border-right: 4px solid #2ecc71; }
-  .alert-info    { border-right: 4px solid #3498db; }
+  .alert-error   { border-right: 4px solid var(--alert-border-error); }
+  .alert-success { border-right: 4px solid var(--alert-border-success); }
+  .alert-info    { border-right: 4px solid var(--alert-border-info); }
 
 

@@ -52,7 +52,7 @@
 
 
 .sidebar_link:hover{
-    background-color: #232E3F;
+    background-color: var(--sidebar-hover-color);
 
 }
 
@@ -65,7 +65,7 @@ a{
     height: 20px;
 }
 .active{
-    background-color: #232E3F;
+    background-color: var(--sidebar-hover-color);
 
 }
 .exit{
@@ -134,8 +134,8 @@ a{
     right: 0px;
     width: 100%; /* برای overlay */
     height: 100%;
-    background: rgba(0,0,0,0.5); /* overlay */
-    z-index: 999; 
+    background: var(--overlay-medium); /* overlay */
+    z-index: 999;
   }
   
   /* خود سایدبار */
@@ -145,7 +145,7 @@ a{
     /* right: -300px; در ابتدا بیرون صفحه */
     width: 300px;
     height: 100%;
-    background: #fff;
+    background: var(--white-color);
     transition: 0.3s ease;
     padding: 20px;
   }

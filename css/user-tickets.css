@@ -80,11 +80,11 @@ body{
 
 .creat_ticket_btn:hover{
     transform: translateY(-1px);
-    box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+    box-shadow: 0 6px 16px var(--shadow-soft);
 }
 
 .creat_ticket_btn:focus{
-    outline: 2px solid rgba(255,255,255,0.35);
+    outline: 2px solid var(--surface-tint-35);
     outline-offset: 2px;
 }
 
@@ -104,7 +104,7 @@ body{
 }
 
 .tickets_lists_container::-webkit-scrollbar-thumb{
-    background-color: rgba(255,255,255,0.15);
+    background-color: var(--surface-tint-15);
     border-radius: 999px;
 }
 
@@ -114,7 +114,7 @@ body{
 
 .ticket_item{
     cursor: pointer;
-    background-color: rgba(15, 17, 29, 0.45);
+    background-color: var(--background-overlay-45);
     border: 1px solid var(--border-color);
     width: 100%;
     padding: 12px;
@@ -129,13 +129,13 @@ body{
 
 .ticket_item:hover{
     transform: translateX(-4px);
-    background-color: rgba(24, 29, 47, 0.65);
+    background-color: var(--card-overlay-65);
 }
 
 .ticket_item.selected{
     border: 1px solid var(--color-primary);
-    box-shadow: 0 0 0 1px rgba(137, 97, 255, 0.35);
-    background-color: rgba(24, 29, 47, 0.9);
+    box-shadow: 0 0 0 1px var(--accent-secondary-35);
+    background-color: var(--card-overlay-90);
 }
 
 .ticket_item::before{
@@ -243,11 +243,11 @@ body{
     justify-content: center;
     gap: 12px;
     text-align: center;
-    color: rgba(255,255,255,0.8);
-    background: rgba(20, 23, 40, 0.7);
+    color: var(--text-white-80);
+    background: var(--background-overlay-70);
     padding: 32px 16px;
     border-radius: 16px;
-    border: 1px dashed rgba(255,255,255,0.15);
+    border: 1px dashed var(--surface-tint-15);
 }
 
 .no-tickets-message p{
@@ -359,13 +359,13 @@ body{
     align-items: center;
     gap: 8px;
     font-size: 12px;
-    color: rgba(255,255,255,0.7);
+    color: var(--text-white-70);
     width: 215px;
 
 }
 
 .conversation_meta_divider{
-    color: rgba(255,255,255,0.25);
+    color: var(--surface-tint-25);
 }
 
 .conversation_ticket_date{
@@ -404,11 +404,11 @@ body{
     justify-content: center;
     align-items: center;
     text-align: center;
-    color: rgba(255,255,255,0.8);
+    color: var(--text-white-80);
 }
 
 .C-open .answer_form{
-    background-color: rgba(16, 18, 30, 0.85);
+    background-color: var(--background-overlay-85);
     width: 100%;
     border-radius:16px;
     padding: 10px;
@@ -461,8 +461,8 @@ body{
 
 .answer_input textarea:focus{
     outline: none;
-    border-color: rgba(137, 97, 255, 0.45);
-    box-shadow: 0 0 0 3px rgba(137, 97, 255, 0.15);
+    border-color: var(--accent-secondary-45);
+    box-shadow: 0 0 0 3px var(--accent-secondary-15);
 }
 
 .answer_actions{
@@ -476,7 +476,7 @@ body{
     cursor: pointer;
     width: 42px;
     height: 42px;
-    background-color: rgba(30, 34, 58, 0.9);
+    background-color: var(--card-overlay-90-alt);
     border-radius: 12px;
     display: inline-flex;
     align-items: center;
@@ -486,12 +486,12 @@ body{
 }
 
 .file_button:hover{
-    background-color: rgba(45, 51, 82, 0.95);
+    background-color: var(--file-button-hover);
     transform: translateY(-1px);
 }
 
 .file_button:focus{
-    outline: 2px solid rgba(137, 97, 255, 0.4);
+    outline: 2px solid var(--accent-secondary-40);
     outline-offset: 2px;
 }
 
@@ -509,14 +509,14 @@ body{
 }
 
 .send_button:hover{
-    background-color: var(--color-primary-light, #ab8aff);
+    background-color: var(--accent-secondary);
     transform: translateY(-1px);
 }
 
 .send_button:disabled{
     cursor: not-allowed;
-    background-color: rgba(255,255,255,0.15);
-    color: rgba(255,255,255,0.6);
+    background-color: var(--surface-tint-15);
+    color: var(--disabled-button-text);
 }
 
 .answer_notice{
@@ -534,11 +534,11 @@ body{
     display: flex;
     flex-direction: column;
     gap: 8px;
-    background: rgba(255,255,255,0.05);
+    background: var(--surface-tint-05);
     border-radius: 16px;
-    border: 1px solid rgba(255,255,255,0.06);
+    border: 1px solid var(--surface-tint-06);
     position: relative;
-    box-shadow: 0 12px 30px rgba(0,0,0,0.25);
+    box-shadow: 0 12px 30px var(--shadow-strong);
     direction: rtl;
     text-align: right;
 }
@@ -546,15 +546,15 @@ body{
 .user_message{
     margin-inline-start: auto;
     max-width: min(90%, 520px);
-    background: linear-gradient(135deg, rgba(137, 97, 255, 0.2), rgba(137, 97, 255, 0.05));
-    border: 1px solid rgba(137, 97, 255, 0.35);
+    background: linear-gradient(135deg, var(--accent-secondary-20), var(--accent-secondary-05));
+    border: 1px solid var(--accent-secondary-35);
 }
 
 .support_message{
     margin-inline-end: auto;
     max-width: min(90%, 520px);
-    background: rgba(28, 31, 52, 0.95);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--card-overlay-95);
+    border: 1px solid var(--surface-tint-08);
 }
 
 .message_header{
@@ -567,7 +567,7 @@ body{
 .message_sender{
     font-size: 13px;
     font-weight: 600;
-    color: rgba(255,255,255,0.85);
+    color: var(--text-white-85);
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -582,18 +582,18 @@ body{
 }
 
 .user_message .message_sender{
-    color: rgba(218, 200, 255, 0.95);
+    color: var(--text-secondary-accent);
 }
 
 .support_message .message_sender{
-    color: rgba(255,255,255,0.7);
+    color: var(--text-white-70);
 }
 
 .message_time,
 .message-time{
     font-size: 11px;
     opacity: 0.65;
-    color: rgba(255,255,255,0.8);
+    color: var(--text-white-80);
 }
 
 .message_body,
@@ -601,7 +601,7 @@ body{
     font-size: 14px;
     line-height: 2;
     white-space: pre-wrap;
-    color: rgba(255,255,255,0.9);
+    color: var(--text-white-90);
 }
 
 /* مودال ایجاد تیکت */
@@ -610,7 +610,7 @@ body{
     inset: 0;
     width: 100%;
     height: 100%;
-    background: rgba(5, 7, 15, 0.7);
+    background: var(--background-overlay-70-deep);
     backdrop-filter: blur(6px);
     display: flex;
     align-items: center;
@@ -621,11 +621,11 @@ body{
 
 .creat_ticket_modal{
     width: min(500px, 100%);
-    background-color: rgba(26, 29, 49, 0.98);
+    background-color: var(--card-overlay-98);
     border-radius: 20px;
     padding: 24px;
-    box-shadow: 0 24px 48px rgba(0,0,0,0.3);
-    border: 1px solid rgba(255,255,255,0.05);
+    box-shadow: 0 24px 48px var(--shadow-elevated);
+    border: 1px solid var(--surface-tint-05);
 }
 
 .creat_ticket_modal .modal-content{
@@ -649,7 +649,7 @@ body{
 .creat_ticket_modal .close-modal{
     background: transparent;
     border: none;
-    color: rgba(255,255,255,0.7);
+    color: var(--text-white-70);
     font-size: 24px;
     cursor: pointer;
     transition: color 0.2s ease;
@@ -673,7 +673,7 @@ body{
 
 .creat_ticket_modal label{
     font-size: 13px;
-    color: rgba(255,255,255,0.8);
+    color: var(--text-white-80);
 }
 
 .creat_ticket_modal input[type="text"],
@@ -681,7 +681,7 @@ body{
     width: 100%;
     border: 1px solid transparent;
     border-radius: 12px;
-    background: rgba(14, 17, 31, 0.85);
+    background: var(--background-overlay-85-alt);
     padding: 12px 14px;
     color: var(--white-color);
     font-size: 14px;
@@ -691,8 +691,8 @@ body{
 .creat_ticket_modal input[type="text"]:focus,
 .creat_ticket_modal textarea:focus{
     outline: none;
-    border-color: rgba(137, 97, 255, 0.45);
-    box-shadow: 0 0 0 3px rgba(137, 97, 255, 0.15);
+    border-color: var(--accent-secondary-45);
+    box-shadow: 0 0 0 3px var(--accent-secondary-15);
 }
 
 .creat_ticket_modal textarea{
@@ -718,13 +718,13 @@ body{
 }
 
 .creat_ticket_modal .cancel-btn{
-    background: rgba(255,255,255,0.12);
-    color: rgba(255,255,255,0.8);
+    background: var(--surface-tint-12);
+    color: var(--text-white-80);
 }
 
 .creat_ticket_modal .cancel-btn:hover{
     transform: translateY(-1px);
-    background: rgba(255,255,255,0.18);
+    background: var(--surface-tint-18);
 }
 
 .creat_ticket_modal .submit-btn{
@@ -735,13 +735,13 @@ body{
 
 .creat_ticket_modal .submit-btn:hover{
     transform: translateY(-1px);
-    background: var(--color-primary-light, #ab8aff);
+    background: var(--accent-secondary);
 }
 
 .creat_ticket_modal .submit-btn:disabled{
     cursor: not-allowed;
-    background: rgba(255,255,255,0.2);
-    color: rgba(255,255,255,0.6);
+    background: var(--surface-tint-20);
+    color: var(--disabled-button-text);
 }
 
 .hidden{
