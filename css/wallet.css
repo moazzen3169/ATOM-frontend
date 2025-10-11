@@ -44,7 +44,7 @@ body{
     width: 100%;
     background-color: var(--card-color);
     /* border: 1px solid var(--border-color); */
-    border-radius: 10px;
+    border-radius: 20px;
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -92,7 +92,7 @@ body{
     width: 100%;
     background-color: var(--card-color);
     /* border: 1px solid var(--border-color); */
-    border-radius: 10px;
+    border-radius: 20px;
     padding: 20px;
     display: flex;
     flex-direction: column;
@@ -185,7 +185,7 @@ body{
     margin-top: 20px;
     padding: 20px;
     border: 1px solid var(--border-color);
-    border-radius: 10px;
+    border-radius: 20px;
 
 }
 .Transaction_filters_ordering{
