@@ -5,6 +5,8 @@ import {
 } from "./admin-auth.js";
 
 const MAX_HEADER_UPDATE_ATTEMPTS = 12;
+const MAX_LAYOUT_INIT_ATTEMPTS = 24;
+let layoutInitialized = false;
 
 async function initAdminDashboard() {
   try {
@@ -12,10 +14,15 @@ async function initAdminDashboard() {
     document.body.classList.add("admin-dashboard-ready");
     updateDashboardHeader(adminUser);
     registerUserChangeListener();
+    ensureLayoutInteractions();
   } catch (error) {
     console.error("Admin dashboard bootstrap failed", error);
   }
 }
+
+document.addEventListener("adminSidebarReady", () => {
+  ensureLayoutInteractions();
+});
 
 function registerUserChangeListener() {
   onAdminUserChange((user) => {
@@ -31,6 +38,8 @@ function updateDashboardHeader(user, attempt = 0) {
     window.requestAnimationFrame(() =>
       updateDashboardHeader(adminUser, attempt + 1)
     );
+  } else if (applied) {
+    ensureLayoutInteractions();
   }
 }
 
@@ -73,6 +82,48 @@ function applyHeaderUser(user) {
   }
 
   return updated;
+}
+
+function ensureLayoutInteractions(attempt = 0) {
+  if (layoutInitialized) return;
+
+  const sidebar = document.querySelector(".sidebar");
+  const toggleButton = document.querySelector('[data-action="toggle-sidebar"]');
+
+  if (!sidebar || !toggleButton) {
+    if (attempt < MAX_LAYOUT_INIT_ATTEMPTS) {
+      window.requestAnimationFrame(() =>
+        ensureLayoutInteractions(attempt + 1)
+      );
+    }
+    return;
+  }
+
+  toggleButton.addEventListener("click", (event) => {
+    event.preventDefault();
+    document.body.classList.toggle("sidebar-open");
+  });
+
+  document.addEventListener(
+    "click",
+    (event) => {
+      if (!document.body.classList.contains("sidebar-open")) return;
+
+      const path = event.composedPath ? event.composedPath() : [];
+      if (path.includes(sidebar) || path.includes(toggleButton)) return;
+
+      document.body.classList.remove("sidebar-open");
+    },
+    { capture: true }
+  );
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 1024 && document.body.classList.contains("sidebar-open")) {
+      document.body.classList.remove("sidebar-open");
+    }
+  });
+
+  layoutInitialized = true;
 }
 
 function getDisplayName(user) {

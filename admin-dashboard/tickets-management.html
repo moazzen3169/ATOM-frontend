@@ -13,6 +13,7 @@
         document.querySelector('meta[name="tickets-endpoint"]').setAttribute('content', API_BASE_URL + '/api/support/tickets/');
     </script>
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <link rel="stylesheet" href="../css/colors.css">
     <link rel="stylesheet" href="../css/admin-dashboard.css">
     <link rel="stylesheet" href="../css/admin-sidebar.css">
@@ -33,6 +34,27 @@
                     });
             </script>
         </header>
+
+        <section class="page-heading" aria-label="نمای کلی مدیریت تیکت‌ها">
+            <div class="page-heading__info">
+                <h1>مدیریت درخواست‌های پشتیبانی</h1>
+                <p>تمامی تیکت‌های کاربران در این بخش رصد، دسته‌بندی و مدیریت می‌شوند. از فیلترها و ابزارهای تعاملی برای پاسخ‌گویی سریع و بهینه بهره ببرید.</p>
+            </div>
+            <div class="page-heading__actions">
+                <button type="button" class="admin-button admin-button--primary">
+                    <i class="ti ti-inbox" aria-hidden="true"></i>
+                    <span>تیکت‌های جدید</span>
+                </button>
+                <button type="button" class="admin-button admin-button--ghost" data-action="refresh">
+                    <i class="ti ti-refresh" aria-hidden="true"></i>
+                    <span>به‌روزرسانی آمار</span>
+                </button>
+                <button type="button" class="admin-button">
+                    <i class="ti ti-settings" aria-hidden="true"></i>
+                    <span>تنظیمات سریع</span>
+                </button>
+            </div>
+        </section>
 
         <section class="tickets-analytics" aria-label="آمار کلی تیکت‌ها">
             <article class="analytics-card">
@@ -70,78 +92,96 @@
         </section>
 
         <section class="tickets-panel" aria-label="مدیریت و بررسی تیکت‌ها">
-            <div class="tickets-feedback" data-feedback></div>
-
-            <div class="tickets-toolbar" role="group" aria-label="ابزارهای فیلتر و جستجو">
-                <div class="toolbar-group toolbar-group--primary">
-                    <label class="toolbar-field search-field">
-                        <span class="sr-only">جستجو در تیکت‌ها</span>
-                        <input type="search" data-action="search" placeholder="جستجوی شناسه، موضوع یا نام کاربر">
-                    </label>
-                    <label class="toolbar-field">
-                        <span>وضعیت</span>
-                        <select data-filter="status">
-                            <option value="all">همه وضعیت‌ها</option>
-                            <option value="new">جدید</option>
-                            <option value="waiting">در انتظار پاسخ</option>
-                            <option value="answered">پاسخ داده شده</option>
-                            <option value="resolved">حل شده</option>
-                            <option value="closed">بسته شده</option>
-                        </select>
-                    </label>
-                    <label class="toolbar-field">
-                        <span>اولویت</span>
-                        <select data-filter="priority">
-                            <option value="all">همه اولویت‌ها</option>
-                            <option value="urgent">فوری</option>
-                            <option value="high">بالا</option>
-                            <option value="medium">متوسط</option>
-                            <option value="low">پایین</option>
-                        </select>
-                    </label>
-                    <label class="toolbar-field">
-                        <span>کانال</span>
-                        <select data-filter="channel">
-                            <option value="all">همه کانال‌ها</option>
-                            <option value="website">وب‌سایت</option>
-                            <option value="tournament">تورنمنت</option>
-                            <option value="payment">پرداخت</option>
-                            <option value="account">حساب کاربری</option>
-                        </select>
-                    </label>
-                    <label class="toolbar-field">
-                        <span>از تاریخ</span>
-                        <input type="date" data-filter="from">
-                    </label>
-                    <label class="toolbar-field">
-                        <span>تا تاریخ</span>
-                        <input type="date" data-filter="to">
-                    </label>
+            <div class="tickets-panel__header">
+                <div class="tickets-panel__title">
+                    <h2>لیست تیکت‌ها</h2>
+                    <p>بر اساس اولویت، وضعیت یا کانال ایجاد، درخواست‌ها را مدیریت کنید و در کمترین زمان پاسخ دهید.</p>
                 </div>
-                <div class="toolbar-group toolbar-group--secondary">
-                    <button type="button" class="toolbar-chip is-active" data-quick="all">همه</button>
-                    <button type="button" class="toolbar-chip" data-quick="waiting">منتظر پاسخ</button>
-                    <button type="button" class="toolbar-chip" data-quick="high">اولویت بالا</button>
-                    <button type="button" class="toolbar-chip" data-quick="overdue">نزدیک به ددلاین</button>
-                    <button type="button" class="toolbar-chip" data-quick="unassigned">بدون مسئول</button>
-                    <button type="button" class="toolbar-action" data-action="export">گزارش‌گیری</button>
+                <div class="tickets-panel__actions">
+                    <button type="button" class="admin-button admin-button--ghost" data-action="export">
+                        <i class="ti ti-download" aria-hidden="true"></i>
+                        <span>دانلود گزارش</span>
+                    </button>
+                    <button type="button" class="admin-button" data-action="assign">
+                        <i class="ti ti-users" aria-hidden="true"></i>
+                        <span>انتساب تیمی</span>
+                    </button>
                 </div>
             </div>
+            <div class="tickets-panel__body">
+                <div class="tickets-feedback" data-feedback></div>
 
-            <div class="tickets-content">
-                <aside class="tickets-list" data-ticket-list aria-label="فهرست تیکت‌ها"></aside>
-
-                <section class="ticket-detail" data-ticket-detail aria-live="polite">
-                    <div class="ticket-placeholder">
-                        <h3>یک تیکت را انتخاب کنید</h3>
-                        <p>برای مشاهده جزئیات گفتگو، پاسخ‌دهی و مدیریت وضعیت، از فهرست سمت راست یک تیکت را انتخاب کنید.</p>
-                        <ul>
-                            <li>نمایش تاریخچه کامل پیام‌ها</li>
-                            <li>به‌روزرسانی سریع وضعیت و اولویت</li>
-                            <li>ثبت پاسخ عمومی یا یادداشت داخلی</li>
-                        </ul>
+                <div class="tickets-toolbar" role="group" aria-label="ابزارهای فیلتر و جستجو">
+                    <div class="toolbar-group toolbar-group--primary">
+                        <label class="toolbar-field search-field">
+                            <span class="sr-only">جستجو در تیکت‌ها</span>
+                            <input type="search" data-action="search" placeholder="جستجوی شناسه، موضوع یا نام کاربر">
+                        </label>
+                        <label class="toolbar-field">
+                            <span>وضعیت</span>
+                            <select data-filter="status">
+                                <option value="all">همه وضعیت‌ها</option>
+                                <option value="new">جدید</option>
+                                <option value="waiting">در انتظار پاسخ</option>
+                                <option value="answered">پاسخ داده شده</option>
+                                <option value="resolved">حل شده</option>
+                                <option value="closed">بسته شده</option>
+                            </select>
+                        </label>
+                        <label class="toolbar-field">
+                            <span>اولویت</span>
+                            <select data-filter="priority">
+                                <option value="all">همه اولویت‌ها</option>
+                                <option value="urgent">فوری</option>
+                                <option value="high">بالا</option>
+                                <option value="medium">متوسط</option>
+                                <option value="low">پایین</option>
+                            </select>
+                        </label>
+                        <label class="toolbar-field">
+                            <span>کانال</span>
+                            <select data-filter="channel">
+                                <option value="all">همه کانال‌ها</option>
+                                <option value="website">وب‌سایت</option>
+                                <option value="tournament">تورنمنت</option>
+                                <option value="payment">پرداخت</option>
+                                <option value="account">حساب کاربری</option>
+                            </select>
+                        </label>
+                        <label class="toolbar-field">
+                            <span>از تاریخ</span>
+                            <input type="date" data-filter="from">
+                        </label>
+                        <label class="toolbar-field">
+                            <span>تا تاریخ</span>
+                            <input type="date" data-filter="to">
+                        </label>
                     </div>
-                </section>
+                    <div class="toolbar-group toolbar-group--secondary">
+                        <button type="button" class="toolbar-chip is-active" data-quick="all">همه</button>
+                        <button type="button" class="toolbar-chip" data-quick="waiting">منتظر پاسخ</button>
+                        <button type="button" class="toolbar-chip" data-quick="high">اولویت بالا</button>
+                        <button type="button" class="toolbar-chip" data-quick="overdue">نزدیک به ددلاین</button>
+                        <button type="button" class="toolbar-chip" data-quick="unassigned">بدون مسئول</button>
+                        <button type="button" class="toolbar-action" data-action="export">گزارش‌گیری</button>
+                    </div>
+                </div>
+
+                <div class="tickets-content">
+                    <aside class="tickets-list" data-ticket-list aria-label="فهرست تیکت‌ها"></aside>
+
+                    <section class="ticket-detail" data-ticket-detail aria-live="polite">
+                        <div class="ticket-placeholder">
+                            <h3>یک تیکت را انتخاب کنید</h3>
+                            <p>برای مشاهده جزئیات گفتگو، پاسخ‌دهی و مدیریت وضعیت، از فهرست سمت راست یک تیکت را انتخاب کنید.</p>
+                            <ul>
+                                <li>نمایش تاریخچه کامل پیام‌ها</li>
+                                <li>به‌روزرسانی سریع وضعیت و اولویت</li>
+                                <li>ثبت پاسخ عمومی یا یادداشت داخلی</li>
+                            </ul>
+                        </div>
+                    </section>
+                </div>
             </div>
         </section>
     </main>

@@ -1,10 +1,11 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin - Accept User Verifications</title>
+    <title>پنل ادمین - احراز هویت کاربران</title>
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
     <link rel="stylesheet" href="../css/colors.css">
     <link rel="stylesheet" href="../css/admin-dashboard.css">
     <link rel="stylesheet" href="../css/admin-sidebar.css">
@@ -14,58 +15,66 @@
 <body>
 
 <div class="body_container">
-    <!-- سایدبار -->
     <aside id="sidebar" class="sidebar"></aside>
 
-    <!-- محتوای اصلی -->
     <main class="main_content">
+        <header class="dashboard_header" id="dashboard_header">
+          <script>
+            fetch('dashboard-header.html')
+              .then(response => response.text())
+              .then(html => {
+                document.getElementById('dashboard_header').innerHTML = html;
+              });
+          </script>
+        </header>
 
-    <!-- هدر -->
-    <header class="dashboard_header" id="dashboard_header">
-      <script>
-        // بارگذاری محتوای هدر
-        fetch('dashboard-header.html')
-          .then(response => response.text())
-          .then(html => {
-            document.getElementById('dashboard_header').innerHTML = html;
-          });
-      </script>
-    </header>
-
-    <!-- Accept Verifications -->
-    <section class="accept-verifications">
-        <div class="accept-verifications__header">
-            <h2>درخواست‌های احراز هویت کاربران</h2>
-            <div class="verifications-toolbar" aria-label="فیلتر درخواست‌ها">
-                <label class="toolbar-field">
-                    <span>فیلتر تاریخ:</span>
-                    <select id="verification-date-filter" class="toolbar-select">
-                        <option value="all">همه</option>
-                        <option value="today">امروز</option>
-                        <option value="last7">۷ روز اخیر</option>
-                        <option value="last30">۳۰ روز اخیر</option>
-                        <option value="last90">۹۰ روز اخیر</option>
-                    </select>
-                </label>
-                <label class="toolbar-field">
-                    <span>وضعیت:</span>
-                    <select id="verification-status-filter" class="toolbar-select">
-                        <option value="all">همه</option>
-                        <option value="pending">در انتظار بررسی</option>
-                        <option value="approved">تایید شده</option>
-                        <option value="rejected">رد شده</option>
-                    </select>
-                </label>
-                <button type="button" class="toolbar-refresh" id="verification-refresh" title="به‌روزرسانی لیست">
-                    به‌روزرسانی
+        <section class="page-heading" aria-label="نمای کلی احراز هویت">
+            <div class="page-heading__info">
+                <h1>بررسی درخواست‌های احراز هویت</h1>
+                <p>تمامی درخواست‌های ارسال شده برای تایید هویت کاربران در این بخش قرار دارد. با بررسی دقیق مدارک و وضعیت کاربران، امنیت و سلامت اکوسیستم را تضمین کنید.</p>
+            </div>
+            <div class="page-heading__actions">
+                <button type="button" class="admin-button admin-button--primary" id="verification-refresh">
+                    <i class="ti ti-refresh" aria-hidden="true"></i>
+                    <span>به‌روزرسانی لیست</span>
+                </button>
+                <button type="button" class="admin-button admin-button--ghost">
+                    <i class="ti ti-filter" aria-hidden="true"></i>
+                    <span>فیلترهای ذخیره‌شده</span>
                 </button>
             </div>
-        </div>
-        <div id="verifications-list" class="verifications-list" role="list">
-            <!-- Verifications will be loaded here -->
-        </div>
-    </section>
-</main>
+        </section>
+
+        <section class="accept-verifications">
+            <div class="accept-verifications__header">
+                <h2>درخواست‌های احراز هویت کاربران</h2>
+                <div class="verifications-toolbar" aria-label="فیلتر درخواست‌ها">
+                    <label class="toolbar-field">
+                        <span>فیلتر تاریخ:</span>
+                        <select id="verification-date-filter" class="toolbar-select">
+                            <option value="all">همه</option>
+                            <option value="today">امروز</option>
+                            <option value="last7">۷ روز اخیر</option>
+                            <option value="last30">۳۰ روز اخیر</option>
+                            <option value="last90">۹۰ روز اخیر</option>
+                        </select>
+                    </label>
+                    <label class="toolbar-field">
+                        <span>وضعیت:</span>
+                        <select id="verification-status-filter" class="toolbar-select">
+                            <option value="all">همه</option>
+                            <option value="pending">در انتظار بررسی</option>
+                            <option value="approved">تایید شده</option>
+                            <option value="rejected">رد شده</option>
+                        </select>
+                    </label>
+                </div>
+            </div>
+            <div id="verifications-list" class="verifications-list" role="list">
+                <!-- Verifications will be loaded here -->
+            </div>
+        </section>
+    </main>
 </div>
 
 <script type="module" src="/js/admin/admin-sidebar.js"></script>
