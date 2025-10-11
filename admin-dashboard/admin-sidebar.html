@@ -1,59 +1,74 @@
-<nav class="sidebar__container">
-  <div class="sidebar__brand">
-    <a href="../index.html" class="sidebar__brand-link" aria-label="بازگشت به صفحه اصلی">
-      <img src="../img/logo.png" alt="ATOM" class="sidebar__brand-logo" loading="lazy">
-      <span class="sidebar__brand-name">ATOM Admin</span>
-    </a>
-  </div>
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل کاربری</title>
+    <!-- Tabler Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="/css/admin-sidebar.css">
+</head>
+<body>
+    <div class="user_sidebar_container">
+        <div class="user_sidebar">
+            <div class="sidebar_logo">
+                <a href="../index.html"><img src="../img/logo.png" alt="logo"></a>
+            </div>
+            <div class="sidebar_links">
+                <a href="index.html" class="sidebar_link">
+                    <i class="ti ti-home"></i>
+                    <p>داشبورد</p>
+                </a>
 
-  <div class="sidebar__content" role="navigation" aria-label="منوی مدیریت">
-    <div class="sidebar__section">
-      <p class="sidebar__section-title">پنل مدیریتی</p>
-      <a href="index.html" class="sidebar__link sidebar_link" data-icon="home">
-        <i class="ti ti-layout-dashboard" aria-hidden="true"></i>
-        <span class="sidebar__label">داشبورد اصلی</span>
-        <span class="sidebar__chip" data-role="metric">جدید</span>
-      </a>
-      <a href="accept-users-verification.html" class="sidebar__link sidebar_link" data-icon="users">
-        <i class="ti ti-user-search" aria-hidden="true"></i>
-        <span class="sidebar__label">احراز هویت کاربران</span>
-      </a>
-      <a href="tickets-management.html" class="sidebar__link sidebar_link" data-icon="support">
-        <i class="ti ti-messages" aria-hidden="true"></i>
-        <span class="sidebar__label">مدیریت تیکت‌ها</span>
-      </a>
-      <a href="tournaments-management.html" class="sidebar__link sidebar_link" data-icon="tournament">
-        <i class="ti ti-trophy" aria-hidden="true"></i>
-        <span class="sidebar__label">مدیریت تورنومنت‌ها</span>
-      </a>
-      <a href="withdraw-requests.html" class="sidebar__link sidebar_link" data-icon="wallet">
-        <i class="ti ti-cash"></i>
-        <span class="sidebar__label">درخواست‌های برداشت</span>
-      </a>
-      <a href="support-inbox.html" class="sidebar__link sidebar_link" data-icon="inbox">
-        <i class="ti ti-inbox"></i>
-        <span class="sidebar__label">صندوق پیام‌ها</span>
-        <span class="sidebar__chip sidebar__chip--muted" data-role="inbox-count">0</span>
-      </a>
+                <a href="accept-users-verification.html" class="sidebar_link">
+                    <i class="ti ti-users"></i>
+                    <p>احراز هویت کاربر</p>
+                </a>
+
+                <a href="tickets-management.html" class="sidebar_link">
+                    <i class="ti ti-trophy"></i>
+                    <p>تیکت های ارسالی</p>
+                </a>
+
+                <a href="wallet.html" class="sidebar_link">
+                    <i class="ti ti-wallet"></i>
+                    <p>مدیریت تورنومنت ها</p>
+                </a>
+
+                <a href="wallet.html" class="sidebar_link">
+                    <i class="ti ti-wallet"></i>
+                    <p>درخواست  برداشت</p>
+                </a>
+
+                <a href="tickets.html" class="sidebar_link">
+                    <i class="ti ti-ticket"></i>
+                    <p>پیام پیام های پشتیبانی</p>
+                </a>
+
+
+
+                <a href="#" class="sidebar_link exit">
+                    <i class="ti ti-logout"></i>
+                    <p>خروج از حساب</p>
+                </a>
+            </div>
+        </div>
     </div>
 
-    <div class="sidebar__section">
-      <p class="sidebar__section-title">مالی و گزارشات</p>
-      <a href="../payment/index.html" class="sidebar__link sidebar_link" data-icon="payments">
-        <i class="ti ti-credit-card" aria-hidden="true"></i>
-        <span class="sidebar__label">مدیریت پرداخت‌ها</span>
-      </a>
-      <a href="../leaderBoard.html" class="sidebar__link sidebar_link" data-icon="reports">
-        <i class="ti ti-report-analytics" aria-hidden="true"></i>
-        <span class="sidebar__label">گزارش عملکرد</span>
-      </a>
-    </div>
-  </div>
-
-  <div class="sidebar__footer">
-    <button type="button" class="sidebar__link sidebar__link--danger" data-action="logout">
-      <i class="ti ti-logout" aria-hidden="true"></i>
-      <span class="sidebar__label">خروج از حساب</span>
-    </button>
-  </div>
-</nav>
+    <script>
+        // اضافه کردن event listener برای خروج از حساب
+        const exitLink = document.querySelector('.sidebar_link.exit');
+        if (exitLink) {
+            exitLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                // پاک کردن توکن‌ها از localStorage
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user_data');
+                // ریدایرکت به صفحه لاگین
+                window.location.href = '/register/login.html';
+            });
+        }
+    </script>
+</body>
+</html>
