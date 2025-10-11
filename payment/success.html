@@ -6,185 +6,206 @@
     <title>پرداخت موفق - Atom Game</title>
 
     <link rel="stylesheet" href="../css/colors.css">
-    <link rel="stylesheet" href="../css/user-dashboard.css">
-    <link rel="stylesheet" href="../css/user-sidebar.css">
     <link rel="stylesheet" href="../fonts/fonts.css">
-    <link rel="stylesheet" href="../css/wallet.css">
 
     <style>
-        .payment-result {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 70vh;
-            text-align: center;
-            padding: 2rem;
+        :root {
+            --success-color: #10b981;
+            --surface-color: rgba(15, 23, 42, 0.75);
+            --text-muted: rgba(255, 255, 255, 0.75);
         }
 
-        .success-icon {
-            width: 80px;
-            height: 80px;
-            background-color: #10b981;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin-bottom: 1.5rem;
-            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+        * {
+            box-sizing: border-box;
         }
 
-        .success-icon svg {
-            width: 40px;
-            height: 40px;
-            fill: white;
-        }
-
-        .payment-title {
-            font-size: 2rem;
-            font-weight: bold;
-            color: var(--color-primary);
-            margin-bottom: 1rem;
-        }
-
-        .payment-message {
-            font-size: 1.1rem;
-            color: var(--text-color);
-            margin-bottom: 2rem;
-            line-height: 1.6;
-        }
-
-        .balance-info {
-            background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
-            color: white;
-            padding: 1.5rem;
-            border-radius: 12px;
-            margin-bottom: 2rem;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-
-        .balance-info h3 {
-            margin: 0 0 0.5rem 0;
-            font-size: 1.2rem;
-        }
-
-        .balance-info p {
+        body {
             margin: 0;
-            font-size: 1.5rem;
-            font-weight: bold;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 2.5rem 1.5rem;
+            font-family: "IRANSans", "Vazirmatn", sans-serif;
+            background: radial-gradient(circle at top, rgba(79, 70, 229, 0.2), transparent 55%),
+                        linear-gradient(135deg, #020617 0%, #0f172a 45%, #111827 100%);
+            color: #fff;
         }
 
-        .action-buttons {
+        main {
+            width: min(520px, 100%);
+        }
+
+        .payment-card {
+            position: relative;
+            background: var(--surface-color);
+            border-radius: 24px;
+            padding: 3rem 2.5rem 2.5rem;
+            box-shadow: 0 30px 70px rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(148, 163, 184, 0.08);
+        }
+
+        .payment-card::before {
+            content: "";
+            position: absolute;
+            inset: 12px;
+            border-radius: 18px;
+            border: 1px solid rgba(148, 163, 184, 0.08);
+            pointer-events: none;
+        }
+
+        .icon-wrapper {
+            display: grid;
+            place-items: center;
+            width: 96px;
+            height: 96px;
+            margin: 0 auto 1.75rem;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--success-color), rgba(16, 185, 129, 0.65));
+            box-shadow: 0 20px 35px rgba(16, 185, 129, 0.35);
+        }
+
+        .icon-wrapper svg {
+            width: 44px;
+            height: 44px;
+            fill: #fff;
+        }
+
+        h1 {
+            margin: 0 0 1rem;
+            font-size: clamp(1.6rem, 2.2vw + 1rem, 2.35rem);
+            font-weight: 800;
+            text-align: center;
+            color: var(--color-primary, #6366f1);
+            letter-spacing: -0.02em;
+        }
+
+        p {
+            margin: 0;
+            font-size: 1.05rem;
+            line-height: 1.8;
+            color: var(--text-muted);
+            text-align: center;
+        }
+
+        .balance-card {
+            margin: 2.25rem auto;
+            padding: 1.75rem 1.5rem;
+            border-radius: 18px;
+            width: min(420px, 100%);
+            background: linear-gradient(135deg,
+                        rgba(79, 70, 229, 0.95),
+                        rgba(129, 140, 248, 0.85));
+            box-shadow: 0 20px 40px rgba(79, 70, 229, 0.35);
+            color: #fff;
+            text-align: center;
+        }
+
+        .balance-card h3 {
+            margin: 0 0 0.5rem;
+            font-size: 1rem;
+            font-weight: 600;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+        }
+
+        .balance-card p {
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #fff;
+        }
+
+        .actions {
             display: flex;
-            gap: 1rem;
             flex-wrap: wrap;
+            gap: 0.75rem;
             justify-content: center;
         }
 
-        .btn-primary, .btn-secondary {
-            padding: 0.75rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            font-size: 1rem;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        a.button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            min-width: 170px;
+            padding: 0.85rem 1.75rem;
+            border-radius: 999px;
+            font-size: 0.95rem;
+            font-weight: 600;
             text-decoration: none;
-            display: inline-block;
+            color: #fff;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background: linear-gradient(135deg, var(--color-primary, #6366f1), var(--color-secondary, #22d3ee));
+            box-shadow: 0 16px 32px rgba(99, 102, 241, 0.28);
         }
 
-        .btn-primary {
-            background: var(--color-primary);
-            color: white;
+        a.button.secondary {
+            background: rgba(148, 163, 184, 0.18);
+            color: #e2e8f0;
+            box-shadow: none;
+            border: 1px solid rgba(148, 163, 184, 0.3);
         }
 
-        .btn-primary:hover {
-            background: var(--color-primary-dark);
-            transform: translateY(-2px);
+        a.button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 22px 40px rgba(99, 102, 241, 0.35);
         }
 
-        .btn-secondary {
-            background: var(--white-color);
-            color: var(--color-primary);
-            border: 2px solid var(--color-primary);
+        a.button.secondary:hover {
+            box-shadow: 0 18px 35px rgba(148, 163, 184, 0.2);
         }
 
-        .btn-secondary:hover {
-            background: var(--color-primary);
-            color: white;
-            transform: translateY(-2px);
+        footer {
+            margin-top: 2.5rem;
+            text-align: center;
+            font-size: 0.85rem;
+            color: rgba(148, 163, 184, 0.65);
         }
 
-        @media (max-width: 768px) {
-            .payment-title {
-                font-size: 1.5rem;
+        @media (max-width: 480px) {
+            .payment-card {
+                padding: 2.5rem 1.75rem 2rem;
             }
 
-            .action-buttons {
-                flex-direction: column;
-                align-items: center;
+            .balance-card {
+                margin: 2rem 0;
             }
 
-            .btn-primary, .btn-secondary {
-                width: 200px;
+            a.button {
+                width: 100%;
             }
         }
     </style>
 </head>
 <body>
+    <main>
+        <section class="payment-card" aria-labelledby="payment-success-title">
+            <div class="icon-wrapper" aria-hidden="true">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                    <path d="M9 16.17 4.83 12l-1.42 1.41L9 19l12-12-1.41-1.41z" />
+                </svg>
+            </div>
 
-<div class="body_container">
-    <!-- سایدبار -->
-    <aside id="sidebar" class="sidebar"></aside>
+            <h1 id="payment-success-title">پرداخت با موفقیت انجام شد!</h1>
+            <p>مبلغ واریزی به کیف پول شما اضافه شد و اکنون آماده استفاده است.</p>
 
-    <!-- محتوای اصلی -->
-    <main class="main_content">
+            <div class="balance-card">
+                <h3>موجودی جدید کیف پول</h3>
+                <p id="current-balance">در حال بارگذاری...</p>
+            </div>
 
-    <!-- هدر -->
-    <header class="dashboard_header" id="dashboard_header">
-      <script>
-        // بارگذاری محتوای هدر
-        fetch('../user-dashboard/dashboard-header.html')
-          .then(response => response.text())
-          .then(html => {
-            document.getElementById('dashboard_header').innerHTML = html;
-          });
-      </script>
-    </header>
+            <div class="actions">
+                <a class="button" href="../user-dashboard/wallet.html">مشاهده کیف پول</a>
+                <a class="button secondary" href="../index.html">بازگشت به خانه</a>
+            </div>
 
-    <div class="payment-result">
-        <div class="success-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/>
-            </svg>
-        </div>
-
-        <h1 class="payment-title">پرداخت با موفقیت انجام شد!</h1>
-
-        <p class="payment-message">
-            مبلغ واریزی به کیف پول شما اضافه شده و آماده استفاده است.
-        </p>
-
-        <div class="balance-info">
-            <h3>موجودی جدید کیف پول</h3>
-            <p id="current-balance">در حال بارگذاری...</p>
-        </div>
-
-        <div class="action-buttons">
-            <a href="../user-dashboard/wallet.html" class="btn-primary">
-                مشاهده کیف پول
-            </a>
-            <a href="../index.html" class="btn-secondary">
-                بازگشت به صفحه اصلی
-            </a>
-        </div>
-    </div>
-
+            <footer>
+                اگر به کمک بیشتری نیاز دارید می‌توانید با پشتیبانی اتم گیم تماس بگیرید.
+            </footer>
+        </section>
     </main>
-</div>
 
-<script src="../js/sidebar.js"></script>
-<script src="../js/user-dashboard.js"></script>
 <script type="module" src="../js/payment-success.js"></script>
 
 </body>
