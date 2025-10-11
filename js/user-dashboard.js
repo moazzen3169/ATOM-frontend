@@ -12,6 +12,7 @@ let pendingConfirmation = null;
 let currentUserProfile = {};
 let cachedTeamsCount = 0;
 let cachedTournamentsCount = 0;
+let teamsInteractionsInitialized = false;
 
 const DEFAULT_AVATAR_SRC = "../img/profile.jpg";
 const LEGACY_PROFILE_ENDPOINTS = [
@@ -1380,6 +1381,33 @@ function createTeamCard(team) {
         </div>
     `;
 
+    const isTeamsPage = window.location.pathname.includes('teams');
+    const hasValidTeamId = typeof team?.id !== 'undefined' && team?.id !== null;
+
+    if (isTeamsPage && hasValidTeamId) {
+        const footer = document.createElement('footer');
+        footer.className = 'team_card__footer';
+
+        const actions = document.createElement('div');
+        actions.className = 'team_card__actions';
+        const teamIdAttr = escapeHTML(String(team.id));
+
+        if (isCaptain) {
+            actions.innerHTML = `
+                <button type="button" class="btn btn--primary" data-team-action="invite" data-team-id="${teamIdAttr}" aria-label="دعوت عضو به تیم ${escapeHTML(team?.name || '')}">دعوت عضو</button>
+                <button type="button" class="btn" data-team-action="edit" data-team-id="${teamIdAttr}" aria-label="ویرایش تیم ${escapeHTML(team?.name || '')}">ویرایش تیم</button>
+                <button type="button" class="btn btn--danger" data-team-action="delete" data-team-id="${teamIdAttr}" aria-label="حذف تیم ${escapeHTML(team?.name || '')}">حذف تیم</button>
+            `;
+        } else {
+            actions.innerHTML = `
+                <button type="button" class="btn btn--danger" data-team-action="leave" data-team-id="${teamIdAttr}" aria-label="خروج از تیم ${escapeHTML(team?.name || '')}">خروج از تیم</button>
+            `;
+        }
+
+        footer.appendChild(actions);
+        card.appendChild(footer);
+    }
+
     return card;
 }
 
@@ -1960,7 +1988,12 @@ async function respondToInvitationAction(inviteId, action) {
     }
 }
 
-function setupTeamsPageInteractions() {
+export function setupTeamsPageInteractions() {
+    if (teamsInteractionsInitialized) {
+        return;
+    }
+    teamsInteractionsInitialized = true;
+
     const teamsContainer = document.getElementById('teams_container');
     if (teamsContainer) {
         teamsContainer.addEventListener('click', (event) => {
