@@ -133,10 +133,11 @@
   }
 
   .edit_user_btn {
-    background: var(--color-primary);
-    color: var(--dark-color);
+    color: var(--color-primary);
+    background-color: transparent;
     border: none;
     border-radius: 50%;
+    border: 1px solid var(--color-primary);
     width: 44px;
     height: 44px;
     display: inline-flex;
@@ -609,11 +610,14 @@
     align-items: center;
     gap: 16px;
     flex-wrap: wrap;
+    max-width: 100px;
+    max-height: 100px;
+    
   }
 
   .modal_avatar_preview {
-    width: 72px;
-    height: 72px;
+    width: 100px;
+    height: 100px;
     border-radius: 50%;
     overflow: hidden;
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -637,10 +641,7 @@
     color: var(--white-color);
   }
 
-  .modal_avatar_actions small {
-    color: var(--gray-color);
-    line-height: 1.6;
-  }
+
 
   .modal_form_field input,
   .modal_form_field textarea {
@@ -755,10 +756,6 @@
       gap: 12px;
     }
 
-    .edit_user_btn {
-      width: 48px;
-      height: 48px;
-    }
 
     .user_profile_list {
       grid-template-columns: 1fr;

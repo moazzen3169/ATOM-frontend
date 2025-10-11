@@ -2171,6 +2171,13 @@ document.addEventListener("DOMContentLoaded", () => {
         editUserAvatarInput.addEventListener('change', handleEditAvatarChange);
     }
 
+    const editUserAvatarPreview = document.querySelector('.modal_avatar_preview');
+    if (editUserAvatarPreview) {
+        editUserAvatarPreview.addEventListener('click', () => {
+            document.getElementById('edit_user_avatar').click();
+        });
+    }
+
     const createTeamLinks = document.querySelectorAll('.creat_team_link');
     createTeamLinks.forEach((link) => {
         const isTeamsPage = window.location.pathname.includes('teams');
