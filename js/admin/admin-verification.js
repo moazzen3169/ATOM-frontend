@@ -143,6 +143,23 @@ function escapeHtml(value) {
     .replace(/'/g, "&#039;");
 }
 
+function renderValue(value, label) {
+  if (value === null || value === undefined || value === "") {
+    return '<span class="verification-details__value"></span>';
+  }
+  const url = value.toString();
+  if (isLikelyImage(url)) {
+    return `<img src="${escapeHtml(url)}" alt="${escapeHtml(label)}" loading="lazy" class="verification-details__media" />`;
+  }
+  if (isLikelyVideo(url)) {
+    return `<video controls preload="metadata" class="verification-details__media">
+      <source src="${escapeHtml(url)}" />
+      مرورگر شما از پخش ویدیو پشتیبانی نمی‌کند.
+    </video>`;
+  }
+  return `<span class="verification-details__value">${escapeHtml(value)}</span>`;
+}
+
 function getAccessToken() {
   const accessToken = localStorage.getItem("access_token");
   if (!accessToken) {
@@ -315,20 +332,7 @@ function formatUserDetails(item) {
     )}</div>`;
   }
 
-  return `
-    <div class="verification-details">
-      ${fields
-        .map(
-          (field) => `
-            <div class="verification-details__item">
-              <span class="verification-details__label">${field.label}</span>
-              <span class="verification-details__value">${escapeHtml(field.value)}</span>
-            </div>
-          `
-        )
-        .join("")}
-    </div>
-  `;
+  return buildDetailsGrid(fields);
 }
 
 function buildDetailsGrid(pairs) {
@@ -341,7 +345,7 @@ function buildDetailsGrid(pairs) {
           (pair) => `
             <div class="verification-details__item">
               <span class="verification-details__label">${pair.label}</span>
-              <span class="verification-details__value">${escapeHtml(pair.value)}</span>
+              ${renderValue(pair.value, pair.label)}
             </div>
           `
         )

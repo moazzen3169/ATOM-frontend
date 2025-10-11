@@ -1,174 +1,172 @@
-.sidebar {
-  background: rgba(15, 23, 42, 0.92);
-  border-inline-start: 1px solid rgba(148, 163, 184, 0.08);
-  padding: 32px 24px;
+
+
+
+
+
+
+
+.user_sidebar_container{
+  max-width: 225px;
+  width: 100%;
+  height: 685px;
+  background-color: var(--card-color);
   display: flex;
   flex-direction: column;
-  gap: 28px;
-  min-height: 100vh;
-  box-sizing: border-box;
+  border-radius: 10px;
+  position: fixed;
+  top: 20px;
+
 }
 
-.sidebar__brand {
+
+.sidebar_logo img{ 
+  position: absolute;
+  top: 50px;
+  right: 52.91px;
+  width: 121.18px;
+  height: 48.13px;
+}
+.sidebar_links{
+  position: absolute;
+  top: 150px;
+  right: 22.81px;
   display: flex;
-  align-items: center;
-  gap: 14px;
-}
-
-.sidebar__logo {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  background: rgba(0, 245, 255, 0.16);
-  color: var(--color-primary);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: 18px;
-  letter-spacing: 1px;
-}
-
-.sidebar__brand-meta {
-  display: grid;
-  gap: 4px;
-}
-
-.sidebar__brand-title {
-  font-size: 16px;
-  font-weight: 600;
-}
-
-.sidebar__brand-caption {
-  font-size: 12px;
-  color: rgba(226, 232, 240, 0.65);
-}
-
-.sidebar__user {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px;
-  background: rgba(30, 41, 59, 0.65);
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  border-radius: 16px;
-}
-
-.sidebar__avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
-  background: rgba(0, 245, 255, 0.16);
-  color: var(--color-primary);
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: 18px;
-}
-
-.sidebar__user-meta {
-  display: grid;
-  gap: 4px;
-}
-
-.sidebar__user-name {
-  font-size: 15px;
-  font-weight: 600;
-}
-
-.sidebar__user-role {
-  font-size: 12px;
-  color: rgba(226, 232, 240, 0.65);
-}
-
-.sidebar__nav {
-  display: grid;
-  gap: 8px;
-}
-
-.sidebar__link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 14px;
-  border-radius: 14px;
-  color: rgba(226, 232, 240, 0.8);
-  text-decoration: none;
-  background: transparent;
-  border: 1px solid rgba(148, 163, 184, 0.12);
-  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
-}
-
-.sidebar__link:hover,
-.sidebar__link:focus-visible {
-  background: rgba(0, 245, 255, 0.12);
-  border-color: rgba(0, 245, 255, 0.35);
-  color: var(--white-color);
-  outline: none;
-}
-
-.sidebar__link.is-active {
-  background: rgba(0, 245, 255, 0.18);
-  border-color: rgba(0, 245, 255, 0.4);
-  color: var(--color-primary);
-}
-
-.sidebar__icon {
-  font-size: 18px;
-}
-
-.sidebar__footer {
-  margin-top: auto;
-}
-
-.sidebar__logout {
-  width: 100%;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
   gap: 10px;
-  padding: 10px 16px;
-  border-radius: 14px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.25);
-  color: rgba(248, 113, 113, 0.95);
-  font-size: 13px;
-  cursor: pointer;
-  transition: background 0.2s ease, border-color 0.2s ease;
+  width: 90%;
+}
+.sidebar_link{
+  width: 90%;
+  height: 50px;
+  border: 10px;   
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  padding-right: 10px;
+  gap: 5px;
+  border-radius: 10px;
+  color: var(--white-color);
+  font-size: 14px;
+  transition: ease 0.2s;
 }
 
-.sidebar__logout:hover,
-.sidebar__logout:focus-visible {
-  background: rgba(239, 68, 68, 0.2);
-  border-color: rgba(239, 68, 68, 0.4);
-  outline: none;
+
+.sidebar_link:hover{
+  background-color: var(--sidebar-hover-color);
+
 }
 
-@media (max-width: 1024px) {
-  .sidebar {
-    flex-direction: row;
+a{
+  text-decoration: none;
+}
+
+.sidebar_link  svg {
+  width: 20px;
+  height: 20px;
+}
+.active{
+  background-color: var(--sidebar-hover-color);
+
+}
+.exit{
+  color: var(--logout-color);
+
+
+}
+
+
+/* ✅ وقتی عرض صفحه 1300px یا کمتر شد */
+@media (max-width: 1300px) {
+  .user_sidebar_container {
+    max-width: 70px;   /* سایدبار باریک‌تر */
+    width: 70px;
+    padding: 0;
     align-items: center;
-    gap: 20px;
-    padding: 20px;
-    overflow-x: auto;
-    min-height: auto;
   }
 
-  .sidebar__brand,
-  .sidebar__user,
-  .sidebar__nav,
-  .sidebar__footer {
-    flex-shrink: 0;
+  .sidebar_logo img {
+    right: 50%;
+    transform: translateX(50%); /* لوگو وسط بشه */
+    width: 40px;
+    height: auto;
   }
 
-  .sidebar__nav {
-    display: flex;
+  .sidebar_links {
+    right: 7px;
+    width: 80%;
+    align-items: center;
+    padding: 0;
+    display: grid;
+
   }
 
-  .sidebar__link {
-    white-space: nowrap;
+  .sidebar_link {
+    justify-content: center;
+    padding: 0;
+    width: 100%;
   }
 
-  .sidebar__footer {
-    margin-top: 0;
+  .sidebar_link span,   /* متن داخل لینک‌ها */
+  .sidebar_link p {
+    display: none; /* متن مخفی */
+  }
+
+  .sidebar_link svg {
+    margin: 0;
+  }
+
+  /* Hide the sidebar toggle button on screens 1300px or less */
+  .page_title button {
+    display: none;
   }
 }
+
+
+
+
+
+
+/* استایل پایه برای overlay + سایدبار */
+.right_sidebar_container {
+  display: none; /* در ابتدا مخفی */
+  position: fixed;
+  top: 0;
+  right: 0px;
+  width: 100%; /* برای overlay */
+  height: 100%;
+  background: var(--overlay-medium); /* overlay */
+  z-index: 999;
+}
+
+/* خود سایدبار */
+.right_sidebar {
+  position: absolute;
+  top: 0;
+  /* right: -300px; در ابتدا بیرون صفحه */
+  width: 300px;
+  height: 100%;
+  background: var(--white-color);
+  transition: 0.3s ease;
+  padding: 20px;
+}
+
+/* وقتی فعال بشه */
+.right_sidebar_container.active {
+  display: block;
+}
+
+.right_sidebar_container.active .right_sidebar {
+  right: 0; /* وارد صفحه میشه */
+}
+
+/* دکمه بستن */
+.close_btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+
+
+

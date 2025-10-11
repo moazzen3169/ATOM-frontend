@@ -9,8 +9,8 @@
     <link rel="stylesheet" href="../css/colors.css">
     <link rel="stylesheet" href="../css/admin-dashboard.css">
     <link rel="stylesheet" href="../css/admin-sidebar.css">
-    <link rel="stylesheet" href="../css/verification.css">
     <link rel="stylesheet" href="../fonts/fonts.css">
+    <link rel="stylesheet" href="/css/admin-verification.css">
 </head>
 <body>
 
@@ -19,13 +19,13 @@
 
     <main class="main_content">
         <header class="dashboard_header" id="dashboard_header">
-          <script>
-            fetch('dashboard-header.html')
-              .then(response => response.text())
-              .then(html => {
-                document.getElementById('dashboard_header').innerHTML = html;
-              });
-          </script>
+            <script>
+                fetch('dashboard-header.html')
+                    .then(response => response.text())
+                    .then(html => {
+                        document.getElementById('dashboard_header').innerHTML = html;
+                    });
+            </script>
         </header>
 
         <section class="page-heading" aria-label="نمای کلی احراز هویت">
