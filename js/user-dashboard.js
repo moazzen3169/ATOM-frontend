@@ -13,6 +13,38 @@ let currentUserProfile = {};
 let cachedTeamsCount = 0;
 let cachedTournamentsCount = 0;
 
+const DEFAULT_AVATAR_SRC = "../img/profile.jpg";
+
+function getProfileAvatarSrc(profile) {
+    if (!profile || typeof profile !== 'object') {
+        return DEFAULT_AVATAR_SRC;
+    }
+    return profile.profile_picture || profile.avatar || DEFAULT_AVATAR_SRC;
+}
+
+function updateEditUserAvatarPreview(src) {
+    const preview = document.getElementById('edit_user_avatar_preview');
+    if (preview) {
+        preview.src = src || DEFAULT_AVATAR_SRC;
+    }
+}
+
+function handleEditAvatarChange(event) {
+    const input = event?.target;
+    if (!input) return;
+
+    const file = input.files && input.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+            updateEditUserAvatarPreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+    } else {
+        updateEditUserAvatarPreview(getProfileAvatarSrc(currentUserProfile));
+    }
+}
+
 function escapeHTML(value) {
     if (value === null || value === undefined) return "";
     return String(value)
@@ -848,7 +880,7 @@ function displayUserProfile(data, teamsCount, tournamentsCount) {
     setElementText("user_tournaments_played", numberFormatter.format(cachedTournamentsCount));
     setElementText("user_teams", numberFormatter.format(cachedTeamsCount));
 
-    const avatarSrc = data.profile_picture || data.avatar || "../img/profile.jpg";
+    const avatarSrc = getProfileAvatarSrc(data);
     localStorage.setItem("profile_picture", avatarSrc);
     const headerAvatar = document.getElementById("header_user_avatar");
     if (headerAvatar) {
@@ -1027,6 +1059,12 @@ function openEditUserModal() {
     setFieldValue('edit_user_phone', getPhoneNumber(profile) || '');
     setFieldValue('edit_user_bio', profile.bio || profile.about || profile.description || '');
 
+    const avatarInput = document.getElementById('edit_user_avatar');
+    if (avatarInput) {
+        avatarInput.value = '';
+    }
+    updateEditUserAvatarPreview(getProfileAvatarSrc(profile));
+
     openModal('edit_user_modal');
 }
 
@@ -1052,6 +1090,11 @@ async function handleEditUserSubmit(event) {
         return;
     }
 
+    const avatarFile = formData.get('profile_picture');
+    const isFileObject = avatarFile && typeof avatarFile === 'object' &&
+        (typeof File === 'undefined' || avatarFile instanceof File);
+    const hasAvatar = Boolean(isFileObject && Number(avatarFile.size) > 0);
+
     const payload = { username, email };
     if (firstName) payload.first_name = firstName;
     if (lastName) payload.last_name = lastName;
@@ -1063,10 +1106,27 @@ async function handleEditUserSubmit(event) {
     clearEditUserMessage();
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/auth/users/me/`, {
-            method: 'PATCH',
-            body: JSON.stringify(payload)
-        });
+        let response;
+        if (hasAvatar) {
+            const multipartPayload = new FormData();
+            multipartPayload.append('username', username);
+            multipartPayload.append('email', email);
+            if (firstName) multipartPayload.append('first_name', firstName);
+            if (lastName) multipartPayload.append('last_name', lastName);
+            if (phoneNumber) multipartPayload.append('phone_number', phoneNumber);
+            if (bio) multipartPayload.append('bio', bio);
+            multipartPayload.append('profile_picture', avatarFile);
+
+            response = await fetchWithAuth(`${API_BASE_URL}/api/auth/users/me/`, {
+                method: 'PATCH',
+                body: multipartPayload
+            });
+        } else {
+            response = await fetchWithAuth(`${API_BASE_URL}/api/auth/users/me/`, {
+                method: 'PATCH',
+                body: JSON.stringify(payload)
+            });
+        }
 
         if (!response.ok) {
             const message = await extractErrorMessage(response);
@@ -1879,6 +1939,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const editUserForm = document.getElementById('edit_user_form');
     if (editUserForm) {
         editUserForm.addEventListener('submit', handleEditUserSubmit);
+    }
+
+    const editUserAvatarInput = document.getElementById('edit_user_avatar');
+    if (editUserAvatarInput) {
+        editUserAvatarInput.addEventListener('change', handleEditAvatarChange);
     }
 
     const createTeamLinks = document.querySelectorAll('.creat_team_link');
