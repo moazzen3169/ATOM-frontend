@@ -49,7 +49,7 @@
   font-size: 14px;
   line-height: 1.4;
   border: 1px solid var(--border-color);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-tint-04);
   color: var(--white-color);
   cursor: pointer;
   transition: background 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
@@ -57,9 +57,9 @@
 
 .btn:hover,
 .btn:focus-visible {
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--surface-tint-08);
   transform: translateY(-1px);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 10px 25px var(--shadow-soft);
 }
 
 .btn:disabled {
@@ -78,19 +78,19 @@
 
 .btn--primary:hover,
 .btn--primary:focus-visible {
-  background: rgba(0, 245, 255, 0.9);
+  background: var(--color-primary-90);
   color: var(--dark-color);
 }
 
 .btn--danger {
-  background: rgba(248, 113, 113, 0.18);
-  border-color: rgba(248, 113, 113, 0.55);
+  background: color-mix(in srgb, var(--logout-color) 18%, transparent);
+  border-color: color-mix(in srgb, var(--logout-color) 55%, transparent);
   color: var(--logout-color);
 }
 
 .btn--danger:hover,
 .btn--danger:focus-visible {
-  background: rgba(248, 113, 113, 0.28);
+  background: color-mix(in srgb, var(--logout-color) 28%, transparent);
 }
 
 .btn--ghost {
@@ -101,7 +101,7 @@
 
 .btn--ghost:hover,
 .btn--ghost:focus-visible {
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--surface-tint-04);
 }
 
 .teams_grid {
@@ -141,8 +141,8 @@
 
 .team_card {
   position: relative;
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--background-tint-60);
+  border: 1px solid var(--surface-tint-05);
   border-radius: 10px;
   padding: 18px;
   display: flex;
@@ -154,8 +154,8 @@
 
 .team_card:hover {
   transform: translateY(-4px);
-  border-color: rgba(0, 245, 255, 0.4);
-  box-shadow: 0 20px 35px rgba(0, 0, 0, 0.25);
+  border-color: var(--color-primary-40);
+  box-shadow: 0 20px 35px var(--shadow-strong);
 }
 
 .team_card__header {
@@ -169,8 +169,8 @@
   height: 64px;
   border-radius: 16px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--surface-tint-04);
+  border: 1px solid var(--surface-tint-08);
   flex-shrink: 0;
 }
 
@@ -201,7 +201,7 @@
 .team_badge {
   margin-right: auto;
   padding: 6px 10px;
-  background: rgba(0, 245, 255, 0.14);
+  background: var(--color-primary-14);
   color: var(--color-primary);
   border-radius: 999px;
   font-size: 12px;
@@ -246,14 +246,14 @@
 
 .team_member_chip {
   padding: 6px 10px;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--surface-tint-05);
   border-radius: 999px;
   font-size: 12px;
   color: var(--gray-color);
 }
 
 .team_member_chip--more {
-  background: rgba(0, 245, 255, 0.15);
+  background: var(--color-primary-15);
   color: var(--color-primary);
 }
 
@@ -284,8 +284,8 @@
 }
 
 .teams_panel {
-  background: rgba(15, 23, 42, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--background-tint-60);
+  border: 1px solid var(--surface-tint-05);
   border-radius: 10px;
   padding: 18px;
   display: flex;
@@ -319,9 +319,9 @@
 
 .mini_card {
   padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--surface-tint-03);
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--surface-tint-05);
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -363,25 +363,25 @@
 }
 
 .badge--pending {
-  background: rgba(217, 159, 9, 0.22);
+  background: color-mix(in srgb, var(--yellow-color) 22%, transparent);
   color: var(--yellow-color);
 }
 
 .badge--accepted {
-  background: rgba(130, 233, 149, 0.2);
+  background: color-mix(in srgb, var(--green-color) 20%, transparent);
   color: var(--green-color);
 }
 
 .badge--rejected,
 .badge--declined {
-  background: rgba(248, 113, 113, 0.2);
+  background: color-mix(in srgb, var(--logout-color) 20%, transparent);
   color: var(--logout-color);
 }
 
 .empty_state {
   padding: 18px;
   border-radius: 10px;
-  border: 1px dashed rgba(255, 255, 255, 0.1);
+  border: 1px dashed var(--surface-tint-10);
   text-align: center;
   color: var(--gray-color);
   font-size: 13px;
@@ -393,7 +393,7 @@
   display: none;
   align-items: center;
   justify-content: center;
-  background: rgba(15, 23, 42, 0.78);
+  background: color-mix(in srgb, var(--background-color) 78%, transparent);
   backdrop-filter: blur(4px);
   z-index: 999;
   padding: 24px;
@@ -407,8 +407,8 @@
   width: min(500px, 100%);
   background: var(--card-color);
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--surface-tint-08);
+  box-shadow: 0 25px 60px var(--shadow-deep);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -473,8 +473,8 @@
 .form_control input,
 .form_control textarea {
   border-radius: 10px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid var(--surface-tint-10);
+  background: var(--background-tint-60);
   color: var(--white-color);
   font-size: 14px;
   padding: 10px 12px;
@@ -484,12 +484,12 @@
 .form_control input:focus,
 .form_control textarea:focus {
   outline: none;
-  border-color: rgba(0, 245, 255, 0.6);
-  box-shadow: 0 0 0 3px rgba(0, 245, 255, 0.18);
+  border-color: var(--color-primary-60);
+  box-shadow: 0 0 0 3px var(--color-primary-18);
 }
 
 #edit_team_picture button {
-  background-color: #965151;
+  background-color: var(--team-picture-button);
 }
 
 .form_hint {

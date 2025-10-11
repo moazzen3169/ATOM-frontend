@@ -22,19 +22,45 @@
 --white-color:#FEFEFE;     /* رنگ سفید برای متن ها  */
 --dark-color:#0F172A;      /* رنگ تیره برای متن ها*/
 --gray-color:#57667D;      /* رنگ تیره برای متن ها*/
---logout-color:#F87171;         /* رنگ دکمه های حذف یا خروج */ 
---yellow-color-half:#d99e0971;         /* رنگ دکمه های ریپورت */ 
---yellow-color:#D99F09;         /* رنگ دکمه های ریپورت */ 
-      
+--logout-color:#F87171;         /* رنگ دکمه های حذف یا خروج */
+--yellow-color-half:#d99e0971;         /* رنگ دکمه های ریپورت */
+--yellow-color:#D99F09;         /* رنگ دکمه های ریپورت */
+
+/* رنگ های ثانویه برای داشبورد کاربر */
+--sidebar-hover-color:#232E3F;            /* رنگ پس زمینه لینک های سایدبار در حالت فعال */
+--button-primary-hover:#ffcf6b;           /* رنگ هاور دکمه اصلی */
+--danger-surface:rgba(255, 90, 90, 0.2);  /* پس زمینه دکمه های خطر */
+--danger-surface-hover:rgba(255, 90, 90, 0.32);
+--danger-text:#ff7d7d;                    /* متن حالت خطر */
+--danger-text-strong:#ff8b8b;             /* متن خطا در پیام ها */
+--success-text:#7adfa6;                   /* متن حالت موفق */
+--team-picture-button:#965151;            /* رنگ دکمه انتخاب تصویر تیم */
+--accent-secondary:#8961FF;               /* رنگ فرعی برای صفحات تیکت */
+--accent-secondary-05:rgba(137, 97, 255, 0.05);
+--accent-secondary-15:rgba(137, 97, 255, 0.15);
+--accent-secondary-20:rgba(137, 97, 255, 0.2);
+--accent-secondary-35:rgba(137, 97, 255, 0.35);
+--accent-secondary-40:rgba(137, 97, 255, 0.4);
+--accent-secondary-45:rgba(137, 97, 255, 0.45);
+
+/* رنگ های ویژه هشدار */
+--alert-border-error:#e74c3c;
+--alert-border-success:#2ecc71;
+--alert-border-info:#3498db;
+
 
 /* رنگ بوردر */
 
---primary-border:var(--color-primary);             /* رنگ بوردر درحالت انتخاب با , رنگ اصلی*/ 
---border-color:#374151;                          /* رنگ بوردر خاکستری برای حالت های غیر انتخاب*/ 
+--primary-border:var(--color-primary);             /* رنگ بوردر درحالت انتخاب با , رنگ اصلی*/
+--border-color:#374151;                          /* رنگ بوردر خاکستری برای حالت های غیر انتخاب*/
 
 /* رنگ سایه ها */
 
---primary-color-shadow: #00f7ff49 ;       /* drop-shadow با رنگ اصلی*/ 
+--primary-color-shadow: #00f7ff49 ;       /* drop-shadow با رنگ اصلی*/
+--shadow-strong: rgba(0, 0, 0, 0.25);
+--shadow-medium: rgba(0, 0, 0, 0.18);
+--shadow-soft: rgba(0, 0, 0, 0.15);
+--shadow-elevated: rgba(0,0,0,0.3);
 
 /* گرادیانت */
 
@@ -47,6 +73,9 @@
 /* overlay */
 
 --overlay-color:rgba(0, 0, 0, 0.3);
+--overlay-medium:rgba(0, 0, 0, 0.5);
+--overlay-strong:rgba(0, 0, 0, 0.6);
+--overlay-bold:rgba(0, 0, 0, 0.7);
 
 
 /* discord bg color */
@@ -56,6 +85,57 @@
 
 
 --shadow:#0000000d;
+
+/* رنگ های شفاف پایه */
+--surface-tint-02:rgba(255, 255, 255, 0.02);
+--surface-tint-03:rgba(255, 255, 255, 0.03);
+--surface-tint-04:rgba(255, 255, 255, 0.04);
+--surface-tint-05:rgba(255, 255, 255, 0.05);
+--surface-tint-06:rgba(255, 255, 255, 0.06);
+--surface-tint-08:rgba(255, 255, 255, 0.08);
+--surface-tint-10:rgba(255, 255, 255, 0.10);
+--surface-tint-12:rgba(255, 255, 255, 0.12);
+--surface-tint-15:rgba(255, 255, 255, 0.15);
+--surface-tint-16:rgba(255, 255, 255, 0.16);
+--surface-tint-18:rgba(255, 255, 255, 0.18);
+--surface-tint-20:rgba(255, 255, 255, 0.20);
+--surface-tint-25:rgba(255, 255, 255, 0.25);
+--surface-tint-35:rgba(255, 255, 255, 0.35);
+
+/* مقادیر کمکی */
+--background-tint-60:rgba(15, 23, 42, 0.6);
+--color-primary-60:rgba(0, 245, 255, 0.6);
+--color-primary-18:rgba(0, 245, 255, 0.18);
+--color-primary-90:rgba(0, 245, 255, 0.9);
+--color-primary-55:rgba(0, 245, 255, 0.55);
+--color-primary-40:rgba(0, 245, 255, 0.4);
+--color-primary-30:rgba(0, 245, 255, 0.3);
+--color-primary-20:rgba(0, 245, 255, 0.2);
+--color-primary-15:rgba(0, 245, 255, 0.15);
+--color-primary-14:rgba(0, 245, 255, 0.14);
+--file-button-hover:rgba(45, 51, 82, 0.95);
+--file-button-focus:rgba(137, 97, 255, 0.4);
+--disabled-button-bg:rgba(255,255,255,0.15);
+--disabled-button-text:rgba(255,255,255,0.6);
+--message-bg:rgba(255,255,255,0.05);
+--message-border:rgba(255,255,255,0.06);
+--shadow-deep:rgba(0, 0, 0, 0.35);
+--background-overlay-45:rgba(15, 17, 29, 0.45);
+--background-overlay-70:rgba(20, 23, 40, 0.7);
+--background-overlay-85:rgba(16, 18, 30, 0.85);
+--background-overlay-85-alt:rgba(14, 17, 31, 0.85);
+--background-overlay-70-deep:rgba(5, 7, 15, 0.7);
+--card-overlay-65:rgba(24, 29, 47, 0.65);
+--card-overlay-90:rgba(24, 29, 47, 0.9);
+--card-overlay-90-alt:rgba(30, 34, 58, 0.9);
+--card-overlay-95:rgba(28, 31, 52, 0.95);
+--card-overlay-98:rgba(26, 29, 49, 0.98);
+--text-white-70:rgba(255,255,255,0.7);
+--text-white-80:rgba(255,255,255,0.8);
+--text-white-85:rgba(255,255,255,0.85);
+--text-white-90:rgba(255,255,255,0.9);
+--text-secondary-accent:rgba(218, 200, 255, 0.95);
+
 
 }
 
