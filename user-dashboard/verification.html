@@ -1,12 +1,5 @@
-
-
-
-
-
-
-
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -17,224 +10,237 @@
     <link rel="stylesheet" href="../css/user-sidebar.css">
     <link rel="stylesheet" href="../css/verification.css">
     <link rel="stylesheet" href="../fonts/fonts.css">
-
-
-
 </head>
 <body>
-    
+    <div class="body_container">
+        <!-- سایدبار -->
+        <aside id="sidebar" class="sidebar"></aside>
 
+        <!-- محتوای اصلی -->
+        <main class="main_content">
+            <!-- هدر -->
+            <header class="dashboard_header" id="dashboard_header">
+              <script>
+                // بارگذاری محتوای هدر
+                fetch('dashboard-header.html')
+                  .then(response => response.text())
+                  .then(html => {
+                    document.getElementById('dashboard_header').innerHTML = html;
+                  });
+              </script>
+            </header>
 
-    
+            <!-- verification -->
+            <section class="verification" aria-labelledby="verification-title">
+                <header class="verification__summary" role="presentation">
+                    <div class="your_level card">
+                        <div class="level_title">
+                            <span class="label">سطح شما :</span>
+                            <span class="value" data-current-level-label>...</span>
+                        </div>
+                        <div class="summary_status" data-current-level-status-wrapper>
+                            <span class="status-icon" aria-hidden="true">
+                                <img src="https://unpkg.com/heroicons@2.0.18/24/solid/check.svg" alt="check" data-status-icon>
+                            </span>
+                            <h3 class="status-text" data-current-level-status>در حال بارگذاری...</h3>
+                        </div>
+                        <div class="level_Property">
+                            <span class="label">مزایا :</span>
+                            <span class="value" data-current-level-benefits>دسترسی به امکانات عمومی</span>
+                        </div>
+                    </div>
 
-<div class="body_container">
-    <!-- سایدبار -->
-    <aside id="sidebar" class="sidebar"></aside>
-  
-    <!-- محتوای اصلی -->
-    <main class="main_content">
-      
-    <!-- هدر -->
-    <header class="dashboard_header" id="dashboard_header">
-      <script>
-        // بارگذاری محتوای هدر
-        fetch('dashboard-header.html')
-          .then(response => response.text())
-          .then(html => {
-            document.getElementById('dashboard_header').innerHTML = html;
-          });
-      </script>
-    </header>
+                    <h2 class="verification__heading" id="verification-title">پیشرفت احراز هویت</h2>
+                    <ul class="verification-progress" data-progress aria-describedby="verification-title">
+                        <li class="progress-step" data-progress-step="1">
+                            <span class="progress-step__badge" aria-hidden="true">۱</span>
+                            <div class="progress-step__content">
+                                <h3 class="progress-step__title">سطح ۱</h3>
+                                <p class="progress-step__description">ایجاد حساب و تایید ایمیل برای دسترسی اولیه.</p>
+                            </div>
+                        </li>
+                        <li class="progress-step" data-progress-step="2">
+                            <span class="progress-step__badge" aria-hidden="true">۲</span>
+                            <div class="progress-step__content">
+                                <h3 class="progress-step__title">سطح ۲</h3>
+                                <p class="progress-step__description">ارسال عکس سلفی و کارت ملی برای افزایش سقف برداشت.</p>
+                            </div>
+                        </li>
+                        <li class="progress-step" data-progress-step="3">
+                            <span class="progress-step__badge" aria-hidden="true">۳</span>
+                            <div class="progress-step__content">
+                                <h3 class="progress-step__title">سطح ۳</h3>
+                                <p class="progress-step__description">ارسال ویدیوی سلفی جهت دسترسی به برداشت‌های ویژه.</p>
+                            </div>
+                        </li>
+                    </ul>
+                </header>
 
-    <!-- verification -->
+                <aside class="verification_info card" aria-live="polite">
+                    <div class="verification_info__content">
+                        <span class="info-icon" aria-hidden="true">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 01.668 0l.041.02m-.75-.02V9.75a.75.75 0 011.5 0v1.5m-2.25 3a.75.75 0 001.5 0v-.75a.75.75 0 00-1.5 0v.75z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </span>
+                        <div class="verification_info__text">
+                            <h3>لطفا اطلاعات خود را با دقت کامل ارسال کنید</h3>
+                            <p>مدارک شما پس از ارسال توسط تیم پشتیبانی بررسی خواهد شد. در صورت بروز خطا، امکان اصلاح و ارسال مجدد وجود دارد.</p>
+                        </div>
+                    </div>
+                    <button type="button" class="nemuneh">مشاهده راهنما</button>
+                </aside>
 
-    <section class="verification">
+                <div class="user-verification-grid">
+                    <article class="user-verification-card verification_level_2 card" data-level-card="2">
+                        <header class="user-verification-card__header">
+                            <div class="level">
+                                <span class="level__badge">سطح ۲</span>
+                                <p class="level__subtitle">احراز هویت پیشرفته</p>
+                            </div>
+                            <!-- pending - accepted - not_accepted -->
+                            <span class="level_status not_accepted">تکمیل نشد</span>
+                        </header>
+                        <p class="user-verification-card__description">برای فعال‌سازی امکانات مالی بیشتر، تصویر سلفی و کارت ملی خود را ارسال کنید.</p>
+                        <ul class="Property" aria-label="مزایای سطح ۲">
+                            <li>افزایش سقف برداشت روزانه تا ۵ میلیون تومان</li>
+                            <li>فعال‌سازی برداشت آنی به حساب بانکی ثبت‌شده</li>
+                            <li>امکان شرکت در تورنمنت‌های پولی با جوایز بالاتر</li>
+                        </ul>
+                        <div class="user-verification-card__actions">
+                            <button class="verificatin_btn" id="level-2-btn">تکمیل کردن اطلاعات</button>
+                            <button class="secondary-link" type="button" data-open-guide="2">نکات ارسال مدارک</button>
+                        </div>
+                    </article>
 
-        <div class="your_level">
-            <div class="level_title">
-                <span>سطح شما :</span>
-                <span data-current-level-label>...</span>
+                    <article class="user-verification-card verification_level_3 card" data-level-card="3">
+                        <header class="user-verification-card__header">
+                            <div class="level">
+                                <span class="level__badge">سطح ۳</span>
+                                <p class="level__subtitle">تایید امنیت پیشرفته</p>
+                            </div>
+                            <!-- pending - accepted - not_accepted -->
+                            <span class="level_status not_accepted">تکمیل نشد</span>
+                        </header>
+                        <p class="user-verification-card__description">برای دسترسی به برداشت‌های ویژه و سقف‌های نامحدود، یک ویدیوی کوتاه از خود ارسال کنید.</p>
+                        <ul class="Property" aria-label="مزایای سطح ۳">
+                            <li>برداشت ویژه روزانه تا سقف ۲۰ میلیون تومان</li>
+                            <li>فعال شدن پشتیبانی اختصاصی و سریع</li>
+                            <li>اولویت در بررسی درخواست‌های مالی و تیکت‌ها</li>
+                        </ul>
+                        <div class="user-verification-card__actions">
+                            <button class="verificatin_btn" id="level-3-btn">تکمیل کردن اطلاعات</button>
+                            <button class="secondary-link" type="button" data-open-guide="3">مشاهده نمونه ویدیو</button>
+                        </div>
+                    </article>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div class="overlay hidden" data-modal-overlay></div>
+
+    <div class="modal level_2_modal hidden" role="dialog" aria-modal="true" aria-labelledby="level-2-title">
+        <button class="modal-close-btn" type="button" aria-label="بستن" onclick="this.closest('.modal').classList.add('hidden'); document.querySelector('.overlay').classList.add('hidden');">×</button>
+
+        <form class="level_2_modal_form" method="post" novalidate>
+            <h2 class="modal-title" id="level-2-title">احراز هویت سطح ۲</h2>
+            <p class="modal-description">برای تایید سطح ۲ تصویر سلفی و کارت ملی خود را بارگذاری نمایید.</p>
+            <h3 class="steps">انتخاب عکس سلفی</h3>
+            <label class="lable" for="selfy_picture_level2">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="#fff" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+                </svg>
+                <p>عکس سلفی خود را انتخاب کنید</p>
+                <p>اندازه عکس حداکثر ۵ مگابایت باید باشد</p>
+                <div class="file-info" id="selfy_info"></div>
+            </label>
+            <input type="file" name="selfy_picturse" id="selfy_picture_level2" accept="image/*">
+
+            <h3 class="steps">انتخاب عکس کارت ملی</h3>
+            <label class="lable" for="id_card">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="#fff" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+                </svg>
+                <p>عکس کارت ملی یا شناسنامه خود را انتخاب کنید</p>
+                <p>اندازه عکس حداکثر ۵ مگابایت باید باشد</p>
+                <div class="file-info" id="id_card_info"></div>
+            </label>
+            <input type="file" name="id_card" id="id_card" accept="image/*">
+
+            <button type="submit" class="submit-btn">ارسال مدارک</button>
+        </form>
+    </div>
+
+    <div class="modal level_3_modal hidden" role="dialog" aria-modal="true" aria-labelledby="level-3-title">
+        <button class="modal-close-btn" type="button" aria-label="بستن" onclick="this.closest('.modal').classList.add('hidden'); document.querySelector('.overlay').classList.add('hidden');">×</button>
+
+        <form class="level_3_modal_form" method="post" novalidate>
+            <h2 class="modal-title" id="level-3-title">احراز هویت سطح ۳</h2>
+            <p class="modal-description">ویدیوی سلفی خود را با متن اعلامی ضبط و بارگذاری کنید.</p>
+            <h3 class="steps">ویدیوی خود را انتخاب کنید</h3>
+            <label class="lable" for="selfy_video_level3">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="#fff" class="size-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
+                </svg>
+                <p>ویدیوی سلفی خود را انتخاب کنید</p>
+                <p>اندازه ویدیو حداکثر ۱۰ مگابایت باید باشد</p>
+                <div class="file-info" id="video_info"></div>
+            </label>
+            <input type="file" name="selfy_picturse" id="selfy_video_level3" accept="video/*">
+            <button type="submit" class="submit-btn">ارسال مدارک</button>
+        </form>
+    </div>
+
+    <div class="modal nemuneh_modal hidden" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
+        <button class="modal-close-btn" type="button" aria-label="بستن" onclick="this.closest('.modal').classList.add('hidden'); document.querySelector('.overlay').classList.add('hidden');">×</button>
+        <h2 class="modal-title" id="guide-modal-title">راهنمای تکمیل مدارک</h2>
+        <p class="guide-intro">برای افزایش سطح امنیتی حساب خود، مراحل زیر را دنبال کنید. هر سطح مزایای بیشتری به شما می‌دهد.</p>
+
+        <div class="guide-section level-2">
+            <div class="section-header">
+                <svg class="level-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+                </svg>
+                <h3>سطح ۲: ارسال عکس سلفی و کارت ملی</h3>
             </div>
-            <div class="compated_icon" data-current-level-status-wrapper>
-                <img src="https://unpkg.com/heroicons@2.0.18/24/solid/check.svg" alt="check" data-status-icon>
-                <h3 data-current-level-status>در حال بارگذاری...</h3>
-            </div>
-            <div class="level_Property">
-                <span>مزایا :</span>
-                <span data-current-level-benefits>دسترسی به امکانات عمومی</span>
+            <p>برای تکمیل سطح ۲ احراز هویت، لطفا عکس سلفی واضح از خودتان همراه با عکس کارت ملی یا شناسنامه ارسال کنید. عکس‌ها باید با کیفیت بالا و خوانا باشند. حداکثر اندازه هر عکس ۵ مگابایت است.</p>
+            <div class="samples">
+                <div class="sample-item">
+                    <h4>نمونه عکس سلفی:</h4>
+                    <img src="/img/banner5.jpg" alt="نمونه عکس سلفی">
+                </div>
+                <div class="sample-item">
+                    <h4>نمونه عکس کارت ملی:</h4>
+                    <img src="/img/banner5.jpg" alt="نمونه عکس کارت ملی">
+                </div>
             </div>
         </div>
 
-        <div class="verification_info">
-            <li><a   href="">حتما در ارسال اطلاعات خود  دقت کامل داشته باشید </a></li>
-            <button class="nemuneh">مشاهده راهنما</button>
-        </div>
-
-
-        <div class="verification_level_2">
-            <div class="level">
-                <span>سطح 2</span>
+        <div class="guide-section level-3">
+            <div class="section-header">
+                <svg class="level-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+                <h3>سطح ۳: ارسال ویدیو سلفی با متن تنظیم شده</h3>
             </div>
-            <!-- pending - accepted - not_accepted -->
-            <div class="level_status not_accepted">
-                <span>تکمیل نشد</span>
-            </div>
-            <div class="Property">
-                <ul>
-                    <li>افزایش سقف برداشت روزانه</li>
-                    <li>افزایش سقف برداشت روزانه</li>
-                </ul>
-            </div>
-            <button class="verificatin_btn" id="level-2-btn">تکمیل کردن اطلاعات</button>
-
-        </div>
-
-        <div class="verification_level_3">
-            <div class="level">
-                <span>سطح 3</span>
-            </div>
-            <!-- pending - accepted - not_accepted -->
-            <div class="level_status not_accepted">
-                <span>تکمیل نشد</span>
-            </div>
-            <div class="Property">
-                <ul>
-                    <li>افزایش سقف برداشت روزانه</li>
-                    <li>افزایش سقف برداشت روزانه</li>
-                </ul>
-            </div>
-            <button class="verificatin_btn" id="level-3-btn">تکمیل کردن اطلاعات</button>
-        </div>
-
-        <!-- <div class="verification_info">
-            info
-        </div> -->
-
-    </section>
-</main>
-</div>
-
-
-<div class="overlay  hidden"></div>
-<div class="level_2_modal modal hidden ">
-
-    <button class="modal-close-btn" onclick="this.closest('.modal').classList.add('hidden'); document.querySelector('.overlay').classList.add('hidden');">×</button>
-
-    <form class="level_2_modal_form" method="post">
-        <h3 class="steps">انتخاب عکس سلفی</h3>
-        <label class="lable" for="selfy_picture_level2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="#fff" class="size-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
-            </svg>
-              
-            <p>عکس سلفی خود را انتخاب کنید</p>
-            <p>اندازه عکس حداکثر 5MB باید باشد</p>
-            <div class="file-info" id="selfy_info"></div>
-        </label>
-        <input type="file" name="selfy_picturse" id="selfy_picture_level2" accept="image/*">
-
-        <h3 class="steps">انتخاب عکس کارت ملی</h3>
-        <label class="lable" for="id_card">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="#fff" class="size-6">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
-            </svg>
-            <p>عکس کارت ملی یا شناسنامه خود را انتخاب کنید</p>
-            <p>اندازه عکس حداکثر 5MB باید باشد</p>
-            <div class="file-info" id="id_card_info"></div>
-        </label>
-        <input type="file" name="id_card" id="id_card" accept="image/*">
-        
-        <button type="submit" class="submit-btn">ارسال مدارک</button>
-    </form>
-
-
-
-
-
-
-
-</div>
-<div class="level_3_modal modal hidden">
-
-    <button class="modal-close-btn" onclick="this.closest('.modal').classList.add('hidden'); document.querySelector('.overlay').classList.add('hidden');">×</button>
-
-    <form class="level_3_modal_form" method="post">
-
-    <h3 class="steps">ویدیوی خودرا وارد کنید</h3>
-    <label class="lable" for="selfy_video_level3">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="#fff" class="size-6">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 16.5V9.75m0 0 3 3m-3-3-3 3M6.75 19.5a4.5 4.5 0 0 1-1.41-8.775 5.25 5.25 0 0 1 10.233-2.33 3 3 0 0 1 3.758 3.848A3.752 3.752 0 0 1 18 19.5H6.75Z" />
-        </svg>
-
-        <p>ویدیوی سلفی خود را انتخاب کنید</p>
-        <p>اندازه ویدیو حداکثر 10MB باید باشد</p>
-        <div class="file-info" id="video_info"></div>
-    </label>
-    <input type="file" name="selfy_picturse" id="selfy_video_level3" accept="video/*">
-    <button type="submit" class="submit-btn">ارسال مدارک</button>
-    </form>
-
-
-
-</div>
-
-<div class="nemuneh_modal modal hidden">
-    <button class="modal-close-btn" onclick="this.closest('.modal').classList.add('hidden'); document.querySelector('.overlay').classList.add('hidden');">×</button>
-    <p class="guide-intro">برای افزایش سطح امنیتی حساب خود، مراحل زیر را دنبال کنید. هر سطح مزایای بیشتری به شما می‌دهد.</p>
-
-    <div class="guide-section level-2">
-        <div class="section-header">
-            <svg class="level-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
-                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
-            </svg>
-            <h3>سطح ۲: ارسال عکس سلفی و کارت ملی</h3>
-        </div>
-        <p>برای تکمیل سطح ۲ احراز هویت، لطفا عکس سلفی واضح از خودتان همراه با عکس کارت ملی یا شناسنامه ارسال کنید. عکس‌ها باید با کیفیت بالا و خوانا باشند. حداکثر اندازه هر عکس ۵ مگابایت است.</p>
-        <div class="samples">
-            <div class="sample-item">
-                <h4>نمونه عکس سلفی:</h4>
-                <img src="/img/banner5.jpg" alt="نمونه عکس سلفی">
-            </div>
-            <div class="sample-item">
-                <h4>نمونه عکس کارت ملی:</h4>
-                <img src="/img/banner5.jpg" alt="نمونه عکس کارت ملی">
+            <p>برای تکمیل سطح ۳ احراز هویت، لطفا یک ویدیو سلفی ارسال کنید که در آن متن زیر را به صورت واضح بخوانید: <strong>"من [نام شما] هستم و این ویدیو برای احراز هویت در سایت است."</strong></p>
+            <div class="samples">
+                <div class="sample-item">
+                    <h4>نمونه ویدیو:</h4>
+                    <video controls>
+                        <source src="../img/video/ATOM    TOURNOMANTS - Figma 2025-07-26 15-29-26.mp4" type="video/mp4">
+                        مرورگر شما از ویدیو پشتیبانی نمی‌کند.
+                    </video>
+                </div>
             </div>
         </div>
     </div>
 
-    <div class="guide-section level-3">
-        <div class="section-header">
-            <svg class="level-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" d="m15.75 10.5 4.72-4.72a.75.75 0 0 1 1.28.53v11.38a.75.75 0 0 1-1.28.53l-4.72-4.72M4.5 18.75h9a2.25 2.25 0 0 0 2.25-2.25v-9a2.25 2.25 0 0 0-2.25-2.25h-9A2.25 2.25 0 0 0 2.25 7.5v9a2.25 2.25 0 0 0 2.25 2.25Z" />
-            </svg>
-            <h3>سطح ۳: ارسال ویدیو سلفی با متن تنظیم شده</h3>
-        </div>
-        <p>برای تکمیل سطح ۳ احراز هویت، لطفا یک ویدیو سلفی ارسال کنید که در آن متن زیر را به صورت واضح بخوانید: <strong>"من [نام شما] هستم و این ویدیو برای احراز هویت در سایت است."</strong></p>
-        <div class="samples">
-            <div class="sample-item">
-                <h4>نمونه ویدیو:</h4>
-                <video controls>
-                    <source src="../img/video/ATOM    TOURNOMANTS - Figma 2025-07-26 15-29-26.mp4" type="video/mp4">
-                    مرورگر شما از ویدیو پشتیبانی نمی‌کند.
-                </video>
-            </div>
-        </div>
-    </div>
-</div>
-
-
-
-<script src="../js/sidebar.js"></script>
-<script type="module" src="../js/user-dashboard.js"></script>
-<!-- در فایل HTML -->
-<script type="module" src="/js/verification.js"></script>
-
+    <script src="../js/sidebar.js"></script>
+    <script type="module" src="../js/user-dashboard.js"></script>
+    <script type="module" src="/js/verification.js"></script>
 </body>
 </html>
-
-
-
-
-
-

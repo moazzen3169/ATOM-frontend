@@ -7,6 +7,8 @@ const level2btn = document.querySelector("#level-2-btn");
 const level3btn = document.querySelector("#level-3-btn");
 const nemunehBtn = document.querySelector(".nemuneh");
 const nemunehModal = document.querySelector(".nemuneh_modal");
+const guideButtons = Array.from(document.querySelectorAll("[data-open-guide]"));
+const progressSteps = Array.from(document.querySelectorAll("[data-progress-step]"));
 
 const levelSummary = document.querySelector(".your_level");
 const currentLevelLabel = document.querySelector("[data-current-level-label]");
@@ -61,6 +63,7 @@ function openModal(modalElement, initializeFilesCallback) {
   }
   if (modalElement) {
     modalElement.classList.remove("hidden");
+    modalElement.scrollTop = 0;
   }
   if (typeof initializeFilesCallback === "function") {
     initializeFilesCallback();
@@ -99,6 +102,31 @@ if (overlay) {
 if (nemunehBtn) {
   nemunehBtn.addEventListener("click", () => {
     openModal(nemunehModal);
+  });
+}
+
+if (guideButtons.length && nemunehModal) {
+  guideButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      openModal(nemunehModal);
+      const level = button.getAttribute("data-open-guide");
+      if (level) {
+        const section = nemunehModal.querySelector(`.guide-section.level-${level}`);
+        if (section) {
+          setTimeout(() => {
+            section.scrollIntoView({ behavior: "smooth", block: "start" });
+          }, 120);
+        }
+      }
+    });
+  });
+}
+
+if (typeof window !== "undefined") {
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && overlay && !overlay.classList.contains("hidden")) {
+      closeAllModals();
+    }
   });
 }
 
@@ -457,6 +485,7 @@ function updateUIBasedOnStatus(statusData) {
   setLevelStatus(3, level3State.className, level3State.text);
 
   updateCurrentLevelSummary(verifiedLevel, statusData);
+  updateProgressSteps(verifiedLevel, statusFlags);
 
   const shouldHideLevel2Button = isLevel2Verified;
   const shouldDisableLevel2Button = isLevel2Verified || isLevel2Pending;
@@ -474,6 +503,41 @@ function updateUIBasedOnStatus(statusData) {
   toggleSectionAvailability(3, {
     hidden: shouldHideLevel3Button,
     disabled: shouldDisableLevel3Button || level3AccessLocked,
+  });
+}
+
+function updateProgressSteps(verifiedLevel, statusFlags) {
+  if (!progressSteps.length) return;
+
+  const normalizedLevel = Math.max(1, Math.min(Number(verifiedLevel) || 1, 3));
+  const pendingLevel = statusFlags.pending ? statusFlags.level : null;
+  const rejectedLevel = statusFlags.rejected ? statusFlags.level : null;
+  const hasRoomForNext = normalizedLevel < 3;
+  const nextLevelCandidate = hasRoomForNext ? normalizedLevel + 1 : null;
+  const activeLevel = pendingLevel || rejectedLevel || nextLevelCandidate;
+
+  progressSteps.forEach((stepElement) => {
+    const stepLevel = Number(stepElement.getAttribute("data-progress-step"));
+    if (!stepLevel) return;
+
+    stepElement.classList.remove(
+      "is-complete",
+      "is-active",
+      "is-pending",
+      "is-rejected"
+    );
+
+    if (stepLevel <= normalizedLevel) {
+      stepElement.classList.add("is-complete");
+    }
+
+    if (pendingLevel && stepLevel === pendingLevel) {
+      stepElement.classList.add("is-pending");
+    } else if (rejectedLevel && stepLevel === rejectedLevel) {
+      stepElement.classList.add("is-rejected");
+    } else if (activeLevel && stepLevel === activeLevel && stepLevel > normalizedLevel) {
+      stepElement.classList.add("is-active");
+    }
   });
 }
 
