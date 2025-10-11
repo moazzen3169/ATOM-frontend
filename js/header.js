@@ -166,12 +166,14 @@ class HeaderAuthManager {
     if (!token) return '۰ تومان';
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/wallet/`, {
+      const response = await fetch(`${API_BASE_URL}/api/wallet/wallets/`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       if (response.ok) {
-        const data = await response.json();
-        return data.balance ? this.formatBalance(data.balance) : '۰ تومان';
+        const wallets = await response.json();
+        if (wallets && Array.isArray(wallets) && wallets.length > 0) {
+          return this.formatBalance(wallets[0].total_balance || 0);
+        }
       }
       return '۰ تومان';
     } catch {
