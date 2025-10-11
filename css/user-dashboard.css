@@ -550,6 +550,48 @@
     font-size: 13px;
   }
 
+  .modal_form_field--full {
+    grid-column: 1 / -1;
+  }
+
+  .modal_avatar_input {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+
+  .modal_avatar_preview {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+  }
+
+  .modal_avatar_preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .modal_avatar_actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 12px;
+  }
+
+  .modal_avatar_actions input[type="file"] {
+    color: var(--white-color);
+  }
+
+  .modal_avatar_actions small {
+    color: var(--gray-color);
+    line-height: 1.6;
+  }
+
   .modal_form_field input,
   .modal_form_field textarea {
     background: var(--background-color);

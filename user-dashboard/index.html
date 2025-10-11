@@ -156,6 +156,18 @@
     <div class="modal__body">
       <p class="modal_description">اطلاعات زیر را ویرایش کنید و سپس دکمه ذخیره را بزنید.</p>
       <div class="modal_form_grid">
+        <label class="modal_form_field modal_form_field--full">
+          <span>عکس پروفایل</span>
+          <div class="modal_avatar_input">
+            <div class="modal_avatar_preview">
+              <img src="../img/profile.jpg" alt="پیش‌نمایش تصویر پروفایل" id="edit_user_avatar_preview">
+            </div>
+            <div class="modal_avatar_actions">
+              <input type="file" id="edit_user_avatar" name="profile_picture" accept="image/*">
+              <small>حداکثر اندازه پیشنهادی ۵ مگابایت و فرمت‌های تصویر متداول</small>
+            </div>
+          </div>
+        </label>
         <label class="modal_form_field">
           <span>نام کاربری</span>
           <input type="text" id="edit_user_username" name="username" required data-autofocus>
