@@ -14,11 +14,20 @@ let cachedTeamsCount = 0;
 let cachedTournamentsCount = 0;
 
 const DEFAULT_AVATAR_SRC = "../img/profile.jpg";
-const PROFILE_UPDATE_ENDPOINTS = [
+const LEGACY_PROFILE_ENDPOINTS = [
+    '/api/users/users/me/',
     '/api/auth/users/me/',
     '/api/auth/me/',
     '/api/auth/user/'
 ];
+function getProfileUpdateEndpoints() {
+    const endpoints = ['/auth/users/me/'];
+    if (currentUserId) {
+        endpoints.push(`/api/users/users/${currentUserId}/`);
+    }
+    endpoints.push(...LEGACY_PROFILE_ENDPOINTS);
+    return Array.from(new Set(endpoints));
+}
 const PROFILE_BIO_KEYS = ['bio', 'about', 'description'];
 
 function getProfileAvatarSrc(profile) {
@@ -86,7 +95,9 @@ function createProfileFormData(payload, avatarFile) {
 async function submitProfileUpdate(bodyFactory, isMultipart = false) {
     let lastError = null;
 
-    for (const endpointPath of PROFILE_UPDATE_ENDPOINTS) {
+    const endpoints = getProfileUpdateEndpoints();
+
+    for (const endpointPath of endpoints) {
         const endpoint = `${API_BASE_URL}${endpointPath}`;
         try {
             const headers = new Headers();
@@ -777,6 +788,55 @@ async function fetchUserTeams() {
     }
 }
 
+async function fetchUserTournamentHistory(userId) {
+    if (!userId) {
+        console.warn('شناسه کاربر برای دریافت تاریخچه تورنومنت موجود نیست.');
+        return [];
+    }
+
+    try {
+        console.log('دریافت تاریخچه تورنومنت‌های کاربر از API...');
+
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/users/users/${userId}/match-history/`, {
+            method: 'GET'
+        });
+
+        console.log('Tournament history status:', response.status);
+
+        if (!response.ok) {
+            const message = await extractErrorMessage(response);
+            throw new Error(message || `خطای HTTP: ${response.status}`);
+        }
+
+        const raw = await response.text();
+        if (!raw) {
+            console.warn('Tournament history API returned an empty response.');
+            return [];
+        }
+
+        try {
+            const data = JSON.parse(raw);
+            console.log('داده‌های تاریخچه تورنومنت:', data);
+            if (Array.isArray(data)) {
+                return data;
+            }
+            if (data && Array.isArray(data.tournament_history)) {
+                return data.tournament_history;
+            }
+            if (data && Array.isArray(data.matches)) {
+                return data.matches;
+            }
+            return [];
+        } catch (parseError) {
+            console.error('خطا در parse تاریخچه تورنومنت:', parseError);
+            throw new Error('داده‌های نامعتبر از سرور دریافت شد.');
+        }
+    } catch (error) {
+        console.error('خطا در دریافت تاریخچه تورنومنت‌های کاربر:', error);
+        throw error;
+    }
+}
+
 // تابع برای refresh توکن
 async function refreshToken() {
     try {
@@ -998,62 +1058,83 @@ async function loadDashboardData() {
         // تنظیم عنوان صفحه
         setPageTitle();
 
-        const path = window.location.pathname;
-        const isTeamsPage = path.includes('teams') && document.getElementById('teams_container');
+        const dashboardData = await fetchDashboardData();
+        const hasTeamsContainer = Boolean(document.getElementById('teams_container'));
+        const hasTournamentTable = Boolean(document.getElementById('tournaments_history_body'));
 
-        if (isTeamsPage) {
-            const [dashboardResult, teamsResult] = await Promise.allSettled([
-                fetchDashboardData(),
-                fetchUserTeams()
-            ]);
+        const initialTeams = toTeamArray(dashboardData?.teams);
+        const initialTournamentHistory = Array.isArray(dashboardData?.tournament_history)
+            ? dashboardData.tournament_history
+            : [];
 
-            const dashboardData = dashboardResult.status === 'fulfilled' ? dashboardResult.value : null;
-            const teamsData = teamsResult.status === 'fulfilled' ? teamsResult.value : [];
+        if (dashboardData?.user_profile) {
+            displayUserProfile(
+                dashboardData.user_profile,
+                initialTeams.length,
+                initialTournamentHistory.length
+            );
+        }
 
-            if (teamsResult.status === 'fulfilled') {
-                displayUserTeams(teamsData);
-            } else {
-                console.error('خطا در دریافت تیم‌ها:', teamsResult.reason);
-                showError('خطا در دریافت اطلاعات تیم‌ها. لطفاً دوباره تلاش کنید.');
-                displayUserTeams([]);
-            }
+        if (hasTeamsContainer) {
+            displayUserTeams(initialTeams);
+        }
 
-            const teamsCount = toTeamArray(teamsData).length;
-            const tournamentsCount = dashboardData && Array.isArray(dashboardData.tournament_history)
-                ? dashboardData.tournament_history.length
-                : 0;
+        if (hasTournamentTable) {
+            displayTournamentHistory(initialTournamentHistory);
+        }
 
-            if (dashboardData && dashboardData.user_profile) {
-                displayUserProfile(dashboardData.user_profile, teamsCount, tournamentsCount);
-            }
+        handleTeamExtrasFromDashboard(dashboardData);
 
-            if (dashboardData) {
-                handleTeamExtrasFromDashboard(dashboardData);
-            }
+        const userId = dashboardData?.user_profile?.id || currentUserId;
+        const teamsPromise = fetchUserTeams();
+        const tournamentsPromise = userId
+            ? fetchUserTournamentHistory(userId)
+            : Promise.resolve(initialTournamentHistory);
+
+        const [teamsResult, tournamentsResult] = await Promise.allSettled([
+            teamsPromise,
+            tournamentsPromise
+        ]);
+
+        let teamsData = initialTeams;
+        if (teamsResult.status === 'fulfilled') {
+            teamsData = toTeamArray(teamsResult.value);
         } else {
-            // دریافت تمام اطلاعات داشبورد از API واحد
-            const dashboardData = await fetchDashboardData();
+            console.error('خطا در دریافت تیم‌ها:', teamsResult.reason);
+            showError('خطا در دریافت اطلاعات تیم‌ها. لطفاً دوباره تلاش کنید.');
+        }
 
-            // نمایش اطلاعات پروفایل کاربر
-            if (dashboardData.user_profile) {
-                const teamsCount = toTeamArray(dashboardData.teams).length;
-                const tournamentsCount = Array.isArray(dashboardData.tournament_history)
-                    ? dashboardData.tournament_history.length
-                    : 0;
-                displayUserProfile(dashboardData.user_profile, teamsCount, tournamentsCount);
+        let tournamentsData = initialTournamentHistory;
+        if (tournamentsResult.status === 'fulfilled') {
+            const rawData = tournamentsResult.value;
+            tournamentsData = Array.isArray(rawData)
+                ? rawData
+                : Array.isArray(rawData?.tournament_history)
+                    ? rawData.tournament_history
+                    : Array.isArray(rawData?.matches)
+                        ? rawData.matches
+                        : [];
+        } else {
+            if (userId) {
+                console.error('خطا در دریافت تاریخچه تورنومنت‌ها:', tournamentsResult.reason);
+                showError('خطا در دریافت تاریخچه تورنومنت‌ها. لطفاً دوباره تلاش کنید.');
             }
+        }
 
-            // نمایش تیم‌ها (اگر در صفحه داشبورد هستیم و تیم‌ها موجود است)
-            if (dashboardData.teams && document.getElementById('teams_container')) {
-                displayUserTeams(dashboardData.teams);
-            }
+        if (dashboardData?.user_profile) {
+            displayUserProfile(
+                dashboardData.user_profile,
+                toTeamArray(teamsData).length,
+                Array.isArray(tournamentsData) ? tournamentsData.length : 0
+            );
+        }
 
-            // نمایش تاریخچه تورنومنت‌ها
-            if (dashboardData.tournament_history && document.getElementById('tournaments_history_body')) {
-                displayTournamentHistory(dashboardData.tournament_history);
-            }
+        if (hasTeamsContainer) {
+            displayUserTeams(teamsData);
+        }
 
-            handleTeamExtrasFromDashboard(dashboardData);
+        if (hasTournamentTable) {
+            displayTournamentHistory(Array.isArray(tournamentsData) ? tournamentsData : []);
         }
 
     } catch (error) {
@@ -1581,13 +1662,35 @@ async function refreshTeamData() {
 
     const teamsCount = toTeamArray(teamsResult.status === 'fulfilled' ? teamsResult.value : teamsState).length;
 
-    if (dashboardResult.status === 'fulfilled') {
-        const data = dashboardResult.value;
-        const tournamentsCount = Array.isArray(data.tournament_history) ? data.tournament_history.length : 0;
-        if (data.user_profile) {
-            displayUserProfile(data.user_profile, teamsCount, tournamentsCount);
+    const dashboardData = dashboardResult.status === 'fulfilled' ? dashboardResult.value : null;
+    const userId = dashboardData?.user_profile?.id || currentUserId;
+    let tournamentsData = [];
+
+    if (userId) {
+        try {
+            const tournamentsResponse = await fetchUserTournamentHistory(userId);
+            tournamentsData = Array.isArray(tournamentsResponse)
+                ? tournamentsResponse
+                : Array.isArray(tournamentsResponse?.tournament_history)
+                    ? tournamentsResponse.tournament_history
+                    : Array.isArray(tournamentsResponse?.matches)
+                        ? tournamentsResponse.matches
+                        : [];
+        } catch (error) {
+            console.error('خطا در بروزرسانی تاریخچه تورنومنت‌ها:', error);
         }
-        handleTeamExtrasFromDashboard(data);
+    }
+
+    if (dashboardData) {
+        const tournamentsCount = Array.isArray(tournamentsData)
+            ? tournamentsData.length
+            : Array.isArray(dashboardData.tournament_history)
+                ? dashboardData.tournament_history.length
+                : 0;
+        if (dashboardData.user_profile) {
+            displayUserProfile(dashboardData.user_profile, teamsCount, tournamentsCount);
+        }
+        handleTeamExtrasFromDashboard(dashboardData);
     } else {
         displayIncomingInvitations(incomingInvitationsState);
         displayJoinRequests(joinRequestsState);
