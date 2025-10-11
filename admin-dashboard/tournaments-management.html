@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل ادمین - مدیریت تورنومنت‌ها</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../css/admin-dashboard.css">
+    <link rel="stylesheet" href="../css/admin-sidebar.css">
+    <link rel="stylesheet" href="../css/admin-tournaments.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+</head>
+<body>
+<div class="body_container">
+    <aside id="sidebar" class="sidebar"></aside>
+
+    <main class="main_content">
+        <header class="dashboard_header" id="dashboard_header">
+            <script>
+                fetch('dashboard-header.html')
+                    .then(response => response.text())
+                    .then(html => {
+                        document.getElementById('dashboard_header').innerHTML = html;
+                    });
+            </script>
+        </header>
+
+        <section class="page-heading" aria-label="مدیریت تورنومنت‌ها">
+            <div class="page-heading__info">
+                <h1>کنترل و بهینه‌سازی تورنومنت‌ها</h1>
+                <p>در این بخش می‌توانید تورنومنت‌های جدید بسازید، وضعیت رویدادهای در حال اجرا را مدیریت کنید و اقدامات سریع مانند شروع شمارش معکوس یا تولید مسابقات را انجام دهید.</p>
+            </div>
+            <div class="page-heading__actions">
+                <button type="button" class="admin-button admin-button--primary" data-modal-target="create-tournament">
+                    <i class="ti ti-plus" aria-hidden="true"></i>
+                    <span>ایجاد تورنومنت جدید</span>
+                </button>
+                <button type="button" class="admin-button" data-action="refresh-tournaments">
+                    <i class="ti ti-refresh" aria-hidden="true"></i>
+                    <span>به‌روزرسانی لیست</span>
+                </button>
+                <button type="button" class="admin-button admin-button--ghost" data-action="export-tournaments">
+                    <i class="ti ti-table-export" aria-hidden="true"></i>
+                    <span>خروجی اکسل</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="tournaments-toolbar" aria-label="فیلتر تورنومنت‌ها">
+            <div class="toolbar-group">
+                <label>
+                    <span>جستجو</span>
+                    <input type="search" placeholder="نام تورنومنت، بازی یا کد" data-filter="search">
+                </label>
+                <label>
+                    <span>وضعیت</span>
+                    <select data-filter="status">
+                        <option value="all">همه وضعیت‌ها</option>
+                        <option value="upcoming">در انتظار شروع</option>
+                        <option value="running">در حال برگزاری</option>
+                        <option value="completed">به پایان رسیده</option>
+                        <option value="draft">پیش‌نویس</option>
+                    </select>
+                </label>
+                <label>
+                    <span>نوع</span>
+                    <select data-filter="type">
+                        <option value="all">همه</option>
+                        <option value="individual">انفرادی</option>
+                        <option value="team">تیمی</option>
+                    </select>
+                </label>
+                <label>
+                    <span>بازه زمانی</span>
+                    <input type="month" data-filter="month">
+                </label>
+            </div>
+            <div class="toolbar-group toolbar-group--compact">
+                <button type="button" class="toolbar-chip is-active" data-quick="all">همه</button>
+                <button type="button" class="toolbar-chip" data-quick="top-prize">جایزه بالا</button>
+                <button type="button" class="toolbar-chip" data-quick="nearly-full">نزدیک تکمیل ظرفیت</button>
+                <button type="button" class="toolbar-chip" data-quick="needs-action">نیازمند اقدام</button>
+            </div>
+        </section>
+
+        <section class="tournaments-panel" aria-label="لیست تورنومنت‌ها">
+            <div class="panel-header">
+                <div>
+                    <h2>تورنومنت‌های فعال</h2>
+                    <p>برای مشاهده جزئیات هر تورنومنت، روی آن کلیک کنید یا از منوی عملیات استفاده کنید.</p>
+                </div>
+                <div class="panel-actions">
+                    <button type="button" class="admin-button admin-button--ghost" data-action="bulk-notify">
+                        <i class="ti ti-bell"></i>
+                        <span>اطلاع‌رسانی گروهی</span>
+                    </button>
+                    <button type="button" class="admin-button" data-action="generate-reports">
+                        <i class="ti ti-chart-arrows"></i>
+                        <span>تحلیل عملکرد</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="tournaments-table-wrapper">
+                <table class="data-table" aria-describedby="table-info" data-table="tournaments">
+                    <thead>
+                    <tr>
+                        <th>عنوان</th>
+                        <th>بازی</th>
+                        <th>شروع</th>
+                        <th>ظرفیت</th>
+                        <th>جایزه (ریال)</th>
+                        <th>وضعیت</th>
+                        <th>اقدامات</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td colspan="7" class="data-table__empty">در حال بارگذاری اطلاعات...</td>
+                    </tr>
+                    </tbody>
+                </table>
+                <div id="table-info" class="table-info">نمایش <span data-field="visible-count">0</span> از <span data-field="total-count">0</span> تورنومنت</div>
+            </div>
+        </section>
+
+        <section class="tournament-details" aria-label="جزئیات تورنومنت منتخب">
+            <div class="details-card" data-role="tournament-details">
+                <div class="details-placeholder">
+                    <h3>یک تورنومنت را انتخاب کنید</h3>
+                    <p>با انتخاب هر تورنومنت می‌توانید وضعیت، قوانین، شرکت‌کنندگان و اقدامات مدیریتی آن را مشاهده و ویرایش کنید.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+</div>
+
+<div class="modal" id="create-tournament" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal__dialog">
+        <header class="modal__header">
+            <div>
+                <h2>ایجاد تورنومنت جدید</h2>
+                <p>مشخصات رویداد را وارد کنید تا برای کاربران قابل مشاهده شود.</p>
+            </div>
+            <button type="button" class="modal__close" data-close>
+                <i class="ti ti-x"></i>
+            </button>
+        </header>
+        <form class="modal__body" data-form="create-tournament">
+            <div class="modal__grid">
+                <label class="modal__field">
+                    <span>نام تورنومنت</span>
+                    <input type="text" name="name" required maxlength="100" placeholder="مثال: جام قهرمانان زمستان">
+                </label>
+                <label class="modal__field">
+                    <span>بازی</span>
+                    <select name="game" required data-role="games-select"></select>
+                </label>
+                <label class="modal__field">
+                    <span>نوع برگزاری</span>
+                    <select name="type" required>
+                        <option value="individual">انفرادی</option>
+                        <option value="team">تیمی</option>
+                    </select>
+                </label>
+                <label class="modal__field">
+                    <span>حالت بازی</span>
+                    <select name="mode">
+                        <option value="team_deathmatch">Team Deathmatch</option>
+                        <option value="battle_royale">Battle Royale</option>
+                    </select>
+                </label>
+                <label class="modal__field">
+                    <span>تاریخ شروع</span>
+                    <input type="datetime-local" name="start_date" required>
+                </label>
+                <label class="modal__field">
+                    <span>تاریخ پایان</span>
+                    <input type="datetime-local" name="end_date" required>
+                </label>
+                <label class="modal__field">
+                    <span>ورودی (ریال)</span>
+                    <input type="number" name="entry_fee" min="0" step="10000" placeholder="0 در صورت رایگان بودن">
+                </label>
+                <label class="modal__field">
+                    <span>مبلغ جایزه (ریال)</span>
+                    <input type="number" name="prize_pool" min="0" step="10000" placeholder="مثلاً 50000000">
+                </label>
+                <label class="modal__field">
+                    <span>حداکثر شرکت‌کننده</span>
+                    <input type="number" name="max_participants" min="2" step="1" value="32">
+                </label>
+                <label class="modal__field">
+                    <span>سطح احراز لازم</span>
+                    <input type="number" name="required_verification_level" min="1" max="3" value="1">
+                </label>
+                <label class="modal__field modal__field--full">
+                    <span>قوانین و توضیحات</span>
+                    <textarea name="rules" rows="4" placeholder="شرایط و مقررات مسابقه را توضیح دهید"></textarea>
+                </label>
+                <label class="modal__field modal__field--full">
+                    <span>توضیحات عمومی</span>
+                    <textarea name="description" rows="4" placeholder="توضیحات بازاریابی و معرفی تورنومنت"></textarea>
+                </label>
+            </div>
+            <footer class="modal__footer">
+                <span class="modal__feedback" data-role="create-feedback"></span>
+                <div class="modal__actions">
+                    <button type="button" class="modal__btn modal__btn--ghost" data-close>انصراف</button>
+                    <button type="submit" class="modal__btn modal__btn--primary">ثبت تورنومنت</button>
+                </div>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="edit-tournament" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal__dialog">
+        <header class="modal__header">
+            <div>
+                <h2>ویرایش تورنومنت</h2>
+                <p>تغییرات مورد نیاز را اعمال کنید و وضعیت تورنومنت را به‌روزرسانی نمایید.</p>
+            </div>
+            <button type="button" class="modal__close" data-close>
+                <i class="ti ti-x"></i>
+            </button>
+        </header>
+        <form class="modal__body" data-form="edit-tournament">
+            <input type="hidden" name="id">
+            <div class="modal__grid">
+                <label class="modal__field">
+                    <span>نام</span>
+                    <input type="text" name="name" required>
+                </label>
+                <label class="modal__field">
+                    <span>ورودی</span>
+                    <input type="number" name="entry_fee" min="0" step="10000">
+                </label>
+                <label class="modal__field">
+                    <span>جایزه</span>
+                    <input type="number" name="prize_pool" min="0" step="10000">
+                </label>
+                <label class="modal__field">
+                    <span>ظرفیت</span>
+                    <input type="number" name="max_participants" min="2" step="1">
+                </label>
+                <label class="modal__field">
+                    <span>سطح احراز</span>
+                    <input type="number" name="required_verification_level" min="1" max="3">
+                </label>
+                <label class="modal__field modal__field--full">
+                    <span>قوانین</span>
+                    <textarea name="rules" rows="4"></textarea>
+                </label>
+                <label class="modal__field modal__field--full">
+                    <span>توضیحات</span>
+                    <textarea name="description" rows="4"></textarea>
+                </label>
+            </div>
+            <footer class="modal__footer">
+                <span class="modal__feedback" data-role="edit-feedback"></span>
+                <div class="modal__actions">
+                    <button type="button" class="modal__btn modal__btn--ghost" data-close>بستن</button>
+                    <button type="submit" class="modal__btn modal__btn--primary">ذخیره تغییرات</button>
+                </div>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="action-tournament" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal__dialog">
+        <header class="modal__header">
+            <div>
+                <h2>اقدام سریع تورنومنت</h2>
+                <p>فعالیت‌های مدیریتی ویژه مانند شروع شمارش معکوس یا تولید مسابقات را از این بخش انجام دهید.</p>
+            </div>
+            <button type="button" class="modal__close" data-close>
+                <i class="ti ti-x"></i>
+            </button>
+        </header>
+        <form class="modal__body" data-form="action-tournament">
+            <input type="hidden" name="id">
+            <div class="modal__grid">
+                <label class="modal__field modal__field--full">
+                    <span>اقدام</span>
+                    <select name="action" required>
+                        <option value="start_countdown">شروع شمارش معکوس</option>
+                        <option value="generate_matches">تولید مسابقات</option>
+                        <option value="close_registration">بستن ثبت‌نام</option>
+                    </select>
+                </label>
+                <label class="modal__field modal__field--full">
+                    <span>توضیح مدیر</span>
+                    <textarea name="note" rows="4" placeholder="در صورت نیاز توضیحی برای تیم پشتیبانی ثبت کنید"></textarea>
+                </label>
+            </div>
+            <footer class="modal__footer">
+                <span class="modal__feedback" data-role="action-feedback"></span>
+                <div class="modal__actions">
+                    <button type="button" class="modal__btn modal__btn--ghost" data-close>لغو</button>
+                    <button type="submit" class="modal__btn modal__btn--primary">اجرای اقدام</button>
+                </div>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<script type="module" src="/js/admin/admin-sidebar.js"></script>
+<script type="module" src="/js/admin/admin-dashboard.js"></script>
+<script type="module" src="/js/admin/admin-tournaments.js"></script>
+</body>
+</html>

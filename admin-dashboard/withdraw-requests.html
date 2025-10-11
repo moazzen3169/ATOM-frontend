@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل ادمین - مدیریت برداشت‌ها</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../css/admin-dashboard.css">
+    <link rel="stylesheet" href="../css/admin-sidebar.css">
+    <link rel="stylesheet" href="../css/admin-withdrawals.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+</head>
+<body>
+<div class="body_container">
+    <aside id="sidebar" class="sidebar"></aside>
+
+    <main class="main_content">
+        <header class="dashboard_header" id="dashboard_header">
+            <script>
+                fetch('dashboard-header.html')
+                    .then(response => response.text())
+                    .then(html => {
+                        document.getElementById('dashboard_header').innerHTML = html;
+                    });
+            </script>
+        </header>
+
+        <section class="page-heading" aria-label="مدیریت برداشت‌های مالی">
+            <div class="page-heading__info">
+                <h1>درخواست‌های برداشت کاربران</h1>
+                <p>تمامی تراکنش‌های برداشت در انتظار تایید یا بررسی در این بخش فهرست می‌شوند. وضعیت هر برداشت را رصد کنید و در صورت نیاز مستندات و پیام‌های مرتبط را برای کاربر ارسال نمایید.</p>
+            </div>
+            <div class="page-heading__actions">
+                <button type="button" class="admin-button admin-button--primary" data-action="refresh-withdrawals">
+                    <i class="ti ti-refresh" aria-hidden="true"></i>
+                    <span>به‌روزرسانی لیست</span>
+                </button>
+                <button type="button" class="admin-button" data-action="download-withdrawals">
+                    <i class="ti ti-file-download" aria-hidden="true"></i>
+                    <span>دریافت گزارش پرداخت</span>
+                </button>
+                <button type="button" class="admin-button admin-button--ghost" data-modal-target="send-withdraw-message">
+                    <i class="ti ti-message-share" aria-hidden="true"></i>
+                    <span>ارسال پیام سیستمی</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="withdraw-toolbar" aria-label="فیلتر برداشت‌ها">
+            <div class="toolbar-group">
+                <label>
+                    <span>جستجو</span>
+                    <input type="search" placeholder="شناسه تراکنش یا توضیحات" data-filter="search">
+                </label>
+                <label>
+                    <span>وضعیت</span>
+                    <select data-filter="status">
+                        <option value="all">همه</option>
+                        <option value="pending">در انتظار تایید</option>
+                        <option value="processing">در حال پرداخت</option>
+                        <option value="completed">پرداخت شده</option>
+                        <option value="rejected">رد شده</option>
+                    </select>
+                </label>
+                <label>
+                    <span>از تاریخ</span>
+                    <input type="date" data-filter="from">
+                </label>
+                <label>
+                    <span>تا تاریخ</span>
+                    <input type="date" data-filter="to">
+                </label>
+            </div>
+            <div class="toolbar-group toolbar-group--compact">
+                <button type="button" class="toolbar-chip is-active" data-quick="all">همه</button>
+                <button type="button" class="toolbar-chip" data-quick="large">مبالغ بالا</button>
+                <button type="button" class="toolbar-chip" data-quick="today">امروز</button>
+                <button type="button" class="toolbar-chip" data-quick="overdue">بیش از ۲۴ ساعت</button>
+            </div>
+        </section>
+
+        <section class="withdraw-panel" aria-label="لیست برداشت‌ها">
+            <div class="panel-header">
+                <div>
+                    <h2>برداشت‌های در انتظار اقدام</h2>
+                    <p>برای مشاهده تاریخچه هر تراکنش یا درج یادداشت، از گزینه‌های ستون عملیات استفاده کنید.</p>
+                </div>
+                <div class="panel-actions">
+                    <button type="button" class="admin-button admin-button--ghost" data-action="export-csv">
+                        <i class="ti ti-file-spreadsheet"></i>
+                        <span>گزارش مالی</span>
+                    </button>
+                    <button type="button" class="admin-button" data-action="assign-reviewer">
+                        <i class="ti ti-user-check"></i>
+                        <span>انتساب کارشناس</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="withdraw-table-wrapper">
+                <table class="data-table" data-table="withdrawals">
+                    <thead>
+                    <tr>
+                        <th>شناسه</th>
+                        <th>کاربر</th>
+                        <th>مبلغ (ریال)</th>
+                        <th>توضیحات</th>
+                        <th>تاریخ</th>
+                        <th>وضعیت</th>
+                        <th>اقدامات</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr>
+                        <td colspan="7" class="data-table__empty">در حال بارگذاری...</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <section class="withdraw-analytics" aria-label="تحلیل مالی">
+            <article class="analytics-card">
+                <div class="analytics-card__meta">
+                    <span class="analytics-card__title">کل برداشت‌های امروز</span>
+                    <i class="ti ti-calendar" aria-hidden="true"></i>
+                </div>
+                <p class="analytics-card__value" data-field="today-total">--</p>
+                <p class="analytics-card__caption">مجموع برداشت‌های ثبت‌شده در ۲۴ ساعت اخیر</p>
+            </article>
+            <article class="analytics-card">
+                <div class="analytics-card__meta">
+                    <span class="analytics-card__title">برداشت‌های معوق</span>
+                    <i class="ti ti-clock-hour-4" aria-hidden="true"></i>
+                </div>
+                <p class="analytics-card__value" data-field="overdue-count">--</p>
+                <p class="analytics-card__caption">برداشت‌هایی که بیش از ۲۴ ساعت معطل مانده‌اند</p>
+            </article>
+            <article class="analytics-card">
+                <div class="analytics-card__meta">
+                    <span class="analytics-card__title">میانگین مبلغ برداشت</span>
+                    <i class="ti ti-coin" aria-hidden="true"></i>
+                </div>
+                <p class="analytics-card__value" data-field="avg-amount">--</p>
+                <p class="analytics-card__caption">میانگین برداشت‌های تایید شده</p>
+            </article>
+            <article class="analytics-card">
+                <div class="analytics-card__meta">
+                    <span class="analytics-card__title">میزان برداشت ماه جاری</span>
+                    <i class="ti ti-chart-area" aria-hidden="true"></i>
+                </div>
+                <p class="analytics-card__value" data-field="month-total">--</p>
+                <p class="analytics-card__caption">جمع مبالغ پرداخت شده در ماه جاری</p>
+            </article>
+        </section>
+    </main>
+</div>
+
+<div class="modal" id="update-withdraw" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal__dialog">
+        <header class="modal__header">
+            <div>
+                <h2>به‌روزرسانی وضعیت برداشت</h2>
+                <p>وضعیت برداشت را مشخص کنید تا در سوابق کاربر ثبت شود.</p>
+            </div>
+            <button type="button" class="modal__close" data-close>
+                <i class="ti ti-x"></i>
+            </button>
+        </header>
+        <form class="modal__body" data-form="update-withdraw">
+            <input type="hidden" name="transaction_id">
+            <div class="modal__grid">
+                <label class="modal__field">
+                    <span>وضعیت جدید</span>
+                    <select name="status" required>
+                        <option value="processing">در حال پرداخت</option>
+                        <option value="completed">پرداخت شده</option>
+                        <option value="rejected">رد شده</option>
+                    </select>
+                </label>
+                <label class="modal__field">
+                    <span>شناسه تیکت مرتبط</span>
+                    <input type="number" name="ticket_id" min="1" placeholder="در صورت وجود تیکت پشتیبانی">
+                </label>
+                <label class="modal__field modal__field--full">
+                    <span>توضیحات مدیر</span>
+                    <textarea name="note" rows="4" placeholder="جزئیات پرداخت یا علت رد"></textarea>
+                </label>
+            </div>
+            <footer class="modal__footer">
+                <span class="modal__feedback" data-role="update-feedback"></span>
+                <div class="modal__actions">
+                    <button type="button" class="modal__btn modal__btn--ghost" data-close>انصراف</button>
+                    <button type="submit" class="modal__btn modal__btn--primary">ثبت وضعیت</button>
+                </div>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="send-withdraw-message" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal__dialog">
+        <header class="modal__header">
+            <div>
+                <h2>ارسال پیام پشتیبانی</h2>
+                <p>برای کاربر یا تیم داخلی پیام مرتبط با برداشت ارسال کنید.</p>
+            </div>
+            <button type="button" class="modal__close" data-close>
+                <i class="ti ti-x"></i>
+            </button>
+        </header>
+        <form class="modal__body" data-form="withdraw-message">
+            <div class="modal__grid">
+                <label class="modal__field">
+                    <span>شناسه تیکت</span>
+                    <input type="number" name="ticket_id" min="1" required>
+                </label>
+                <label class="modal__field modal__field--full">
+                    <span>پیام</span>
+                    <textarea name="message" rows="5" placeholder="توضیح وضعیت برداشت یا درخواست مدارک تکمیلی" required></textarea>
+                </label>
+                <label class="modal__field modal__field--full">
+                    <span>نوع پیام</span>
+                    <select name="message_type">
+                        <option value="public">پیام برای کاربر</option>
+                        <option value="internal">یادداشت داخلی</option>
+                    </select>
+                </label>
+            </div>
+            <footer class="modal__footer">
+                <span class="modal__feedback" data-role="message-feedback"></span>
+                <div class="modal__actions">
+                    <button type="button" class="modal__btn modal__btn--ghost" data-close>لغو</button>
+                    <button type="submit" class="modal__btn modal__btn--primary">ارسال پیام</button>
+                </div>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<script type="module" src="/js/admin/admin-sidebar.js"></script>
+<script type="module" src="/js/admin/admin-dashboard.js"></script>
+<script type="module" src="/js/admin/admin-withdrawals.js"></script>
+</body>
+</html>

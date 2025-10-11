@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پنل ادمین - صندوق پیام‌ها</title>
+
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css">
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../css/admin-dashboard.css">
+    <link rel="stylesheet" href="../css/admin-sidebar.css">
+    <link rel="stylesheet" href="../css/admin-support-inbox.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+</head>
+<body>
+<div class="body_container">
+    <aside id="sidebar" class="sidebar"></aside>
+
+    <main class="main_content">
+        <header class="dashboard_header" id="dashboard_header">
+            <script>
+                fetch('dashboard-header.html')
+                    .then(response => response.text())
+                    .then(html => {
+                        document.getElementById('dashboard_header').innerHTML = html;
+                    });
+            </script>
+        </header>
+
+        <section class="page-heading" aria-label="مدیریت پیام‌های پشتیبانی">
+            <div class="page-heading__info">
+                <h1>صندوق پیام‌ها</h1>
+                <p>گفتگوهای پشتیبانی و پیام‌های سیستمی کاربران را در این بخش بررسی کنید. پاسخ‌ها به صورت آنی ثبت شده و وضعیت هر تیکت قابل مدیریت است.</p>
+            </div>
+            <div class="page-heading__actions">
+                <button type="button" class="admin-button admin-button--primary" data-action="compose-message">
+                    <i class="ti ti-pencil"></i>
+                    <span>پیام جدید</span>
+                </button>
+                <button type="button" class="admin-button" data-action="refresh-inbox">
+                    <i class="ti ti-refresh"></i>
+                    <span>به‌روزرسانی</span>
+                </button>
+                <button type="button" class="admin-button admin-button--ghost" data-action="archive-closed">
+                    <i class="ti ti-archive"></i>
+                    <span>آرشیو پیام‌ها</span>
+                </button>
+            </div>
+        </section>
+
+        <section class="inbox-layout" aria-label="نمایش گفتگوها">
+            <aside class="inbox-list" data-role="ticket-list" aria-label="فهرست مکالمات">
+                <div class="inbox-list__header">
+                    <h2>گفتگوها</h2>
+                    <div class="inbox-filters">
+                        <input type="search" placeholder="جستجوی عنوان یا کاربر" data-filter="search">
+                        <select data-filter="status">
+                            <option value="all">همه</option>
+                            <option value="open">باز</option>
+                            <option value="closed">بسته</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="inbox-list__body">
+                    <div class="inbox-list__placeholder">در حال بارگذاری گفتگوها...</div>
+                </div>
+            </aside>
+
+            <section class="inbox-thread" data-role="ticket-thread" aria-live="polite">
+                <div class="inbox-thread__placeholder">
+                    <h3>یک پیام را انتخاب کنید</h3>
+                    <p>برای مشاهده جزئیات و پاسخ‌دهی، از فهرست سمت راست یکی از گفتگوها را انتخاب کنید.</p>
+                </div>
+            </section>
+        </section>
+    </main>
+</div>
+
+<div class="composer" data-role="composer" hidden>
+    <form class="composer__form" data-form="reply">
+        <input type="hidden" name="ticket_id">
+        <div class="composer__info">
+            <span data-field="ticket-title"></span>
+            <span class="composer__status" data-field="ticket-status"></span>
+        </div>
+        <textarea name="message" rows="3" placeholder="متن پیام خود را بنویسید..." required></textarea>
+        <div class="composer__actions">
+            <label class="composer__toggle">
+                <input type="checkbox" name="internal">
+                <span>ثبت به عنوان یادداشت داخلی</span>
+            </label>
+            <div class="composer__buttons">
+                <button type="button" class="admin-button admin-button--ghost" data-action="cancel-compose">انصراف</button>
+                <button type="submit" class="admin-button admin-button--primary">ارسال پاسخ</button>
+            </div>
+        </div>
+        <span class="composer__feedback" data-role="composer-feedback"></span>
+    </form>
+</div>
+
+<div class="modal" id="compose-message" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal__dialog">
+        <header class="modal__header">
+            <div>
+                <h2>ایجاد پیام سیستمی</h2>
+                <p>پیامی مستقیم به کاربر یا تیم داخلی ارسال کنید.</p>
+            </div>
+            <button type="button" class="modal__close" data-close>
+                <i class="ti ti-x"></i>
+            </button>
+        </header>
+        <form class="modal__body" data-form="compose">
+            <div class="modal__grid">
+                <label class="modal__field">
+                    <span>شناسه تیکت</span>
+                    <input type="number" name="ticket_id" min="1" required>
+                </label>
+                <label class="modal__field">
+                    <span>عنوان</span>
+                    <input type="text" name="title" placeholder="موضوع پیام" required>
+                </label>
+                <label class="modal__field modal__field--full">
+                    <span>متن پیام</span>
+                    <textarea name="message" rows="5" required></textarea>
+                </label>
+            </div>
+            <footer class="modal__footer">
+                <span class="modal__feedback" data-role="compose-feedback"></span>
+                <div class="modal__actions">
+                    <button type="button" class="modal__btn modal__btn--ghost" data-close>لغو</button>
+                    <button type="submit" class="modal__btn modal__btn--primary">ارسال پیام</button>
+                </div>
+            </footer>
+        </form>
+    </div>
+</div>
+
+<script type="module" src="/js/admin/admin-sidebar.js"></script>
+<script type="module" src="/js/admin/admin-dashboard.js"></script>
+<script type="module" src="/js/admin/admin-support-inbox.js"></script>
+</body>
+</html>
