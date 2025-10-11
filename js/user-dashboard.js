@@ -1028,8 +1028,7 @@ function displayUserProfile(data, teamsCount, tournamentsCount) {
     const scoreValue = Number.isFinite(rawScore) ? rawScore : 0;
     setElementText("user_score", numberFormatter.format(scoreValue));
 
-    setElementText("user_tournaments_played", numberFormatter.format(cachedTournamentsCount));
-    setElementText("user_teams", numberFormatter.format(cachedTeamsCount));
+
 
     const avatarSrc = getProfileAvatarSrc(data);
     localStorage.setItem("profile_picture", avatarSrc);
@@ -1379,15 +1378,6 @@ function createTeamCard(team) {
             ${membersMeta.chips ? `<div class="team_members_chips">${membersMeta.chips}</div>` : ''}
             ${description ? `<p class="team_description">${escapeHTML(description)}</p>` : ''}
         </div>
-        <footer class="team_card__footer">
-            <div class="team_card__actions">
-                ${isCaptain ? `<button class="btn btn--primary" data-team-action="invite" data-team-id="${team?.id}">دعوت عضو</button>` : ''}
-                ${isCaptain ? `<button class="btn" data-team-action="edit" data-team-id="${team?.id}">ویرایش</button>` : ''}
-                ${isCaptain
-                    ? `<button class="btn btn--danger" data-team-action="delete" data-team-id="${team?.id}">حذف تیم</button>`
-                    : `<button class="btn btn--danger" data-team-action="leave" data-team-id="${team?.id}">خروج از تیم</button>`}
-            </div>
-        </footer>
     `;
 
     return card;

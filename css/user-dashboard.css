@@ -17,7 +17,7 @@
   .body_container {
     display: grid;
     grid-template-columns: repeat(12, 1fr);
-    max-width: 1440px;
+    max-width: 1500px;
     margin: 0 auto 32px;
     padding: 24px;
     gap: 24px;
@@ -63,17 +63,18 @@
   
   /* ======= User Info Card ======= */
   .user_profile_section {
-    grid-column: 1/4;
+    grid-column: 1/5;
   }
 
   .user_profile_card {
     background: var(--card-color);
     border-radius: 20px;
-    padding: 28px;
+    padding: 24px;
     display: flex;
     flex-direction: column;
     gap: 24px;
     box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+    max-height: 590px;
   }
 
   .user_profile_header {
@@ -186,11 +187,13 @@
     color: var(--white-color);
     font-size: 15px;
     font-weight: 500;
+    overflow-x: hidden;
+    direction: ltr;
   }
 
   .user_stats_grid {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 16px;
   }
 
@@ -229,17 +232,19 @@
   
   /* ======= Teams Section ======= */
   .user_teams_section {
-    grid-column: 4/10;
+    grid-column: 5/10;
   }
 
   .user_teams_card {
     background: var(--card-color);
-    border-radius: 16px;
+    border-radius: 20px;
     padding: 24px;
     box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
     display: flex;
     flex-direction: column;
     gap: 20px;
+    min-height: 100%;
+    max-height: 590px;
   }
 
   .team_title {
@@ -276,7 +281,10 @@
 
   .teams_container {
     display: grid;
+    overflow-y: scroll;
     gap: 12px;
+    padding: 10px;
+    height: 437px;
   }
 
   .teams_hint {
@@ -298,8 +306,8 @@
   }
 
   .team_card {
-    background: rgba(255, 255, 255, 0.03);
-    border-radius: 16px;
+    background:var(--background-color);
+    border-radius: 10px;
     padding: 18px;
     display: flex;
     flex-direction: column;
@@ -359,20 +367,25 @@
   }
 
   .team_meta {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 12px;
+    display:flex;
+    gap: 20px;
+    align-items: center;
+    justify-content: start;
+
   }
 
   .team_meta dt {
     color: var(--gray-color);
     font-size: 12px;
+    
   }
 
   .team_meta dd {
     color: var(--white-color);
     font-size: 14px;
     margin-top: 4px;
+    display:flex;
+
   }
 
   .team_members_chips {
@@ -449,8 +462,7 @@
 
     background: var(--card-color);
     border-radius: 20px;
-    padding: 24px;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+    padding: 14px;
   }
   
   .user_history_title {
