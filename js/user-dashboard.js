@@ -14,6 +14,12 @@ let cachedTeamsCount = 0;
 let cachedTournamentsCount = 0;
 
 const DEFAULT_AVATAR_SRC = "../img/profile.jpg";
+const PROFILE_UPDATE_ENDPOINTS = [
+    '/api/auth/users/me/',
+    '/api/auth/me/',
+    '/api/auth/user/'
+];
+const PROFILE_BIO_KEYS = ['bio', 'about', 'description'];
 
 function getProfileAvatarSrc(profile) {
     if (!profile || typeof profile !== 'object') {
@@ -43,6 +49,84 @@ function handleEditAvatarChange(event) {
     } else {
         updateEditUserAvatarPreview(getProfileAvatarSrc(currentUserProfile));
     }
+}
+
+function buildProfileUpdatePayload({ username, email, firstName, lastName, phoneNumber, bio, includeBio }) {
+    const payload = {
+        username,
+        email,
+        first_name: typeof firstName === 'string' ? firstName : '',
+        last_name: typeof lastName === 'string' ? lastName : '',
+        phone_number: typeof phoneNumber === 'string' ? phoneNumber : ''
+    };
+
+    if (includeBio) {
+        payload.bio = typeof bio === 'string' ? bio : '';
+    }
+
+    return payload;
+}
+
+function createProfileFormData(payload, avatarFile) {
+    const formData = new FormData();
+
+    Object.entries(payload).forEach(([key, value]) => {
+        if (typeof value !== 'undefined' && value !== null) {
+            formData.append(key, value);
+        }
+    });
+
+    if (avatarFile && typeof avatarFile === 'object' && Number(avatarFile.size) > 0) {
+        formData.append('profile_picture', avatarFile);
+    }
+
+    return formData;
+}
+
+async function submitProfileUpdate(bodyFactory, isMultipart = false) {
+    let lastError = null;
+
+    for (const endpointPath of PROFILE_UPDATE_ENDPOINTS) {
+        const endpoint = `${API_BASE_URL}${endpointPath}`;
+        try {
+            const headers = new Headers();
+
+            if (!isMultipart) {
+                headers.set('Content-Type', 'application/json');
+            }
+            headers.set('Accept', 'application/json');
+
+            let response = await fetchWithAuth(endpoint, {
+                method: 'PATCH',
+                body: bodyFactory(),
+                headers
+            }, false);
+
+            if (response.status === 401) {
+                await refreshToken();
+                response = await fetchWithAuth(endpoint, {
+                    method: 'PATCH',
+                    body: bodyFactory(),
+                    headers
+                }, false);
+            }
+
+            if (!response.ok) {
+                const message = await extractErrorMessage(response);
+                throw new Error(message || `خطا در بروزرسانی پروفایل (${response.status})`);
+            }
+
+            return response;
+        } catch (error) {
+            lastError = error;
+            console.warn(`Profile update failed via ${endpoint}:`, error);
+        }
+    }
+
+    if (lastError) {
+        throw lastError;
+    }
+    throw new Error('خطا در بروزرسانی پروفایل');
 }
 
 function escapeHTML(value) {
@@ -622,33 +706,35 @@ function setupToken() {
 }
 
 // تابع برای دریافت اطلاعات داشبورد
-async function fetchDashboardData(token) {
+async function fetchDashboardData() {
     try {
         console.log('دریافت اطلاعات داشبورد از API...');
 
-        const response = await fetch(`${API_BASE_URL}/api/users/dashboard/`, {
-            method: 'GET',
-            headers: {
-                "Authorization": "Bearer " + token,
-                "Content-Type": "application/json"
-            }
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/users/dashboard/`, {
+            method: 'GET'
         });
 
         console.log('Status:', response.status);
 
-        if (response.status === 401) {
-            // توکن منقضی شده
-            await refreshToken();
-            return fetchDashboardData(localStorage.getItem('token'));
-        }
-
         if (!response.ok) {
-            throw new Error(`خطای HTTP: ${response.status}`);
+            const message = await extractErrorMessage(response);
+            throw new Error(message || `خطای HTTP: ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log('داده‌های دریافتی داشبورد:', data);
-        return data;
+        const raw = await response.text();
+        if (!raw) {
+            console.warn('Dashboard API returned an empty response.');
+            return {};
+        }
+
+        try {
+            const data = JSON.parse(raw);
+            console.log('داده‌های دریافتی داشبورد:', data);
+            return data;
+        } catch (parseError) {
+            console.error('خطا در parse داده‌های داشبورد:', parseError);
+            throw new Error('داده‌های نامعتبر از سرور دریافت شد.');
+        }
     } catch (error) {
         console.error("خطا در دریافت داده‌های داشبورد:", error);
         throw error;
@@ -656,33 +742,35 @@ async function fetchDashboardData(token) {
 }
 
 // تابع برای دریافت تیم‌های کاربر
-async function fetchUserTeams(token) {
+async function fetchUserTeams() {
     try {
         console.log('دریافت تیم‌های کاربر از API...');
 
-        const response = await fetch(`${API_BASE_URL}/api/users/teams/`, {
-            method: 'GET',
-            headers: {
-                "Authorization": "Bearer " + token,
-                "Content-Type": "application/json"
-            }
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/users/teams/`, {
+            method: 'GET'
         });
 
         console.log('Status:', response.status);
 
-        if (response.status === 401) {
-            // توکن منقضی شده
-            await refreshToken();
-            return fetchUserTeams(localStorage.getItem('token'));
-        }
-
         if (!response.ok) {
-            throw new Error(`خطای HTTP: ${response.status}`);
+            const message = await extractErrorMessage(response);
+            throw new Error(message || `خطای HTTP: ${response.status}`);
         }
 
-        const data = await response.json();
-        console.log('داده‌های دریافتی تیم‌ها:', data);
-        return data;
+        const raw = await response.text();
+        if (!raw) {
+            console.warn('User teams API returned an empty response.');
+            return [];
+        }
+
+        try {
+            const data = JSON.parse(raw);
+            console.log('داده‌های دریافتی تیم‌ها:', data);
+            return data;
+        } catch (parseError) {
+            console.error('خطا در parse داده‌های تیم‌ها:', parseError);
+            throw new Error('داده‌های نامعتبر از سرور دریافت شد.');
+        }
     } catch (error) {
         console.error("خطا در دریافت تیم‌های کاربر:", error);
         throw error;
@@ -736,6 +824,9 @@ async function fetchWithAuth(url, options = {}, retry = true) {
     const isJsonBody = options.body && !(options.body instanceof FormData);
     if (isJsonBody && !headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json');
+    }
+    if (!headers.has('Accept')) {
+        headers.set('Accept', 'application/json');
     }
 
     const response = await fetch(url, { ...options, headers });
@@ -912,8 +1003,8 @@ async function loadDashboardData() {
 
         if (isTeamsPage) {
             const [dashboardResult, teamsResult] = await Promise.allSettled([
-                fetchDashboardData(token),
-                fetchUserTeams(token)
+                fetchDashboardData(),
+                fetchUserTeams()
             ]);
 
             const dashboardData = dashboardResult.status === 'fulfilled' ? dashboardResult.value : null;
@@ -941,7 +1032,7 @@ async function loadDashboardData() {
             }
         } else {
             // دریافت تمام اطلاعات داشبورد از API واحد
-            const dashboardData = await fetchDashboardData(token);
+            const dashboardData = await fetchDashboardData();
 
             // نمایش اطلاعات پروفایل کاربر
             if (dashboardData.user_profile) {
@@ -1095,38 +1186,42 @@ async function handleEditUserSubmit(event) {
         (typeof File === 'undefined' || avatarFile instanceof File);
     const hasAvatar = Boolean(isFileObject && Number(avatarFile.size) > 0);
 
-    const payload = { username, email };
-    if (firstName) payload.first_name = firstName;
-    if (lastName) payload.last_name = lastName;
-    if (phoneNumber) payload.phone_number = phoneNumber;
-    if (bio) payload.bio = bio;
+    const existingProfile = currentUserProfile || {};
+    const shouldIncludeBioField = PROFILE_BIO_KEYS.some((key) => typeof existingProfile[key] !== 'undefined');
+    const includeBio = shouldIncludeBioField || Boolean(bio);
+
+    const profilePayload = buildProfileUpdatePayload({
+        username,
+        email,
+        firstName,
+        lastName,
+        phoneNumber,
+        bio,
+        includeBio
+    });
+    const localProfileUpdates = { ...profilePayload };
+    if (includeBio && shouldIncludeBioField) {
+        PROFILE_BIO_KEYS.forEach((key) => {
+            if (Object.prototype.hasOwnProperty.call(existingProfile, key)) {
+                localProfileUpdates[key] = bio;
+            }
+        });
+    }
 
     const submitButton = form.querySelector('button[type="submit"]');
     toggleButtonLoading(submitButton, true, 'در حال ذخیره...');
     clearEditUserMessage();
 
     try {
-        let response;
+        let bodyFactory;
         if (hasAvatar) {
-            const multipartPayload = new FormData();
-            multipartPayload.append('username', username);
-            multipartPayload.append('email', email);
-            if (firstName) multipartPayload.append('first_name', firstName);
-            if (lastName) multipartPayload.append('last_name', lastName);
-            if (phoneNumber) multipartPayload.append('phone_number', phoneNumber);
-            if (bio) multipartPayload.append('bio', bio);
-            multipartPayload.append('profile_picture', avatarFile);
-
-            response = await fetchWithAuth(`${API_BASE_URL}/api/auth/users/me/`, {
-                method: 'PATCH',
-                body: multipartPayload
-            });
+            bodyFactory = () => createProfileFormData(profilePayload, avatarFile);
         } else {
-            response = await fetchWithAuth(`${API_BASE_URL}/api/auth/users/me/`, {
-                method: 'PATCH',
-                body: JSON.stringify(payload)
-            });
+            const jsonString = JSON.stringify(profilePayload);
+            bodyFactory = () => jsonString;
         }
+
+        const response = await submitProfileUpdate(bodyFactory, hasAvatar);
 
         if (!response.ok) {
             const message = await extractErrorMessage(response);
@@ -1147,7 +1242,11 @@ async function handleEditUserSubmit(event) {
             currentUserProfile = { ...currentUserProfile, ...updatedProfile };
             displayUserProfile(currentUserProfile, cachedTeamsCount, cachedTournamentsCount);
         } else {
-            await loadDashboardData();
+            currentUserProfile = { ...currentUserProfile, ...localProfileUpdates };
+            displayUserProfile(currentUserProfile, cachedTeamsCount, cachedTournamentsCount);
+            if (hasAvatar) {
+                await loadDashboardData();
+            }
         }
     } catch (error) {
         console.error('خطا در بروزرسانی پروفایل:', error);
@@ -1472,8 +1571,8 @@ async function refreshTeamData() {
     if (!window.location.pathname.includes('teams')) return;
 
     const [dashboardResult, teamsResult] = await Promise.allSettled([
-        fetchDashboardData(token),
-        fetchUserTeams(token)
+        fetchDashboardData(),
+        fetchUserTeams()
     ]);
 
     if (teamsResult.status === 'fulfilled') {
