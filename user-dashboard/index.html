@@ -32,51 +32,81 @@
     </header>
 
     <!-- پروفایل کاربر -->
-    <section class="user_info_edit">
-      <div class="user_info_edit">
-        <div class="user_edit_title">
-          <span>پروفایل</span>
-          <button class="edit_user_btn">
-            ✏️
-          </button>
-        </div>
-
-        <!-- اطلاعات پروفایل -->
-        <div class="user_info_profile">
-          <div class="profile">
+    <section class="user_profile_section">
+      <div class="user_profile_card">
+        <header class="user_profile_header">
+          <div class="user_profile_avatar">
             <img src="../img/profile.jpg" alt="profile" id="user_avatar">
           </div>
-          <div class="user_name"><span id="user_name">-</span></div>
-          <div class="user_email"><span id="user_email">-</span></div>
-          <div class="user_rank"><span id="user_rank">-</span></div>
+          <div class="user_profile_identity">
+            <h2 id="user_name">-</h2>
+            <p class="user_profile_email" id="user_email_primary">-</p>
+            <div class="user_profile_meta">
+              <span class="user_profile_badge" id="user_rank">-</span>
+              <span class="user_profile_badge user_profile_badge--muted" id="user_status">-</span>
+            </div>
+          </div>
+          <button class="edit_user_btn" type="button" data-action="edit-user">
+            ویرایش پروفایل
+          </button>
+        </header>
+
+        <div class="user_profile_details">
+          <dl class="user_profile_list">
+            <div>
+              <dt>نام کاربری</dt>
+              <dd id="user_username">-</dd>
+            </div>
+            <div>
+              <dt>نام کامل</dt>
+              <dd id="user_full_name">-</dd>
+            </div>
+            <div>
+              <dt>ایمیل</dt>
+              <dd id="user_email_detail">-</dd>
+            </div>
+            <div>
+              <dt>شماره تماس</dt>
+              <dd id="user_phone">-</dd>
+            </div>
+            <div>
+              <dt>تاریخ عضویت</dt>
+              <dd id="user_add_date">-</dd>
+            </div>
+          </dl>
         </div>
 
-        <div class="user_info_bottom">
-          <p class="page_data">امتیاز شما :</p>
-          <p class="user_data user_score" id="user_score">0</p>
-
-          <p class="page_data">تورنومنت‌ها :</p>
-          <p class="user_data user_tournaments_played" id="user_tournaments_played">0</p>
-
-          <p class="page_data">تعداد تیم‌ها :</p>
-          <p class="user_data user_teams" id="user_teams">0</p>
-
-          <p class="page_data">تاریخ عضویت :</p>
-          <p class="user_data user_add_date" id="user_add_date">-</p>
+        <div class="user_stats_grid">
+          <div class="user_stat_card">
+            <span class="user_stat_label">امتیاز شما</span>
+            <span class="user_stat_value" id="user_score">0</span>
+          </div>
+          <div class="user_stat_card">
+            <span class="user_stat_label">تورنومنت‌ها</span>
+            <span class="user_stat_value" id="user_tournaments_played">0</span>
+          </div>
+          <div class="user_stat_card">
+            <span class="user_stat_label">تعداد تیم‌ها</span>
+            <span class="user_stat_value" id="user_teams">0</span>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- تیم‌ها -->
-    <section class="user_teams_creat">
-      <div class="user_teams_creat">
+    <section class="user_teams_section">
+      <div class="user_teams_card">
         <div class="team_title">
-          <span>تیم‌های شما</span>
-          <a href="#" class="creat_team_link">ایجاد تیم +</a>
+          <div class="team_title_text">
+            <span>تیم‌های شما</span>
+            <span class="team_counter" id="teams_counter">0 تیم</span>
+          </div>
+          <a href="teams.html" class="creat_team_link">مدیریت تیم‌ها</a>
         </div>
         <div class="teams_container" id="teams_container">
           <!-- تیم‌ها اینجا با JS پر می‌شوند -->
         </div>
+        <p class="teams_hint" id="teams_overflow_hint"></p>
       </div>
     </section>
 
@@ -115,6 +145,50 @@
 
 <script src="../js/sidebar.js"></script>
 <script type="module" src="../js/user-dashboard.js"></script>
+
+<!-- ویرایش پروفایل کاربر -->
+<div class="modal" id="edit_user_modal" aria-hidden="true">
+  <form class="modal__dialog modal_form" id="edit_user_form">
+    <header class="modal__header">
+      <h2>ویرایش پروفایل کاربر</h2>
+      <button type="button" class="modal__close" data-close-modal aria-label="بستن">×</button>
+    </header>
+    <div class="modal__body">
+      <p class="modal_description">اطلاعات زیر را ویرایش کنید و سپس دکمه ذخیره را بزنید.</p>
+      <div class="modal_form_grid">
+        <label class="modal_form_field">
+          <span>نام کاربری</span>
+          <input type="text" id="edit_user_username" name="username" required data-autofocus>
+        </label>
+        <label class="modal_form_field">
+          <span>نام</span>
+          <input type="text" id="edit_user_first_name" name="first_name">
+        </label>
+        <label class="modal_form_field">
+          <span>نام خانوادگی</span>
+          <input type="text" id="edit_user_last_name" name="last_name">
+        </label>
+        <label class="modal_form_field">
+          <span>ایمیل</span>
+          <input type="email" id="edit_user_email" name="email" required>
+        </label>
+        <label class="modal_form_field">
+          <span>شماره تماس</span>
+          <input type="tel" id="edit_user_phone" name="phone_number" inputmode="tel">
+        </label>
+        <label class="modal_form_field">
+          <span>درباره من</span>
+          <textarea id="edit_user_bio" name="bio" rows="3"></textarea>
+        </label>
+      </div>
+      <p class="modal_form_message" id="edit_user_message" role="status"></p>
+    </div>
+    <footer class="modal__footer">
+      <button type="button" class="modal_btn modal_btn--secondary" data-close-modal>انصراف</button>
+      <button type="submit" class="modal_btn modal_btn--primary">ذخیره تغییرات</button>
+    </footer>
+  </form>
+</div>
 
 </body>
 </html>
