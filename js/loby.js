@@ -5,6 +5,7 @@ import { API_BASE_URL } from "/js/config.js";
  **************************/
 window.currentTournamentData = null;
 let userProfileCache = null;
+let verificationCache = null;
 const teamCache = new Map();
 const walletCache = new Map();
 
@@ -251,7 +252,11 @@ async function getUserProfile() {
     }
 
     userProfileCache = profile;
-    if (profile && profile.id) localStorage.setItem('userId', profile.id);
+    if (profile && profile.id) {
+      localStorage.setItem('userId', profile.id);
+      // Set verification level from dedicated function
+      profile.verification_level = await getUserVerificationLevel();
+    }
     return profile;
     
   } catch (error) {
@@ -265,45 +270,61 @@ async function getUserProfile() {
   }
 }
 
+async function getUserVerificationLevel() {
+  if (verificationCache !== null) return verificationCache;
+
+  if (!isAuthenticated()) return 0;
+
+  try {
+    const status = await apiFetch(`${API_BASE_URL}/api/verification/status/`);
+    verificationCache = status.level || 1;
+    return verificationCache;
+  } catch (error) {
+    console.log("Verification status fetch failed, defaulting to 1");
+    verificationCache = 1;
+    return 1;
+  }
+}
+
 async function checkUserVerification(tournament) {
   try {
     const profile = await getUserProfile();
-    
+
     // اگر پروفایل اصلی دریافت نشد، خطا برگردان
     if (!profile || !profile.id) {
-      return { 
+      return {
         verified: false,
         message: "امکان دریافت اطلاعات کاربر وجود ندارد. لطفاً دوباره وارد شوید."
       };
     }
-    
+
     // بررسی سطح تأیید هویت
     const userVerificationLevel = profile.verification_level || 0;
     const requiredVerificationLevel = tournament.required_verification_level || 0;
-    
+
     console.log("Verification Check:", {
       userLevel: userVerificationLevel,
       requiredLevel: requiredVerificationLevel,
       tournament: tournament.name
     });
-    
+
     if (userVerificationLevel < requiredVerificationLevel) {
-      return { 
-        verified: false, 
+      return {
+        verified: false,
         message: `سطح تأیید هویت شما (${userVerificationLevel}) برای این تورنومنت کافی نیست. سطح مورد نیاز: ${requiredVerificationLevel}`,
         userLevel: userVerificationLevel,
         requiredLevel: requiredVerificationLevel
       };
     }
-    
-    return { 
+
+    return {
       verified: true,
       userLevel: userVerificationLevel,
       requiredLevel: requiredVerificationLevel
     };
   } catch (error) {
     console.error("Error checking verification:", error);
-    return { 
+    return {
       verified: false,
       message: "خطا در بررسی تأیید هویت کاربر"
     };
