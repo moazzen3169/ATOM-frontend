@@ -1,6 +1,14 @@
 // wallet.js
 import { API_BASE_URL } from "/js/config.js";
 
+const notifier = typeof window !== "undefined" ? window.AppNotifier || {} : {};
+const renderInlineMessage = notifier.renderInlineMessage || ((container, _key, overrides = {}) => {
+    if (!container) return;
+    const message = overrides.message || "اطلاعاتی برای نمایش موجود نیست.";
+    container.innerHTML = `<div class="app-message app-message--info" role="alert">${message}</div>`;
+});
+const showAppNotification = notifier.showAppNotification || (() => {});
+
 document.addEventListener("DOMContentLoaded", async () => {
     const walletContainer = document.querySelector(".wallet_container");
     const withdrawableBalanceSpan = document.getElementById("withdrawable-balance");
@@ -68,13 +76,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         const wallets = await fetchData(`${API_BASE_URL}/api/wallet/wallets/`, token);
 
         if (!wallets || !Array.isArray(wallets) || wallets.length === 0) {
-            walletContainer.innerHTML = `<p>کیف پول یافت نشد</p>`;
+            renderInlineMessage(walletContainer, "walletNotFound");
+            showAppNotification("walletNotFound");
             return;
         }
 
         currentWallet = wallets[0];
         if (!currentWallet || !currentWallet.id) {
-            walletContainer.innerHTML = `<p>کیف پول یافت نشد</p>`;
+            renderInlineMessage(walletContainer, "walletNotFound");
+            showAppNotification("walletNotFound");
             return;
         }
 
@@ -88,7 +98,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     } catch (error) {
         console.error("Error fetching wallet data:", error);
-        walletContainer.innerHTML = `<p>مشکلی در ارتباط با سرور پیش آمد: ${error.message}</p>`;
+        renderInlineMessage(walletContainer, "walletLoadFailed");
+        showAppNotification("walletLoadFailed");
     }
 
     // Modals
@@ -158,7 +169,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const description = descriptionField ? descriptionField.value.trim() : "";
 
         if (isNaN(amount) || amount < 1000) {
-            alert("لطفا مبلغ معتبر و حداقل ۱۰۰۰ تومان وارد کنید.");
+            showAppNotification("invalidDepositAmount");
             return;
         }
 
@@ -207,7 +218,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             window.location.href = paymentUrl;
 
         } catch (error) {
-            alert(error.message);
+            console.error("Deposit request failed:", error);
+            showAppNotification("depositFailed");
         } finally {
             depositForm.querySelector(".btn-submit").disabled = false;
         }
@@ -223,12 +235,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         const description = descriptionField ? descriptionField.value.trim() : "";
 
         if (isNaN(amount) || amount < 1000) {
-            alert("لطفا مبلغ معتبر و حداقل ۱۰۰۰ تومان وارد کنید.");
+            showAppNotification("invalidWithdrawAmount");
             return;
         }
 
         if (currentWallet && amount > currentWallet.withdrawable_balance) {
-            alert("مبلغ برداشت نمی‌تواند بیشتر از موجودی قابل برداشت باشد.");
+            showAppNotification("withdrawMoreThanBalance");
             return;
         }
 
@@ -265,14 +277,16 @@ document.addEventListener("DOMContentLoaded", async () => {
             }
 
             const data = JSON.parse(rawText);
-            alert(data.message || "برداشت با موفقیت انجام شد.");
+            console.info("Withdraw response:", data);
+            showAppNotification("withdrawSuccess");
             withdrawModal.classList.remove("show");
             clearForm(withdrawForm);
 
             await refreshWalletData();
 
         } catch (error) {
-            alert(error.message);
+            console.error("Withdraw request failed:", error);
+            showAppNotification("withdrawFailed");
         } finally {
             withdrawForm.querySelector(".btn-submit").disabled = false;
         }
@@ -290,7 +304,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const wallets = await fetchData(`${API_BASE_URL}/api/wallet/wallets/`, token);
             if (!wallets || !Array.isArray(wallets) || wallets.length === 0) {
-                walletContainer.innerHTML = `<p>کیف پول یافت نشد</p>`;
+                renderInlineMessage(walletContainer, "walletNotFound");
                 return;
             }
             currentWallet = wallets[0];
@@ -298,6 +312,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             await loadTransactions(currentWallet.id, token);
         } catch (error) {
             console.error("Error refreshing wallet data:", error);
+            showAppNotification("walletLoadFailed");
         }
     }
 
@@ -307,11 +322,14 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (walletDetail.transactions && Array.isArray(walletDetail.transactions)) {
                 setTransactions(walletDetail.transactions);
             } else {
-                document.querySelector(".Transactions_container").innerHTML = "<p>تراکنشی یافت نشد</p>";
+                const txContainer = document.querySelector(".Transactions_container");
+                renderInlineMessage(txContainer, "transactionsEmpty");
             }
         } catch (error) {
             console.error("Error loading transactions:", error);
-            document.querySelector(".Transactions_container").innerHTML = "<p>خطا در دریافت تراکنش‌ها</p>";
+            const txContainer = document.querySelector(".Transactions_container");
+            renderInlineMessage(txContainer, "transactionsLoadFailed");
+            showAppNotification("transactionsLoadFailed");
         }
     }
 
@@ -323,7 +341,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     function setupToken() {
         let token = localStorage.getItem('token') || localStorage.getItem('access_token');
         if (!token) {
-            alert("ابتدا وارد حساب کاربری شوید");
+            showAppNotification("loginRequired");
             window.location.href = "../register/login.html";
             return null;
         }
@@ -345,7 +363,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         if (!response.ok) {
-            throw new Error(`HTTP error! Status: ${response.status}`);
+            const error = new Error("REQUEST_FAILED");
+            error.status = response.status;
+            throw error;
         }
 
         return await response.json();
@@ -409,7 +429,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const transactionsToRender = prepareTransactions();
 
         if (!transactionsToRender || transactionsToRender.length === 0) {
-            container.innerHTML = "<p>تراکنشی یافت نشد</p>";
+            renderInlineMessage(container, "transactionsEmpty");
             return;
         }
 

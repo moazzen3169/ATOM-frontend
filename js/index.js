@@ -1,7 +1,11 @@
-
-
-
 import { API_BASE_URL } from "/js/config.js";
+const notifier = typeof window !== "undefined" ? window.AppNotifier || {} : {};
+const renderInlineMessage = notifier.renderInlineMessage || ((container, _key, overrides = {}) => {
+  if (!container) return;
+  const message = overrides.message || "در حال حاضر اطلاعاتی برای نمایش وجود ندارد.";
+  container.innerHTML = `<div class="app-message app-message--info" role="alert">${message}</div>`;
+});
+const showAppNotification = notifier.showAppNotification || (() => {});
 
 const goTOp = document.querySelector(".go-top");
 
@@ -81,10 +85,12 @@ async function loadLeaderboard() {
               container.appendChild(div);
           });
       } else {
-          container.innerHTML = `<p class="error">هیچ بازیکنی یافت نشد</p>`;
+          renderInlineMessage(container, "playersEmpty");
       }
   } catch (err) {
-      container.innerHTML = `<p class="error">${err.message}</p>`;
+      console.error("خطا در بارگذاری بازیکنان برتر:", err);
+      renderInlineMessage(container, "playersLoadFailed");
+      showAppNotification("playersLoadFailed");
   }
 }
 
@@ -93,7 +99,7 @@ async function loadLeaderboard() {
 // ---------------------- بارگذاری 3 تورنمنت برای صفحه اصلی ----------------------
 async function loadHomeTournaments() {
   const container = document.getElementById("grid-container-tournaments");
-  container.innerHTML = '<div class="error">در حال بارگذاری تورنمنت‌ها...</div>';
+  renderInlineMessage(container, "tournamentsLoading");
 
   try {
       const response = await fetch(
@@ -109,7 +115,7 @@ async function loadHomeTournaments() {
       container.innerHTML = ""; // پاک کردن محتوای قبلی
 
       if (tournaments.length === 0) {
-          container.innerHTML = "<p class='eror'>هیچ تورنمنتی یافت نشد.</p>";
+          renderInlineMessage(container, "tournamentsEmpty");
           return;
       }
 
@@ -119,7 +125,9 @@ async function loadHomeTournaments() {
       });
 
   } catch (error) {
-      container.innerHTML = `<p class="error">${error.message}</p>`;
+      console.error("خطا در بارگذاری تورنمنت‌ها:", error);
+      renderInlineMessage(container, "tournamentsLoadFailed");
+      showAppNotification("tournamentsLoadFailed");
   }
 }
 

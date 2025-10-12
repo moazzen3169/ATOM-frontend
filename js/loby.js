@@ -264,34 +264,24 @@ function renderParticipants(tournament) {
   section.appendChild(container);
 }
 
-function showMessage(type, message) {
-  const stackId = "alert_stack";
-  let stack = document.getElementById(stackId);
-  if (!stack) {
-    stack = document.createElement("div");
-    stack.id = stackId;
-    stack.className = "alert_stack";
-    document.body.appendChild(stack);
+function notify(key, fallbackMessage, type = "info", overrides = {}) {
+  const payload = { ...overrides };
+  if (fallbackMessage) {
+    payload.message = fallbackMessage;
   }
-
-  const box = document.createElement("div");
-  box.className = `alert alert-${type}`;
-  box.innerHTML = `
-    <button class="alert_close" aria-label="بستن">&times;</button>
-    <div class="alert_msg">${message}</div>
-  `;
-
-  box.querySelector(".alert_close").addEventListener("click", () => box.remove());
-  stack.appendChild(box);
-  setTimeout(() => box.remove(), 6000);
-}
-
-function showError(message) {
-  showMessage("error", message);
-}
-
-function showSuccess(message) {
-  showMessage("success", message);
+  if (window.AppNotifier?.showAppNotification) {
+    window.AppNotifier.showAppNotification(key, payload);
+    return;
+  }
+  const fallbackType = type === "success" ? "success" : type === "error" ? "error" : "info";
+  const fallbackText = payload.message || "";
+  if (fallbackType === "success" && typeof window.showSuccess === "function") {
+    window.showSuccess(fallbackText);
+  } else if (fallbackType === "error" && typeof window.showError === "function") {
+    window.showError(fallbackText);
+  } else if (typeof window.showInfo === "function") {
+    window.showInfo(fallbackText);
+  }
 }
 
 
@@ -340,7 +330,7 @@ async function loadTournament() {
     showLobbyPage();
   } catch (error) {
     console.error("Failed to load tournament", error);
-    showError(error.message || "امکان دریافت اطلاعات تورنومنت وجود ندارد.");
+    notify("tournamentFetchFailed", "امکان دریافت اطلاعات تورنومنت وجود ندارد.", "error");
   } finally {
     hidePreloader();
   }
@@ -458,7 +448,7 @@ async function fetchTeamOptions(searchTerm = "") {
     }
 
     if (!userId) {
-      showError("شناسه کاربر یافت نشد. لطفاً دوباره وارد شوید.");
+      notify("loginRequired", "شناسه کاربر یافت نشد. لطفاً دوباره وارد شوید.");
       return;
     }
 
@@ -495,7 +485,7 @@ async function fetchTeamOptions(searchTerm = "") {
     renderTeamOptions(teams, result?.meta || {});
   } catch (error) {
     console.error("Failed to load teams", error);
-    showError(error.message || "امکان دریافت تیم‌ها وجود ندارد.");
+    notify("tournamentFetchFailed", "امکان دریافت تیم‌ها وجود ندارد.", "error");
   } finally {
     state.teamRequestInFlight = false;
     if (loading) loading.classList.add("is-hidden");
@@ -548,20 +538,20 @@ async function joinIndividualTournament() {
       },
     );
 
-    showSuccess("ثبت‌نام با موفقیت انجام شد.");
+    notify("tournamentJoinSuccess", null, "success");
     closeIndividualJoinModal();
     showJoinSuccessFeedback({ isTeam: false });
     await loadTournament();
   } catch (error) {
     console.error("Failed to join tournament", error);
-    showError(error.message || "امکان ثبت‌نام وجود ندارد.");
+    notify("tournamentJoinFailed", "امکان ثبت‌نام وجود ندارد.", "error");
   }
 }
 
 async function joinTeamTournament() {
   if (!state.tournamentId) return;
   if (!state.selectedTeamId) {
-    showError("لطفاً یک تیم انتخاب کنید.");
+    notify("teamSelectionRequired", "لطفاً یک تیم انتخاب کنید.");
     return;
   }
 
@@ -577,7 +567,7 @@ async function joinTeamTournament() {
       body: JSON.stringify(payload),
     });
 
-    showSuccess("تیم با موفقیت در تورنومنت ثبت‌نام شد ✅");
+    notify("teamJoinSuccess", null, "success");
     closeTeamJoinModal();
     showJoinSuccessFeedback({ isTeam: true });
     await loadTournament();
@@ -596,13 +586,13 @@ async function joinTeamTournament() {
       msg.includes("بیش از حد") ||
       msg.includes("max")
     ) {
-      showError("تعداد اعضای تیم بیشتر از حد مجاز برای این تورنومنت است ❌");
+      notify("teamTooLarge", "تعداد اعضای تیم بیشتر از حد مجاز برای این تورنومنت است ❌", "error");
     } else if (msg.includes("already") || msg.includes("exists")) {
-      showError("این تیم قبلاً در تورنومنت ثبت‌نام کرده است ⚠️");
+      notify("teamAlreadyRegistered", "این تیم قبلاً در تورنومنت ثبت‌نام کرده است ⚠️");
     } else if (msg.includes("permission") || msg.includes("not allowed")) {
-      showError("شما مجاز به ثبت‌نام این تیم در تورنومنت نیستید 🔒");
+      notify("teamJoinUnauthorized", "شما مجاز به ثبت‌نام این تیم در تورنومنت نیستید 🔒", "error");
     } else {
-      showError("امکان ثبت‌نام تیم وجود ندارد. لطفاً دوباره تلاش کنید.");
+      notify("tournamentJoinFailed", "امکان ثبت‌نام تیم وجود ندارد. لطفاً دوباره تلاش کنید.", "error");
     }
   } finally {
     if (confirmBtn) confirmBtn.disabled = false;
@@ -654,7 +644,7 @@ function initialise() {
   state.tournamentId = params.get("id");
 
   if (!state.tournamentId) {
-    showError("شناسه تورنومنت در آدرس وجود ندارد.");
+    notify("tournamentIdMissing", "شناسه تورنومنت در آدرس وجود ندارد.");
     hidePreloader();
     return;
   }

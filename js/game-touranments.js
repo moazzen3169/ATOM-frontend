@@ -1,5 +1,13 @@
 import { API_BASE_URL } from "/js/config.js";
 
+const notifier = typeof window !== "undefined" ? window.AppNotifier || {} : {};
+const renderInlineMessage = notifier.renderInlineMessage || ((container, _key, overrides = {}) => {
+  if (!container) return;
+  const message = overrides.message || "اطلاعاتی برای نمایش وجود ندارد.";
+  container.innerHTML = `<div class="app-message app-message--info" role="alert">${message}</div>`;
+});
+const showAppNotification = notifier.showAppNotification || (() => {});
+
 // ---------------------- 1. گرفتن gameId از URL ----------------------
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get("id");
@@ -35,37 +43,37 @@ function escapeHTML(str) {
 }
 
 // ---------------------- عناصر UI خطا و لودینگ ----------------------
-const errorContainer = document.createElement("div");
-errorContainer.id = "error-message";
-errorContainer.style.cssText = "display:none; color:red; text-align:center; margin:20px;";
-document.body.appendChild(errorContainer);
+const statusContainer = document.createElement("div");
+statusContainer.id = "game-tournaments-status";
+statusContainer.className = "app-message-host game-tournaments-status";
+if (document.body) {
+  document.body.prepend(statusContainer);
+} else {
+  document.addEventListener("DOMContentLoaded", () => {
+    document.body.prepend(statusContainer);
+  });
+}
 
-const loadingContainer = document.createElement("div");
-loadingContainer.id = "loading-message";
-loadingContainer.style.cssText = "text-align:center; margin:20px;";
-loadingContainer.innerHTML = "<p>در حال بارگذاری...</p>";
-document.body.appendChild(loadingContainer);
-
-function showError(msg) {
-  errorContainer.textContent = msg;
-  errorContainer.style.display = "block";
-  loadingContainer.style.display = "none";
+function showError(key, fallbackMessage) {
+  const overrides = fallbackMessage ? { message: fallbackMessage } : {};
+  renderInlineMessage(statusContainer, key, overrides);
+  showAppNotification(key, overrides);
 }
 
 function showLoading() {
-  loadingContainer.style.display = "block";
-  errorContainer.style.display = "none";
+  renderInlineMessage(statusContainer, "loadingInProgress");
 }
 
 function hideLoading() {
-  loadingContainer.style.display = "none";
-  errorContainer.style.display = "none";
+  if (statusContainer) {
+    statusContainer.innerHTML = "";
+  }
 }
 
 // ---------------------- 2. گرفتن اطلاعات بازی و تورنومنت‌ها ----------------------
 async function loadGameTournaments() {
   if (!gameId) {
-    showError("شناسه بازی موجود نیست. لطفا از طریق لینک معتبر وارد شوید.");
+    showError("gameIdMissing");
     return;
   }
 
@@ -106,9 +114,11 @@ async function loadGameTournaments() {
   } catch (err) {
     clearTimeout(timeoutId);
     hideLoading();
-    showError(err.name === "AbortError"
-      ? "زمان درخواست به پایان رسید. لطفا دوباره تلاش کنید."
-      : err.message || "خطا در بارگذاری داده‌ها.");
+    if (err.name === "AbortError") {
+      showError("requestTimeout");
+    } else {
+      showError("gameTournamentsLoadFailed");
+    }
     console.error("loadGameTournaments error:", err);
   }
 }

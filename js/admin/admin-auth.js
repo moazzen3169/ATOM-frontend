@@ -496,7 +496,11 @@ function safeRedirect(url, message) {
   if (redirectInProgress) return;
   redirectInProgress = true;
   if (message) {
-    window.alert(message);
+    if (window.AppNotifier?.showAppNotification) {
+      window.AppNotifier.showAppNotification("adminRedirectInfo", { message });
+    } else {
+      showInfo(message);
+    }
   }
   window.location.href = url;
 }

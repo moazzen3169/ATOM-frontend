@@ -29,7 +29,11 @@ function setupToken() {
     let token = localStorage.getItem('token') || localStorage.getItem('access_token');
 
     if (!token) {
-        alert("ابتدا وارد حساب کاربری شوید");
+        if (window.AppNotifier?.showAppNotification) {
+            window.AppNotifier.showAppNotification("loginRequired");
+        } else {
+            showError("ابتدا وارد حساب کاربری شوید");
+        }
         window.location.href = "../register/login.html";
         return null;
     }

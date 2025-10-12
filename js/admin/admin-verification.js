@@ -1,5 +1,21 @@
 import { API_BASE_URL } from "../config.js";
 
+const notifier = typeof window !== "undefined" ? window.AppNotifier || {} : {};
+
+function notifyKey(key, fallbackMessage, type = "info") {
+  if (notifier.showAppNotification) {
+    notifier.showAppNotification(key);
+    return;
+  }
+  if (type === "success") {
+    showSuccess(fallbackMessage);
+  } else if (type === "error") {
+    showError(fallbackMessage);
+  } else {
+    showInfo(fallbackMessage);
+  }
+}
+
 const verificationsList = document.getElementById("verifications-list");
 const dateFilterSelect = document.getElementById("verification-date-filter");
 const statusFilterSelect = document.getElementById("verification-status-filter");
@@ -163,7 +179,7 @@ function renderValue(value, label) {
 function getAccessToken() {
   const accessToken = localStorage.getItem("access_token");
   if (!accessToken) {
-    alert("لطفا ابتدا وارد شوید.");
+    notifyKey("adminLoginRequired", "لطفا ابتدا وارد شوید.");
     window.location.href = "/register/login.html";
     return null;
   }
@@ -193,7 +209,7 @@ async function fetchAllVerifications() {
     });
     if (response.status === 401 || response.status === 403) {
       localStorage.removeItem("access_token");
-      alert("نشست شما منقضی شده است. لطفا مجددا وارد شوید.");
+      notifyKey("sessionExpired", "نشست شما منقضی شده است. لطفا مجددا وارد شوید.");
       window.location.href = "/register/login.html";
       return;
     }
@@ -667,7 +683,7 @@ async function postAction(id, action, payload = {}) {
   });
   if (response.status === 401 || response.status === 403) {
     localStorage.removeItem("access_token");
-    alert("نشست شما منقضی شده است. لطفا مجددا وارد شوید.");
+    notifyKey("sessionExpired", "نشست شما منقضی شده است. لطفا مجددا وارد شوید.");
     window.location.href = "/register/login.html";
     return null;
   }
@@ -719,10 +735,10 @@ async function handleApprove(id, button) {
       status: "approved",
     });
     updateState(id, result || {}, "approved");
-    alert("درخواست با موفقیت تایید شد.");
+    notifyKey("adminVerificationApproveSuccess", "درخواست با موفقیت تایید شد.", "success");
   } catch (error) {
     console.error("Approve verification failed", error);
-    alert("خطا در تایید درخواست: " + (error.message || ""));
+    notifyKey("adminVerificationApproveFailed", "در تایید درخواست مشکلی رخ داد.", "error");
   } finally {
     setButtonsDisabled(button, false);
   }
@@ -748,10 +764,10 @@ async function handleReject(id, button) {
       updates.rejection_reason = reason;
     }
     updateState(id, updates, "rejected");
-    alert("درخواست با موفقیت رد شد.");
+    notifyKey("adminVerificationRejectSuccess", "درخواست با موفقیت رد شد.", "success");
   } catch (error) {
     console.error("Reject verification failed", error);
-    alert("خطا در رد درخواست: " + error.message);
+    notifyKey("adminVerificationRejectFailed", "در رد درخواست مشکلی رخ داد.", "error");
   } finally {
     setButtonsDisabled(button, false);
   }

@@ -695,13 +695,13 @@ class UserTickets {
             const message = formData.get('message') ? formData.get('message').toString().trim() : '';
 
             if (!title) {
-                this.showError('عنوان تیکت را وارد کنید');
+                this.showError('عنوان تیکت را وارد کنید', 'ticketTitleRequired');
                 this.setFormSubmitting(formElement, false);
                 return;
             }
 
             if (!message) {
-                this.showError('متن پیام را وارد کنید');
+                this.showError('متن پیام را وارد کنید', 'ticketMessageRequired');
                 this.setFormSubmitting(formElement, false);
                 return;
             }
@@ -720,14 +720,14 @@ class UserTickets {
             this.hideCreateTicketModal();
             await this.loadTickets();
             await this.selectTicket(ticketResponse.id);
-            this.showSuccess('تیکت با موفقیت ایجاد شد');
+            this.showSuccess('تیکت با موفقیت ایجاد شد', 'ticketCreateSuccess');
         } catch (error) {
             if (this.handleUnauthorized(error)) {
                 return;
             }
 
             console.error('Error creating ticket:', error);
-            this.showError('خطا در ایجاد تیکت');
+            this.showError('خطا در ایجاد تیکت', 'ticketCreateFailed');
         } finally {
             this.setFormSubmitting(formElement, false);
         }
@@ -735,7 +735,7 @@ class UserTickets {
 
     async sendMessage() {
         if (!this.selectedTicket) {
-            this.showError('لطفاً ابتدا یک تیکت انتخاب کنید');
+            this.showError('لطفاً ابتدا یک تیکت انتخاب کنید', 'ticketSelectRequired');
             return;
         }
 
@@ -745,7 +745,7 @@ class UserTickets {
 
         const message = this.answerTextarea.value.trim();
         if (!message) {
-            this.showError('لطفاً پیام خود را وارد کنید');
+            this.showError('لطفاً پیام خود را وارد کنید', 'ticketReplyEmpty');
             return;
         }
 
@@ -768,7 +768,7 @@ class UserTickets {
             }
 
             console.error('Error sending message:', error);
-            this.showError('خطا در ارسال پیام');
+            this.showError('خطا در ارسال پیام', 'ticketReplyFailed');
         } finally {
             if (this.sendButton) {
                 this.sendButton.disabled = false;
@@ -900,36 +900,34 @@ class UserTickets {
         this.setAnswerFormAvailability();
     }
 
-    showSuccess(message) {
-        this.showNotification(message, 'success');
+    showSuccess(message, key = 'customSuccess') {
+        this.notify(key, message, 'success');
     }
 
-    showError(message) {
-        this.showNotification(message, 'error');
+    showError(message, key = 'customError') {
+        this.notify(key, message, 'error');
     }
 
-    showNotification(message, type) {
-        const notification = document.createElement('div');
-        notification.className = `notification ${type}`;
-        notification.textContent = message;
+    showNotification(message, type = 'info', key) {
+        const resolvedKey = key || (type === 'success' ? 'customSuccess' : type === 'error' ? 'customError' : 'customInfo');
+        this.notify(resolvedKey, message, type);
+    }
 
-        notification.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 12px 20px;
-            border-radius: 4px;
-            color: white;
-            z-index: 1000;
-            font-family: inherit;
-            ${type === 'success' ? 'background: #4CAF50;' : 'background: #f44336;'}
-        `;
+    notify(key, message, type = 'info') {
+        const overrides = message ? { message } : {};
+        if (window.AppNotifier?.showAppNotification) {
+            window.AppNotifier.showAppNotification(key, overrides);
+            return;
+        }
 
-        document.body.appendChild(notification);
-
-        setTimeout(() => {
-            notification.remove();
-        }, 3000);
+        const fallbackText = message || 'در حال حاضر پیامی نمایش داده نمی‌شود.';
+        if (type === 'success' && typeof window.showSuccess === 'function') {
+            window.showSuccess(fallbackText);
+        } else if (type === 'error' && typeof window.showError === 'function') {
+            window.showError(fallbackText);
+        } else if (typeof window.showInfo === 'function') {
+            window.showInfo(fallbackText);
+        }
     }
 
     setFormSubmitting(formElement, isSubmitting) {
