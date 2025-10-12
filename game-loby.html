@@ -173,7 +173,37 @@
       </div>
     </div>
   </div>
-    
+
+
+  <!-- 🔹 مودال موفقیت ثبت‌نام -->
+  <div
+    id="joinSuccessModal"
+    class="modal modal--success"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="joinSuccessModalTitle"
+    aria-describedby="joinSuccessModalMessage"
+    aria-hidden="true"
+  >
+    <div class="modal_content modal_content--compact">
+      <div class="modal_header modal_header--success">
+        <div class="modal_success_icon" aria-hidden="true">
+          <i class="fas fa-envelope-open-text"></i>
+        </div>
+        <div class="modal_success_texts">
+          <h2 id="joinSuccessModalTitle" class="modal_title">ثبت‌نام با موفقیت انجام شد</h2>
+          <p id="joinSuccessModalMessage" class="modal_desc"></p>
+        </div>
+        <button type="button" class="modal_close" onclick="closeJoinSuccessModal()" aria-label="بستن">
+          &times;
+        </button>
+      </div>
+      <div class="modal_actions">
+        <button type="button" class="modal_button modal_button--primary" onclick="closeJoinSuccessModal()">متوجه شدم</button>
+      </div>
+    </div>
+  </div>
+
 
 
 
