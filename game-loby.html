@@ -112,27 +112,67 @@
 
 
 
-    <!-- 🔹 مودال انفرادی -->
-    <div id="modal_individual" class="modal">
-        <div class="modal_content">
-          <span class="modal_close" onclick="closeModal('modal_individual')">&times;</span>
-          <h2>ثبت‌نام در تورنومنت</h2>
-          <p>نام کاربری خود را در بازی وارد کنید:</p>
-          <input type="text" id="game_username" placeholder="نام کاربری در بازی">
-          <button onclick="confirmIndividualJoin()">تایید</button>
-        </div>
+  <!-- 🔹 مودال ثبت‌نام انفرادی -->
+  <div id="individualJoinModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="individualJoinModalTitle">
+    <div class="modal_content modal_content--compact">
+      <div class="modal_header">
+        <h2 id="individualJoinModalTitle" class="modal_title">ثبت‌نام در تورنومنت</h2>
+        <button type="button" class="modal_close" onclick="closeIndividualJoinModal()" aria-label="بستن">
+          &times;
+        </button>
       </div>
-    
-      <!-- 🔹 مودال تیمی -->
-        <div id="modal_team" class="modal">
-        <div class="modal_content">
-          <span class="modal_close" onclick="closeModal('modal_team')">&times;</span>
-          <h2>انتخاب تیم</h2>
-          <p>یکی از تیم‌هایی که کاپیتان آن هستید را انتخاب کنید:</p>
-          <div id="team_list"></div>
-          <button onclick="confirmTeamJoin()">تایید</button>
-        </div>
+      <p class="modal_desc">برای ورود به این تورنومنت کافیست شرایط لازم را داشته باشید. با تایید، حساب شما به عنوان شرکت‌کننده ثبت می‌شود.</p>
+      <div class="modal_actions">
+        <button type="button" class="modal_button modal_button--secondary" onclick="closeIndividualJoinModal()">انصراف</button>
+        <button type="button" class="modal_button modal_button--primary" onclick="joinIndividualTournament()">تایید ثبت‌نام</button>
+      </div>
     </div>
+  </div>
+
+  <!-- 🔹 مودال انتخاب تیم -->
+  <div id="teamJoinModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="teamJoinModalTitle">
+    <div class="modal_content modal_content--wide">
+      <div class="modal_header">
+        <div>
+          <h2 id="teamJoinModalTitle" class="modal_title">انتخاب تیم برای ثبت‌نام</h2>
+          <p id="teamModalMeta" class="modal_desc"></p>
+        </div>
+        <button type="button" class="modal_close" onclick="closeTeamJoinModal()" aria-label="بستن">
+          &times;
+        </button>
+      </div>
+
+      <div class="team-modal__toolbar">
+        <div class="team-modal__search">
+          <input type="search" id="teamModalSearch" placeholder="جستجوی نام تیم..." aria-label="جستجوی تیم">
+          <i class="fas fa-search"></i>
+        </div>
+        <div class="team-modal__hint" id="teamModalHint"></div>
+      </div>
+
+      <div id="teamModalLoading" class="team-modal__loader is-hidden">
+        <span class="team-modal__spinner"></span>
+        <span>در حال دریافت تیم‌های شما...</span>
+      </div>
+
+      <div id="teamModalEmptyState" class="team-modal__empty is-hidden">
+        <i class="fas fa-users-slash"></i>
+        <p>هیچ تیم واجد شرایطی برای این تورنومنت پیدا نشد.</p>
+        <span>تیم انتخابی باید با ظرفیت تورنومنت هم‌خوانی داشته باشد و شما کاپیتان آن باشید.</span>
+      </div>
+
+      <div id="teamModalList" class="team-modal__list"></div>
+
+      <select id="teamSelect" class="team-modal__select" aria-hidden="true" tabindex="-1"></select>
+
+      <div class="modal_actions">
+        <button type="button" class="modal_button modal_button--secondary" onclick="closeTeamJoinModal()">انصراف</button>
+        <button id="teamJoinConfirmButton" type="button" class="modal_button modal_button--primary" onclick="joinTeamTournament()" disabled>
+          تایید و ثبت‌نام تیم
+        </button>
+      </div>
+    </div>
+  </div>
     
 
 

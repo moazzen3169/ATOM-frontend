@@ -46,6 +46,15 @@ function getTeamMembers(team) {
   return [];
 }
 
+function getTeamMemberCount(team) {
+  if (!team) return 0;
+  const members = getTeamMembers(team);
+  if (Array.isArray(members) && members.length) return members.length;
+  if (team.members_count !== undefined) return toNumber(team.members_count);
+  if (team.member_count !== undefined) return toNumber(team.member_count);
+  return 0;
+}
+
 function getTournamentRegistrationCount(tournament) {
   if (!tournament) return 0;
   if (tournament.type === "team") {
@@ -581,7 +590,7 @@ async function openTeamJoinModal() {
 
   const modal = document.getElementById("teamJoinModal");
   if (modal) {
-    loadUserTeams();
+    loadUserTeams(baseCheck.profile);
     modal.style.display = "flex";
   } else {
     showError("مودال انتخاب تیم یافت نشد.");
@@ -596,35 +605,276 @@ function closeIndividualJoinModal() {
 function closeTeamJoinModal() {
   const modal = document.getElementById("teamJoinModal");
   if (modal) modal.style.display = "none";
+
+  const confirmButton = document.getElementById("teamJoinConfirmButton");
+  if (confirmButton) {
+    const originalText = confirmButton.dataset.originalText || "تایید و ثبت‌نام تیم";
+    confirmButton.textContent = originalText;
+    confirmButton.disabled = true;
+    delete confirmButton.dataset.originalText;
+  }
 }
 
 /*************************
  * Load User Teams
  *************************/
-async function loadUserTeams() {
+async function loadUserTeams(profileFromEligibility = null) {
+  const tournament = window.currentTournamentData;
+  const teamSize = toNumber(tournament?.team_size);
+
+  const listEl = document.getElementById("teamModalList");
+  const selectEl = document.getElementById("teamSelect");
+  const loadingEl = document.getElementById("teamModalLoading");
+  const emptyEl = document.getElementById("teamModalEmptyState");
+  const searchInput = document.getElementById("teamModalSearch");
+  const hintEl = document.getElementById("teamModalHint");
+  const metaEl = document.getElementById("teamModalMeta");
+  const confirmButton = document.getElementById("teamJoinConfirmButton");
+
+  if (metaEl) {
+    if (teamSize > 0) {
+      metaEl.textContent = `ظرفیت مورد نیاز هر تیم در این تورنومنت ${teamSize.toLocaleString("fa-IR")} نفر است.`;
+    } else {
+      metaEl.textContent = "یکی از تیم‌هایی که کاپیتان آن هستید را برای ثبت‌نام انتخاب کنید.";
+    }
+  }
+
+  const emptyTitle = emptyEl?.querySelector("p");
+  const emptySubtitle = emptyEl?.querySelector("span");
+
+  if (confirmButton) {
+    confirmButton.disabled = true;
+  }
+
+  if (listEl) listEl.innerHTML = "";
+  if (selectEl) selectEl.innerHTML = '<option value="">انتخاب تیم</option>';
+  if (emptyEl) emptyEl.classList.add("is-hidden");
+  if (loadingEl) loadingEl.classList.remove("is-hidden");
+  if (searchInput) searchInput.value = "";
+
+  let profile = profileFromEligibility;
+
   try {
-    const teams = await apiFetch(`${API_BASE_URL}/api/tournaments/teams/`);
-    const teamSelect = document.getElementById("teamSelect");
+    const teamsResponse = await apiFetch(`${API_BASE_URL}/api/tournaments/teams/`);
+    const teams = normaliseArray(teamsResponse);
 
-    if (teamSelect && teams) {
-      teamSelect.innerHTML = '<option value="">انتخاب تیم</option>';
+    if (!profile) {
+      profile = await getUserProfile();
+    }
 
-      teams.forEach(team => {
+    const currentUserId = profile?.id || getCurrentUserId();
+
+    const eligibleTeams = teams.filter(team => {
+      if (!team?.id) return false;
+
+      teamCache.set(String(team.id), team);
+
+      const memberCount = getTeamMemberCount(team);
+      if (teamSize > 0 && memberCount > teamSize) {
+        return false;
+      }
+
+      if (!currentUserId) return true;
+      return isUserTeamCaptain(team, currentUserId);
+    });
+
+    const oversizedCount = teams.reduce((acc, team) => {
+      const memberCount = getTeamMemberCount(team);
+      return acc + (teamSize > 0 && memberCount > teamSize ? 1 : 0);
+    }, 0);
+
+    const baseHintParts = [];
+    if (teamSize > 0) baseHintParts.push(`حداکثر ${teamSize.toLocaleString("fa-IR")} عضو`);
+    baseHintParts.push("فقط تیم‌هایی که کاپیتان آن‌ها هستید نمایش داده می‌شوند");
+    if (oversizedCount > 0) baseHintParts.push(`${oversizedCount.toLocaleString("fa-IR")} تیم به دلیل ظرفیت بالا نمایش داده نشد`);
+
+    const decorateTeams = eligibleTeams.map(team => ({
+      team,
+      memberCount: getTeamMemberCount(team),
+      members: getTeamMembers(team)
+    }));
+
+    let selectedTeamId = "";
+
+    const updateHint = (visibleCount) => {
+      if (!hintEl) return;
+      const visibleMessage = visibleCount > 0
+        ? `تعداد تیم‌های قابل انتخاب: ${visibleCount.toLocaleString("fa-IR")}`
+        : "تیمی برای نمایش وجود ندارد";
+      const suffix = baseHintParts.length ? ` • ${baseHintParts.join(" • ")}` : "";
+      hintEl.textContent = `${visibleMessage}${suffix}`;
+    };
+
+    const updateSelection = (teamId, { silent = false } = {}) => {
+      selectedTeamId = teamId ? String(teamId) : "";
+
+      if (selectEl) {
+        selectEl.value = selectedTeamId;
+      }
+
+      if (listEl) {
+        listEl.querySelectorAll(".team-option").forEach(card => {
+          const isSelected = card.dataset.teamId === selectedTeamId;
+          card.classList.toggle("selected", isSelected);
+          card.setAttribute("aria-pressed", isSelected ? "true" : "false");
+        });
+      }
+
+      if (confirmButton && !silent) {
+        confirmButton.disabled = !selectedTeamId;
+      }
+    };
+
+    const renderTeams = (searchTerm = "") => {
+      const term = searchTerm.trim().toLowerCase();
+      const visibleTeams = decorateTeams.filter(({ team }) => {
+        if (!term) return true;
+        const name = (team.name || "").toLowerCase();
+        return name.includes(term);
+      });
+
+      if (listEl) listEl.innerHTML = "";
+      if (selectEl) selectEl.innerHTML = '<option value="">انتخاب تیم</option>';
+
+      if (!visibleTeams.length) {
+        if (emptyEl) {
+          emptyEl.classList.remove("is-hidden");
+          if (emptyTitle && emptySubtitle) {
+            if (term) {
+              emptyTitle.textContent = "تیمی با این مشخصات پیدا نشد.";
+              emptySubtitle.textContent = "عبارت دیگری را امتحان کنید یا شرایط تیم خود را بررسی کنید.";
+            } else {
+              emptyTitle.textContent = "هیچ تیم واجد شرایطی برای این تورنومنت پیدا نشد.";
+              emptySubtitle.textContent = "تیم انتخابی باید با ظرفیت تورنومنت هم‌خوانی داشته باشد و شما کاپیتان آن باشید.";
+            }
+          }
+        }
+      } else if (emptyEl) {
+        emptyEl.classList.add("is-hidden");
+      }
+
+      visibleTeams.forEach(({ team, memberCount, members }) => {
         const option = document.createElement("option");
         option.value = team.id;
-        option.textContent = `${team.name} (${team.members_count} عضو)`;
-        teamSelect.appendChild(option);
-        if (team?.id) teamCache.set(String(team.id), team);
+        option.textContent = `${team.name} (${memberCount.toLocaleString("fa-IR")} عضو)`;
+        selectEl?.appendChild(option);
+
+        const card = document.createElement("button");
+        card.type = "button";
+        card.className = "team-option";
+        card.dataset.teamId = String(team.id);
+        card.setAttribute("aria-pressed", "false");
+        card.setAttribute("aria-label", `انتخاب تیم ${team.name}`);
+
+        let statusClass = "team-option__status";
+        let statusText = `${memberCount.toLocaleString("fa-IR")} عضو`;
+
+        if (teamSize > 0) {
+          if (memberCount === teamSize) {
+            statusClass += " team-option__status--ok";
+            statusText = "آماده ثبت‌نام";
+          } else if (memberCount < teamSize) {
+            statusClass += " team-option__status--warning";
+            const diff = teamSize - memberCount;
+            statusText = `${diff.toLocaleString("fa-IR")} عضو تا تکمیل`;
+          } else {
+            statusClass += " team-option__status--danger";
+            statusText = "اعضای بیش از حد";
+          }
+        }
+
+        const displayMembers = members.slice(0, 6);
+        let avatarsHtml = "";
+
+        displayMembers.forEach(member => {
+          const avatar = member?.avatar || member?.profile_image || member?.image || "img/profile.jpg";
+          const name = member?.username || member?.name || "بازیکن";
+          avatarsHtml += `
+            <div class="team-option__avatar" title="${name}">
+              <img src="${avatar}" alt="${name}">
+            </div>`;
+        });
+
+        if (!avatarsHtml) {
+          avatarsHtml = `
+            <div class="team-option__avatar team-option__avatar--placeholder">
+              <i class="fas fa-user"></i>
+            </div>`;
+        }
+
+        const remaining = memberCount - displayMembers.length;
+        if (remaining > 0) {
+          avatarsHtml += `
+            <div class="team-option__avatar team-option__avatar--more">+${remaining.toLocaleString("fa-IR")}</div>`;
+        }
+
+        const gameName = team?.game?.name || team?.game_name;
+        const roleBadge = (team?.is_captain === true || team?.user_role === "captain")
+          ? '<span class="team-option__role"><i class="fas fa-crown"></i> کاپیتان</span>'
+          : "";
+
+        const metaItems = [];
+        if (teamSize > 0) {
+          metaItems.push(`<span><i class="fas fa-users"></i>${memberCount.toLocaleString("fa-IR")} / ${teamSize.toLocaleString("fa-IR")} عضو</span>`);
+        } else {
+          metaItems.push(`<span><i class="fas fa-users"></i>${memberCount.toLocaleString("fa-IR")} عضو</span>`);
+        }
+        if (gameName) metaItems.push(`<span><i class="fas fa-gamepad"></i>${gameName}</span>`);
+        if (team?.ranking || team?.rank) metaItems.push(`<span><i class="fas fa-trophy"></i>${team.ranking || team.rank}</span>`);
+        if (roleBadge) metaItems.push(roleBadge);
+
+        card.innerHTML = `
+          <div class="team-option__header">
+            <div class="team-option__name">${team.name || "بدون نام"}</div>
+            <span class="${statusClass}">${statusText}</span>
+          </div>
+          <div class="team-option__body">
+            <div class="team-option__avatars">${avatarsHtml}</div>
+            <div class="team-option__meta">${metaItems.join("")}</div>
+          </div>`;
+
+        card.addEventListener("click", () => {
+          updateSelection(team.id);
+          confirmButton?.focus();
+        });
+
+        listEl?.appendChild(card);
       });
-    } else if (teamSelect) {
-      teamSelect.innerHTML = '<option value="">تیمی یافت نشد</option>';
+
+      if (!selectedTeamId && visibleTeams.length) {
+        updateSelection(visibleTeams[0].team.id, { silent: true });
+        if (confirmButton) confirmButton.disabled = false;
+      } else {
+        const stillExists = visibleTeams.some(({ team }) => String(team.id) === selectedTeamId);
+        if (!stillExists) {
+          updateSelection("", { silent: true });
+          if (confirmButton) confirmButton.disabled = true;
+        } else {
+          updateSelection(selectedTeamId, { silent: true });
+          if (confirmButton) confirmButton.disabled = !selectedTeamId;
+        }
+      }
+
+      updateHint(visibleTeams.length);
+    };
+
+    renderTeams();
+
+    if (searchInput) {
+      searchInput.oninput = (event) => {
+        renderTeams(event.target.value || "");
+      };
     }
-  } catch (err) {
-    console.error("Error loading teams:", err);
-    const teamSelect = document.getElementById("teamSelect");
-    if (teamSelect) {
-      teamSelect.innerHTML = '<option value="">خطا در بارگذاری تیم‌ها</option>';
+  } catch (error) {
+    console.error("Failed to load teams:", error);
+    showError("خطا در بارگذاری تیم‌ها. لطفاً دوباره تلاش کنید.");
+    if (emptyEl && emptyTitle && emptySubtitle) {
+      emptyEl.classList.remove("is-hidden");
+      emptyTitle.textContent = "بروز خطا در دریافت تیم‌ها.";
+      emptySubtitle.textContent = "لطفاً اتصال اینترنت خود را بررسی کرده و دوباره تلاش کنید.";
     }
+  } finally {
+    if (loadingEl) loadingEl.classList.add("is-hidden");
   }
 }
 
@@ -973,10 +1223,16 @@ async function ensureTeamEligibility(teamId, { checkWallet = false } = {}) {
 
   const expectedSize = toNumber(tournament.team_size);
   const members = getTeamMembers(team);
-  const actualSize = members.length || toNumber(team.members_count);
+  const actualSize = getTeamMemberCount(team);
 
-  if (expectedSize > 0 && actualSize !== expectedSize) {
-    showError(`اندازه تیم باید دقیقاً ${expectedSize} نفر باشد.`);
+  if (expectedSize > 0 && actualSize > expectedSize) {
+    showError(`تعداد اعضای تیم نباید بیشتر از ${expectedSize.toLocaleString("fa-IR")} نفر باشد.`);
+    return { ok: false };
+  }
+
+  if (expectedSize > 0 && actualSize < expectedSize) {
+    const diff = expectedSize - actualSize;
+    showError(`تیم شما هنوز کامل نشده است. ${diff.toLocaleString("fa-IR")} عضو دیگر برای ثبت‌نام لازم است.`);
     return { ok: false };
   }
 
@@ -1037,6 +1293,11 @@ async function joinTeamTournament() {
 
     const teamSelect = document.getElementById("teamSelect");
     const teamId = teamSelect?.value;
+    const confirmButton = document.getElementById("teamJoinConfirmButton");
+
+    if (confirmButton && !confirmButton.dataset.originalText) {
+      confirmButton.dataset.originalText = confirmButton.textContent?.trim() || "";
+    }
 
     if (!teamId) {
       showError("لطفاً یک تیم انتخاب کنید.");
@@ -1045,6 +1306,11 @@ async function joinTeamTournament() {
 
     const eligibility = await ensureTeamEligibility(teamId, { checkWallet: true });
     if (!eligibility.ok) return;
+
+    if (confirmButton) {
+      confirmButton.disabled = true;
+      confirmButton.textContent = "در حال ثبت...";
+    }
 
     console.log("Joining team tournament with team_id:", teamId);
 
@@ -1064,6 +1330,14 @@ async function joinTeamTournament() {
   } catch (err) {
     console.error("Join team tournament error:", err);
     showError(err.message || "ثبت‌نام تیم انجام نشد.");
+  } finally {
+    const confirmButton = document.getElementById("teamJoinConfirmButton");
+    if (confirmButton) {
+      const originalText = confirmButton.dataset.originalText || "تایید و ثبت‌نام تیم";
+      confirmButton.textContent = originalText;
+      confirmButton.disabled = false;
+      delete confirmButton.dataset.originalText;
+    }
   }
 }
 
