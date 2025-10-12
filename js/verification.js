@@ -202,7 +202,11 @@ function ensureAuthenticated() {
   const token = localStorage.getItem("access_token");
   if (!token && !authRedirectTriggered) {
     authRedirectTriggered = true;
-    alert("لطفا ابتدا وارد شوید.");
+    if (window.AppNotifier?.showAppNotification) {
+      window.AppNotifier.showAppNotification("loginRequired");
+    } else {
+      showInfo("لطفا ابتدا وارد شوید.");
+    }
     window.location.href = "/register/login.html";
   }
   return token;
@@ -212,7 +216,11 @@ function handleUnauthorized() {
   if (authRedirectTriggered) return;
   authRedirectTriggered = true;
   localStorage.removeItem("access_token");
-  alert("نشست شما منقضی شده است. لطفا مجددا وارد شوید.");
+  if (window.AppNotifier?.showAppNotification) {
+    window.AppNotifier.showAppNotification("sessionExpired");
+  } else {
+    showInfo("نشست شما منقضی شده است. لطفا مجددا وارد شوید.");
+  }
   window.location.href = "/register/login.html";
 }
 
@@ -548,7 +556,11 @@ async function submitLevel2(formEvent) {
   const selfieInput = document.querySelector("#selfy_picture_level2");
 
   if (!idCardInput || !selfieInput) {
-    alert("خطا: عناصر فرم یافت نشد. لطفا صفحه را مجددا بارگذاری کنید.");
+    if (window.AppNotifier?.showAppNotification) {
+      window.AppNotifier.showAppNotification("verificationFormMissing");
+    } else {
+      showError("خطا: عناصر فرم یافت نشد. لطفا صفحه را مجددا بارگذاری کنید.");
+    }
     return;
   }
 
@@ -556,7 +568,11 @@ async function submitLevel2(formEvent) {
   const selfieFile = selfieInput.files?.[0];
 
   if (!idCardFile || !selfieFile) {
-    alert("لطفا هر دو فایل را انتخاب کنید.");
+    if (window.AppNotifier?.showAppNotification) {
+      window.AppNotifier.showAppNotification("verificationFilesMissing");
+    } else {
+      showInfo("لطفا هر دو فایل را انتخاب کنید.");
+    }
     return;
   }
 
@@ -592,12 +608,20 @@ async function submitLevel2(formEvent) {
       throw new Error(`ارسال مدارک سطح 2 ناموفق بود (${response.status})`);
     }
 
-    alert("مدارک سطح 2 ارسال شد. در حال بررسی...");
+    if (window.AppNotifier?.showAppNotification) {
+      window.AppNotifier.showAppNotification("verificationLevel2Submitted");
+    } else {
+      showSuccess("مدارک سطح 2 ارسال شد. در حال بررسی...");
+    }
     closeAllModals();
     await fetchVerificationStatus();
   } catch (error) {
     console.error(error);
-    alert("در ارسال مدارک سطح 2 خطایی رخ داد. لطفا دوباره تلاش کنید.");
+    if (window.AppNotifier?.showAppNotification) {
+      window.AppNotifier.showAppNotification("verificationLevel2Failed");
+    } else {
+      showError("در ارسال مدارک سطح 2 خطایی رخ داد. لطفا دوباره تلاش کنید.");
+    }
   } finally {
     if (submitButton) {
       submitButton.disabled = false;
@@ -615,13 +639,21 @@ async function submitLevel3(formEvent) {
   const videoInput = document.querySelector("#selfy_video_level3");
 
   if (!videoInput) {
-    alert("خطا: عنصر ویدیو یافت نشد. لطفا صفحه را مجددا بارگذاری کنید.");
+    if (window.AppNotifier?.showAppNotification) {
+      window.AppNotifier.showAppNotification("verificationVideoMissing");
+    } else {
+      showError("خطا: عنصر ویدیو یافت نشد. لطفا صفحه را مجددا بارگذاری کنید.");
+    }
     return;
   }
 
   const videoFile = videoInput.files?.[0];
   if (!videoFile) {
-    alert("لطفا ویدیو را انتخاب کنید.");
+    if (window.AppNotifier?.showAppNotification) {
+      window.AppNotifier.showAppNotification("verificationVideoRequired");
+    } else {
+      showInfo("لطفا ویدیو را انتخاب کنید.");
+    }
     return;
   }
 
@@ -656,12 +688,20 @@ async function submitLevel3(formEvent) {
       throw new Error(`ارسال مدارک سطح 3 ناموفق بود (${response.status})`);
     }
 
-    alert("مدارک سطح 3 ارسال شد. در حال بررسی...");
+    if (window.AppNotifier?.showAppNotification) {
+      window.AppNotifier.showAppNotification("verificationLevel3Submitted");
+    } else {
+      showSuccess("مدارک سطح 3 ارسال شد. در حال بررسی...");
+    }
     closeAllModals();
     await fetchVerificationStatus();
   } catch (error) {
     console.error(error);
-    alert("در ارسال مدارک سطح 3 خطایی رخ داد. لطفا دوباره تلاش کنید.");
+    if (window.AppNotifier?.showAppNotification) {
+      window.AppNotifier.showAppNotification("verificationLevel3Failed");
+    } else {
+      showError("در ارسال مدارک سطح 3 خطایی رخ داد. لطفا دوباره تلاش کنید.");
+    }
   } finally {
     if (submitButton) {
       submitButton.disabled = false;

@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const headerContainer = document.getElementById("header");
   if (!headerContainer) return;
 
+  await ensureAppNotifierLoaded();
+
   // ---- 1. نمایش سریع هدر از کش ----
   const cachedHeader = localStorage.getItem("header_html");
   if (cachedHeader) {
@@ -31,6 +33,33 @@ document.addEventListener("DOMContentLoaded", async () => {
   // Scroll to top
   window.scrollTo(0, 0);
 });
+
+async function ensureAppNotifierLoaded() {
+  if (typeof window === "undefined") return;
+  if (window.AppNotifier) return;
+
+  const existing = document.querySelector('script[data-app-notifier="true"]');
+  if (existing) {
+    await new Promise((resolve) => {
+      if (window.AppNotifier) {
+        resolve();
+        return;
+      }
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener("error", () => resolve(), { once: true });
+    });
+    return;
+  }
+
+  await new Promise((resolve) => {
+    const script = document.createElement("script");
+    script.src = "/js/app-errors.js";
+    script.dataset.appNotifier = "true";
+    script.onload = () => resolve();
+    script.onerror = () => resolve();
+    document.head.appendChild(script);
+  });
+}
 
 /* ----------------- Utility ----------------- */
 const closest = (el, sel) => el?.closest ? el.closest(sel) : null;

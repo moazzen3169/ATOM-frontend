@@ -2,6 +2,14 @@
 import { API_BASE_URL } from "/js/config.js";
 import { renderInlineMessage, showAppNotification } from "/js/app-errors.js";
 
+const notifier = typeof window !== "undefined" ? window.AppNotifier || {} : {};
+const renderInlineMessage = notifier.renderInlineMessage || ((container, _key, overrides = {}) => {
+    if (!container) return;
+    const message = overrides.message || "اطلاعاتی برای نمایش موجود نیست.";
+    container.innerHTML = `<div class="app-message app-message--info" role="alert">${message}</div>`;
+});
+const showAppNotification = notifier.showAppNotification || (() => {});
+
 document.addEventListener("DOMContentLoaded", async () => {
     const walletContainer = document.querySelector(".wallet_container");
     const withdrawableBalanceSpan = document.getElementById("withdrawable-balance");

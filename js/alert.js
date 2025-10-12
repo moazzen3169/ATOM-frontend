@@ -51,16 +51,53 @@ function renderAlert({ classes = [], title = "", message = "", actions = [], dur
   }
 }
 
+function getNotifier() {
+  if (typeof window === "undefined") return null;
+  return window.AppNotifier || null;
+}
+
+function normalizeMessage(msg, fallback) {
+  if (typeof msg !== "string") return fallback;
+  const value = msg.trim();
+  if (!value) return fallback;
+  const persianRegex = /[\u0600-\u06FF]/;
+  if (!persianRegex.test(value)) {
+    return fallback;
+  }
+  return value;
+}
+
 function showError(msg) {
-  renderAlert({ title: "خطا", message: msg, type: "error" });
+  const notifier = getNotifier();
+  const fallback = "در انجام عملیات مشکلی رخ داد. لطفاً دوباره تلاش کنید.";
+  const message = normalizeMessage(msg, fallback);
+  if (notifier?.showAppNotification) {
+    notifier.showAppNotification("customError", { message });
+    return;
+  }
+  renderAlert({ title: "خطا", message, type: "error" });
 }
 
 function showSuccess(msg) {
-  renderAlert({ title: "موفقیت‌آمیز", message: msg, type: "success", duration: 5000 });
+  const notifier = getNotifier();
+  const fallback = "عملیات با موفقیت انجام شد.";
+  const message = typeof msg === "string" && msg.trim() ? msg.trim() : fallback;
+  if (notifier?.showAppNotification) {
+    notifier.showAppNotification("customSuccess", { message });
+    return;
+  }
+  renderAlert({ title: "موفقیت‌آمیز", message, type: "success", duration: 5000 });
 }
 
 function showInfo(msg) {
-  renderAlert({ title: "اطلاع", message: msg, type: "info", duration: 6000 });
+  const notifier = getNotifier();
+  const fallback = "اطلاعات جدیدی در دسترس قرار گرفت.";
+  const message = typeof msg === "string" && msg.trim() ? msg.trim() : fallback;
+  if (notifier?.showAppNotification) {
+    notifier.showAppNotification("customInfo", { message });
+    return;
+  }
+  renderAlert({ title: "اطلاع", message, type: "info", duration: 6000 });
 }
 
 // Export functions to global scope for usage in other scripts

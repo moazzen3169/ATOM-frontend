@@ -533,6 +533,34 @@ function normalizePostedMessage(rawMessage, fallback = {}) {
 function showFeedback(message, type = "success") {
   if (!elements.feedback) return;
   elements.feedback.innerHTML = `<div class="feedback feedback--${type}">${message}</div>`;
+  const trimmed = (message || "").trim();
+  let key;
+  if (trimmed.includes("بازنشانی")) {
+    key = "filtersReset";
+  } else if (trimmed.includes("گزارش وضعیت تیکت‌ها")) {
+    key = "reportReady";
+  } else if (trimmed.includes("به‌روزرسانی شد")) {
+    key = "ticketsRefreshSuccess";
+  } else if (type === "error") {
+    key = "customError";
+  } else if (type === "warning") {
+    key = "customWarning";
+  } else if (type === "success") {
+    key = "customSuccess";
+  } else {
+    key = "customInfo";
+  }
+
+  if (window.AppNotifier?.showAppNotification) {
+    window.AppNotifier.showAppNotification(key, { message });
+  } else if (type === "error" && typeof window.showError === "function") {
+    window.showError(message);
+  } else if (type === "warning" && typeof window.showInfo === "function") {
+    window.showInfo(message);
+  } else if (typeof window.showSuccess === "function") {
+    window.showSuccess(message);
+  }
+
   window.setTimeout(() => {
     if (elements.feedback) {
       elements.feedback.innerHTML = "";
