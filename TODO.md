@@ -1,5 +1,37 @@
-# TODO: Display Admin Sidebar on All Admin Panel Pages
+# TODO List for Admin Verification Page Enhancement
 
-- [x] Create js/admin/admin-sidebar.js to fetch and insert sidebar content from admin-dashboard/admin-sidebar.html into #sidebar element on admin pages.
-- [x] Edit admin-dashboard/admin-sidebar.html to update sidebar links for admin-specific pages (e.g., change hrefs to tickets-management.html for tickets, accept-users-verification.html for verification, etc.).
-- [x] Test sidebar display by opening an admin page (e.g., accept-users-verification.html) in browser to verify it loads correctly.
+## Task: Distinguish Approved/Rejected Requests from Pending Ones
+
+### Goals
+- Visually differentiate processed (approved/rejected) verification requests from pending ones
+- Ensure pending requests are prioritized in the list
+- Improve user experience for admins reviewing requests
+
+### Steps
+1. **Modify Sorting Logic in JS**
+   - Update `applyFilters` function to sort by status first (pending first), then by date
+   - Ensure pending requests appear at the top of the list
+
+2. **Add Visual Distinction Classes**
+   - Add 'verification-card--processed' class to approved/rejected cards in `createVerificationCard` function
+   - Apply reduced opacity and subtle styling to processed cards
+
+3. **Update CSS Styles**
+   - Add styles for `.verification-card--processed` to make processed cards less prominent
+   - Ensure the distinction is clear but not obstructive
+
+4. **Test the Changes**
+   - Verify sorting works correctly
+   - Check visual distinction on different screen sizes
+   - Ensure filters still function properly
+
+### Files to Edit
+- `js/admin/admin-verification.js`: Sorting logic and class addition
+- `css/admin-verification.css`: New styles for processed cards
+
+### Status
+- [x] Plan approved
+- [x] Sorting logic updated
+- [x] Visual classes added
+- [x] CSS styles applied
+- [ ] Testing completed

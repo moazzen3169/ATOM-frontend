@@ -133,6 +133,18 @@
   border-radius: 10px;
   border: 1px solid var(--color-primary);
 }
+
+.verification-card--processed {
+  opacity: 0.7;
+  background-color: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.verification-card--processed .verification-card__header,
+.verification-card--processed .verification-card__body,
+.verification-card--processed .verification-card__actions {
+  opacity: 0.8;
+}
 .verification-card__title{
   display: flex;
   align-items: center;

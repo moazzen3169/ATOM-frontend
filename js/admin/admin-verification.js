@@ -221,6 +221,13 @@ function applyFilters() {
   const { date, status } = STATE.filters;
   let items = [...STATE.all];
   items.sort((a, b) => {
+    const statusA = getStatusKey(a);
+    const statusB = getStatusKey(b);
+    const isPendingA = statusA === 'pending' ? 1 : 0;
+    const isPendingB = statusB === 'pending' ? 1 : 0;
+    if (isPendingA !== isPendingB) {
+      return isPendingB - isPendingA; // pending first
+    }
     const dateA = toDate(a?.created_at)?.getTime() || 0;
     const dateB = toDate(b?.created_at)?.getTime() || 0;
     return dateB - dateA;
@@ -606,7 +613,7 @@ function createVerificationCard(item) {
   const rejectDisabledAttr = statusKey === "rejected" ? 'disabled data-static-disabled="true"' : "";
 
   return `
-    <article class="verification-card" data-verification-id="${escapeHtml(item?.id || '')}">
+    <article class="verification-card ${statusKey !== 'pending' ? 'verification-card--processed' : ''}" data-verification-id="${escapeHtml(item?.id || '')}">
       <header class="verification-card__header">
         <div class="verification-card__title">
           <h3>${escapeHtml(userDisplayName)}</h3>
