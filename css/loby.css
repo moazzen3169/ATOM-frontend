@@ -499,6 +499,35 @@ hr{
   transform: rotate(90deg);
 }
 
+.modal--success .modal_content {
+  border-color: rgba(76, 175, 80, 0.35);
+  background: var(--card-overlay-90);
+}
+
+.modal_header--success {
+  align-items: center;
+  gap: 16px;
+}
+
+.modal_success_icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  background: rgba(76, 175, 80, 0.18);
+  color: var(--white-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+}
+
+.modal_success_texts {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 .modal_actions {
   display: flex;
   justify-content: flex-end;

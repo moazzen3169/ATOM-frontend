@@ -295,7 +295,36 @@ function showSuccess(message) {
 }
 
 
-console.log("Sending join request:", JSON.stringify({ team_id: state.selectedTeamId }));
+function openJoinSuccessModal(message) {
+  const modal = document.getElementById("joinSuccessModal");
+  const description = document.getElementById("joinSuccessModalMessage");
+
+  if (description) {
+    description.textContent =
+      message || "جزئیات تورنومنت به ایمیل شما ارسال شد. لطفاً ایمیل خود را بررسی کنید.";
+  }
+
+  if (modal) {
+    modal.style.display = "flex";
+    modal.setAttribute("aria-hidden", "false");
+  }
+}
+
+function closeJoinSuccessModal() {
+  const modal = document.getElementById("joinSuccessModal");
+  if (modal) {
+    modal.style.display = "none";
+    modal.setAttribute("aria-hidden", "true");
+  }
+}
+
+function showJoinSuccessFeedback({ isTeam } = {}) {
+  const message = isTeam
+    ? "جزئیات تورنومنت به ایمیل کاپیتان تیم ارسال شد. لطفاً ایمیل را بررسی کنید."
+    : "جزئیات تورنومنت به ایمیل شما ارسال شد. لطفاً ایمیل خود را بررسی کنید.";
+
+  openJoinSuccessModal(message);
+}
 
 
 async function loadTournament() {
@@ -521,6 +550,7 @@ async function joinIndividualTournament() {
 
     showSuccess("ثبت‌نام با موفقیت انجام شد.");
     closeIndividualJoinModal();
+    showJoinSuccessFeedback({ isTeam: false });
     await loadTournament();
   } catch (error) {
     console.error("Failed to join tournament", error);
@@ -549,6 +579,7 @@ async function joinTeamTournament() {
 
     showSuccess("تیم با موفقیت در تورنومنت ثبت‌نام شد ✅");
     closeTeamJoinModal();
+    showJoinSuccessFeedback({ isTeam: true });
     await loadTournament();
   } catch (error) {
     console.error("Failed to join team tournament:", error);
@@ -597,6 +628,15 @@ function setupModalDismiss() {
       }
     });
   }
+
+  const successModal = document.getElementById("joinSuccessModal");
+  if (successModal) {
+    successModal.addEventListener("click", (event) => {
+      if (event.target === successModal) {
+        closeJoinSuccessModal();
+      }
+    });
+  }
 }
 
 function setupTeamSearch() {
@@ -636,5 +676,6 @@ window.openIndividualJoinModal = openIndividualJoinModal;
 window.openTeamJoinModal = openTeamJoinModal;
 window.closeIndividualJoinModal = closeIndividualJoinModal;
 window.closeTeamJoinModal = closeTeamJoinModal;
+window.closeJoinSuccessModal = closeJoinSuccessModal;
 window.joinIndividualTournament = joinIndividualTournament;
 window.joinTeamTournament = joinTeamTournament;
