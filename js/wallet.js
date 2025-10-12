@@ -1,5 +1,6 @@
 // wallet.js
 import { API_BASE_URL } from "/js/config.js";
+import { renderInlineMessage, showAppNotification } from "/js/app-errors.js";
 
 const notifier = typeof window !== "undefined" ? window.AppNotifier || {} : {};
 const renderInlineMessage = notifier.renderInlineMessage || ((container, _key, overrides = {}) => {

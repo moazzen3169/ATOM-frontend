@@ -1,11 +1,5 @@
 import { API_BASE_URL } from "/js/config.js";
-const notifier = typeof window !== "undefined" ? window.AppNotifier || {} : {};
-const renderInlineMessage = notifier.renderInlineMessage || ((container, _key, overrides = {}) => {
-  if (!container) return;
-  const message = overrides.message || "در حال حاضر اطلاعاتی برای نمایش وجود ندارد.";
-  container.innerHTML = `<div class="app-message app-message--info" role="alert">${message}</div>`;
-});
-const showAppNotification = notifier.showAppNotification || (() => {});
+import { renderInlineMessage, showAppNotification } from "/js/app-errors.js";
 
 const goTOp = document.querySelector(".go-top");
 
