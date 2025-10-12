@@ -5,6 +5,60 @@ import { API_BASE_URL } from "/js/config.js";
  **************************/
 window.currentTournamentData = null;
 let userProfileCache = null;
+const teamCache = new Map();
+const walletCache = new Map();
+
+/**************************
+ * Utility helpers
+ **************************/
+function toNumber(value, fallback = 0) {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : fallback;
+}
+
+function normaliseArray(value) {
+  if (Array.isArray(value)) return value;
+  if (value && Array.isArray(value.results)) return value.results;
+  if (value && Array.isArray(value.data)) return value.data;
+  return [];
+}
+
+function getParticipantId(item) {
+  return (
+    item?.id ||
+    item?.user_id ||
+    item?.user?.id ||
+    item?.player_id ||
+    null
+  );
+}
+
+function getParticipantUsername(item) {
+  return item?.username || item?.user?.username || item?.name || null;
+}
+
+function getTeamMembers(team) {
+  if (!team) return [];
+  if (Array.isArray(team.members)) return team.members;
+  if (Array.isArray(team.players)) return team.players;
+  if (Array.isArray(team.users)) return team.users;
+  return [];
+}
+
+function getTournamentRegistrationCount(tournament) {
+  if (!tournament) return 0;
+  if (tournament.type === "team") {
+    const teamCount = toNumber(tournament.current_participants, 0);
+    if (teamCount > 0) return teamCount;
+    const teams = normaliseArray(tournament.teams);
+    if (teams.length) return teams.length;
+  }
+
+  const participantCount = toNumber(tournament.current_participants, 0);
+  if (participantCount > 0) return participantCount;
+  const participants = normaliseArray(tournament.participants);
+  return participants.length;
+}
 
 /**************************
  * Auth & Token Management
@@ -489,36 +543,8 @@ function renderParticipants(tournament) {
  * Modal Functions - ENHANCED
  *************************/
 async function openIndividualJoinModal() {
-  if (!checkGeneralConditions()) return;
-  
-  // بررسی سطح تأیید هویت قبل از نمایش مودال
-  const tournament = window.currentTournamentData;
-  const verificationCheck = await checkUserVerification(tournament);
-  
-  if (!verificationCheck.verified) {
-    showError(verificationCheck.message);
-    
-    // نمایش راهنمای ارتقای سطح تأیید هویت
-    renderAlert({
-      title: "سطح تأیید هویت ناکافی",
-      message: verificationCheck.message,
-      type: "info",
-      actions: [
-        {
-          label: "راهنمای ارتقای سطح",
-          href: "/verification-guide.html",
-          target: "_self"
-        },
-        {
-          label: "تورنومنت‌های دیگر",
-          href: "/tournaments.html",
-          target: "_self"
-        }
-      ]
-    });
-    return;
-  }
-  
+  if (!(await ensureIndividualEligibility())) return;
+
   const modal = document.getElementById("individualJoinModal");
   if (modal) {
     modal.style.display = "flex";
@@ -528,17 +554,10 @@ async function openIndividualJoinModal() {
 }
 
 async function openTeamJoinModal() {
-  if (!checkGeneralConditions()) return;
-  
-  // بررسی سطح تأیید هویت قبل از نمایش مودال
   const tournament = window.currentTournamentData;
-  const verificationCheck = await checkUserVerification(tournament);
-  
-  if (!verificationCheck.verified) {
-    showError(verificationCheck.message);
-    return;
-  }
-  
+  const baseCheck = await ensureBaseEligibility(tournament);
+  if (!baseCheck.ok) return;
+
   const modal = document.getElementById("teamJoinModal");
   if (modal) {
     loadUserTeams();
@@ -565,15 +584,16 @@ async function loadUserTeams() {
   try {
     const teams = await apiFetch(`${API_BASE_URL}/api/tournaments/teams/`);
     const teamSelect = document.getElementById("teamSelect");
-    
+
     if (teamSelect && teams) {
       teamSelect.innerHTML = '<option value="">انتخاب تیم</option>';
-      
+
       teams.forEach(team => {
         const option = document.createElement("option");
         option.value = team.id;
         option.textContent = `${team.name} (${team.members_count} عضو)`;
         teamSelect.appendChild(option);
+        if (team?.id) teamCache.set(String(team.id), team);
       });
     } else if (teamSelect) {
       teamSelect.innerHTML = '<option value="">تیمی یافت نشد</option>';
@@ -588,79 +608,374 @@ async function loadUserTeams() {
 }
 
 /*************************
- * Condition Checks
+ * Eligibility & Wallet Checks
  *************************/
-function checkGeneralConditions() {
-  const tournament = window.currentTournamentData;
-  if (!tournament) {
-    showError("اطلاعات تورنومنت در دسترس نیست.");
+function describeMember(member) {
+  const id = getParticipantId(member);
+  return (
+    getParticipantUsername(member) ||
+    member?.gamertag ||
+    (id ? `کاربر ${id}` : "یک عضو تیم")
+  );
+}
+
+function isTeamAlreadyRegistered(tournament, teamId) {
+  if (!tournament || !teamId) return false;
+  const registeredTeams = normaliseArray(tournament.teams);
+  return registeredTeams.some(team => {
+    const id = getParticipantId(team) || team?.team_id;
+    return id && String(id) === String(teamId);
+  });
+}
+
+function isUserTeamCaptain(team, userId) {
+  if (!team || !userId) return false;
+
+  if (team.is_captain === true || team.user_role === "captain") return true;
+  const captainId = team.captain_id || team.owner_id || getParticipantId(team.captain) || getParticipantId(team.owner);
+  if (captainId && String(captainId) === String(userId)) return true;
+
+  return getTeamMembers(team).some(member => {
+    if (!member) return false;
+    const memberId = getParticipantId(member);
+    const isCaptainMember =
+      member.is_captain ||
+      member.is_leader ||
+      member.role === "captain" ||
+      member.position === "captain";
+    return isCaptainMember && memberId && String(memberId) === String(userId);
+  });
+}
+
+function getOverlappingMembers(tournament, members) {
+  if (!tournament || !Array.isArray(members) || !members.length) return [];
+
+  const participantIds = new Set();
+  const participantNames = new Map();
+
+  normaliseArray(tournament.participants).forEach(p => {
+    const id = getParticipantId(p);
+    const username = getParticipantUsername(p);
+    if (id) participantIds.add(String(id));
+    if (id && username) participantNames.set(String(id), username);
+    if (!id && username) participantNames.set(username, username);
+  });
+
+  normaliseArray(tournament.teams).forEach(team => {
+    getTeamMembers(team).forEach(member => {
+      const id = getParticipantId(member);
+      const username = getParticipantUsername(member);
+      if (id) participantIds.add(String(id));
+      if (id && username) participantNames.set(String(id), username);
+      if (!id && username) participantNames.set(username, username);
+    });
+  });
+
+  return members.reduce((acc, member) => {
+    const id = getParticipantId(member);
+    const username = getParticipantUsername(member);
+
+    if (id && participantIds.has(String(id))) {
+      acc.push(describeMember(member));
+    } else if (!id && username && participantNames.has(username)) {
+      acc.push(username);
+    }
+
+    return acc;
+  }, []);
+}
+
+async function fetchTeamDetails(teamId) {
+  if (!teamId) return null;
+  const key = String(teamId);
+  if (teamCache.has(key)) return teamCache.get(key);
+
+  const url = `${API_BASE_URL}/api/tournaments/teams/${teamId}/`;
+  try {
+    const team = await apiFetch(url);
+    teamCache.set(key, team);
+    return team;
+  } catch (error) {
+    console.error("Failed to fetch team details:", error);
+    teamCache.set(key, null);
+    return null;
+  }
+}
+
+function resolveWalletBalance(data) {
+  if (!data) return null;
+
+  let wallet = null;
+  if (Array.isArray(data)) {
+    [wallet] = data;
+  } else if (Array.isArray(data?.results)) {
+    [wallet] = data.results;
+  } else if (Array.isArray(data?.data)) {
+    [wallet] = data.data;
+  } else if (data.wallet) {
+    wallet = data.wallet;
+  } else if (data.id || data.balance !== undefined || data.total_balance !== undefined) {
+    wallet = data;
+  }
+
+  if (!wallet) return null;
+
+  const balance = toNumber(
+    wallet.withdrawable_balance ??
+    wallet.available_balance ??
+    wallet.total_balance ??
+    wallet.balance
+  );
+
+  return { balance, wallet };
+}
+
+async function getCurrentUserWallet(cacheKey = "self") {
+  if (walletCache.has(cacheKey)) return walletCache.get(cacheKey);
+
+  try {
+    const data = await apiFetch(`${API_BASE_URL}/api/wallet/wallets/`);
+    const walletInfo = resolveWalletBalance(data);
+    walletCache.set(cacheKey, walletInfo);
+    return walletInfo;
+  } catch (error) {
+    console.error("Failed to fetch current user wallet:", error);
+    walletCache.set(cacheKey, null);
+    return null;
+  }
+}
+
+async function fetchWalletForUser(userId) {
+  if (!userId) return null;
+  const key = `user-${userId}`;
+  if (walletCache.has(key)) return walletCache.get(key);
+
+  const endpoints = [
+    `${API_BASE_URL}/api/wallet/wallets/?user=${userId}`,
+    `${API_BASE_URL}/api/wallet/wallets/?user_id=${userId}`,
+    `${API_BASE_URL}/api/wallet/users/${userId}/wallet/`
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const data = await apiFetch(url);
+      const walletInfo = resolveWalletBalance(data);
+      if (walletInfo) {
+        walletCache.set(key, walletInfo);
+        return walletInfo;
+      }
+    } catch (error) {
+      console.warn(`Failed to fetch wallet from ${url}:`, error);
+    }
+  }
+
+  walletCache.set(key, null);
+  return null;
+}
+
+async function ensureUserHasEnoughBalance(tournament, profile) {
+  if (!tournament || tournament.is_free) return true;
+  const entryFee = toNumber(tournament.entry_fee);
+  if (entryFee <= 0) return true;
+
+  const walletInfo = await getCurrentUserWallet(profile?.id ? `self-${profile.id}` : "self");
+  if (!walletInfo) {
+    showError("امکان بررسی موجودی کیف پول وجود ندارد. لطفاً بعداً دوباره تلاش کنید.");
     return false;
   }
 
-  // 1. بررسی احراز هویت
-  if (!isAuthenticated()) {
-    showError("برای ثبت‌نام در تورنومنت باید وارد حساب کاربری خود شوید.");
-    return false;
-  }
-
-  // 2. بررسی وضعیت تورنومنت
-  const now = new Date();
-  const start = new Date(tournament.start_date);
-  const end = new Date(tournament.end_date);
-  
-  if (now > end) {
-    showError("تورنومنت به پایان رسیده است.");
-    return false;
-  }
-  
-  if (now >= start && now <= end) {
-    showError("تورنومنت در حال برگزاری است و امکان ثبت‌نام وجود ندارد.");
-    return false;
-  }
-
-  // 3. بررسی ظرفیت
-  const currentParticipants = tournament.participants?.length || 0;
-  if (currentParticipants >= tournament.max_participants) {
-    showError("تورنومنت به حداکثر ظرفیت خود رسیده است.");
+  if (walletInfo.balance < entryFee) {
+    showError(`موجودی کیف پول شما برای پرداخت ورودی (${entryFee.toLocaleString("fa-IR")} تومان) کافی نیست.`);
     return false;
   }
 
   return true;
 }
 
-async function checkIndividualConditions() {
-  const tournament = window.currentTournamentData;
-  if (!tournament) return false;
+async function ensureTeamMembersHaveFunds(team, tournament) {
+  if (!team || !tournament || tournament.is_free) return true;
+  const entryFee = toNumber(tournament.entry_fee);
+  if (entryFee <= 0) return true;
 
-  try {
-    // بررسی تأیید هویت
-    const verificationCheck = await checkUserVerification(tournament);
-    if (!verificationCheck.verified) {
-      showError(verificationCheck.message);
-      return false;
+  const members = getTeamMembers(team);
+  if (!members.length) return true;
+
+  const insufficientMembers = [];
+  const uncheckedMembers = [];
+
+  await Promise.all(members.map(async (member) => {
+    const memberId = getParticipantId(member);
+    if (!memberId) {
+      uncheckedMembers.push(describeMember(member));
+      return;
     }
 
-    // بررسی ثبت‌نام تکراری
-    const userProfile = await getUserProfile();
-    
-    if (userProfile && userProfile.id) {
-      const isAlreadyRegistered = tournament.participants?.some(p => 
-        p.id === userProfile.id || 
-        p.user_id === userProfile.id || 
-        p.username === userProfile.username);
-      
-      if (isAlreadyRegistered) {
-        showError("شما قبلاً در این تورنومنت ثبت‌نام کرده‌اید.");
-        return false;
-      }
+    const walletInfo = await fetchWalletForUser(memberId);
+    if (!walletInfo) {
+      uncheckedMembers.push(describeMember(member));
+      return;
     }
 
-    return true;
-  } catch (error) {
-    console.error("Error in individual conditions check:", error);
-    showError("خطا در بررسی شرایط ثبت‌نام");
+    if (walletInfo.balance < entryFee) {
+      insufficientMembers.push(describeMember(member));
+    }
+  }));
+
+  if (insufficientMembers.length) {
+    showError(`موجودی کیف پول اعضای زیر برای پرداخت ورودی کافی نیست: ${insufficientMembers.join("، ")}`);
     return false;
   }
+
+  if (uncheckedMembers.length) {
+    showInfo(`امکان بررسی موجودی کیف پول ${uncheckedMembers.join("، ")} وجود نداشت. لطفاً پیش از ثبت‌نام از کافی بودن موجودی آن‌ها اطمینان حاصل کنید.`);
+  }
+
+  return true;
+}
+
+async function ensureBaseEligibility(tournament) {
+  if (!tournament) {
+    showError("اطلاعات تورنومنت در دسترس نیست.");
+    return { ok: false };
+  }
+
+  if (!isAuthenticated()) {
+    showError("برای ثبت‌نام در تورنومنت باید وارد حساب کاربری خود شوید.");
+    return { ok: false };
+  }
+
+  const now = new Date();
+  const start = tournament.start_date ? new Date(tournament.start_date) : null;
+  const end = tournament.end_date ? new Date(tournament.end_date) : null;
+
+  if (end && now > end) {
+    showError("تورنومنت به پایان رسیده است.");
+    return { ok: false };
+  }
+
+  if (start && end && now >= start && now <= end) {
+    showError("تورنومنت در حال برگزاری است و امکان ثبت‌نام وجود ندارد.");
+    return { ok: false };
+  }
+
+  const maxParticipants = toNumber(tournament.max_participants);
+  if (maxParticipants > 0) {
+    const current = getTournamentRegistrationCount(tournament);
+    if (current >= maxParticipants) {
+      showError("تورنومنت به حداکثر ظرفیت خود رسیده است.");
+      return { ok: false };
+    }
+  }
+
+  const verificationCheck = await checkUserVerification(tournament);
+  if (!verificationCheck.verified) {
+    showError(verificationCheck.message);
+    renderAlert({
+      title: "سطح تأیید هویت ناکافی",
+      message: verificationCheck.message,
+      type: "info",
+      actions: [
+        {
+          label: "راهنمای ارتقای سطح",
+          href: "/verification-guide.html",
+          target: "_self"
+        },
+        {
+          label: "تورنومنت‌های دیگر",
+          href: "/tournaments.html",
+          target: "_self"
+        }
+      ]
+    });
+    return { ok: false };
+  }
+
+  const profile = await getUserProfile();
+  if (!profile || !profile.id) {
+    showError("امکان دریافت اطلاعات کاربر وجود ندارد. لطفاً دوباره وارد شوید.");
+    return { ok: false };
+  }
+
+  return { ok: true, profile };
+}
+
+async function ensureIndividualEligibility({ checkWallet = false } = {}) {
+  const tournament = window.currentTournamentData;
+  const base = await ensureBaseEligibility(tournament);
+  if (!base.ok) return false;
+
+  const participants = normaliseArray(tournament.participants);
+  const userId = base.profile.id;
+  const username = base.profile.username;
+
+  const alreadyRegistered = participants.some(p => {
+    const participantId = getParticipantId(p);
+    const participantUsername = getParticipantUsername(p);
+    if (participantId && String(participantId) === String(userId)) return true;
+    if (participantUsername && username && participantUsername === username) return true;
+    return false;
+  });
+
+  if (alreadyRegistered) {
+    showError("شما قبلاً در این تورنومنت ثبت‌نام کرده‌اید.");
+    return false;
+  }
+
+  if (checkWallet) {
+    const hasFunds = await ensureUserHasEnoughBalance(tournament, base.profile);
+    if (!hasFunds) return false;
+  }
+
+  return true;
+}
+
+async function ensureTeamEligibility(teamId, { checkWallet = false } = {}) {
+  const tournament = window.currentTournamentData;
+  const base = await ensureBaseEligibility(tournament);
+  if (!base.ok) return { ok: false };
+
+  if (!teamId) {
+    showError("لطفاً یک تیم انتخاب کنید.");
+    return { ok: false };
+  }
+
+  const team = await fetchTeamDetails(teamId);
+  if (!team) {
+    showError("امکان دریافت اطلاعات تیم وجود ندارد.");
+    return { ok: false };
+  }
+
+  if (!isUserTeamCaptain(team, base.profile.id)) {
+    showError("فقط کاپیتان تیم می‌تواند درخواست ثبت‌نام را ارسال کند.");
+    return { ok: false };
+  }
+
+  const expectedSize = toNumber(tournament.team_size);
+  const members = getTeamMembers(team);
+  const actualSize = members.length || toNumber(team.members_count);
+
+  if (expectedSize > 0 && actualSize !== expectedSize) {
+    showError(`اندازه تیم باید دقیقاً ${expectedSize} نفر باشد.`);
+    return { ok: false };
+  }
+
+  if (isTeamAlreadyRegistered(tournament, team.id)) {
+    showError("این تیم قبلاً در تورنومنت ثبت‌نام شده است.");
+    return { ok: false };
+  }
+
+  const overlappingMembers = getOverlappingMembers(tournament, members);
+  if (overlappingMembers.length) {
+    showError(`اعضای زیر قبلاً در این تورنومنت ثبت‌نام کرده‌اند: ${overlappingMembers.join("، ")}`);
+    return { ok: false };
+  }
+
+  if (checkWallet) {
+    const hasFunds = await ensureTeamMembersHaveFunds(team, tournament);
+    if (!hasFunds) return { ok: false };
+  }
+
+  return { ok: true, team, profile: base.profile };
 }
 
 /*************************
@@ -671,14 +986,10 @@ async function joinIndividualTournament() {
     const tournament = window.currentTournamentData;
     if (!tournament) return;
 
-    // بررسی شرایط عمومی
-    if (!checkGeneralConditions()) return;
-    
-    // بررسی شرایط خاص انفرادی
-    if (!(await checkIndividualConditions())) return;
+    if (!(await ensureIndividualEligibility({ checkWallet: true }))) return;
 
     console.log("Joining individual tournament");
-    
+
     await apiFetch(`${API_BASE_URL}/api/tournaments/tournaments/${tournament.id}/join/`, {
       method: "POST",
       body: JSON.stringify({})
@@ -711,11 +1022,11 @@ async function joinTeamTournament() {
       return;
     }
 
-    // بررسی شرایط عمومی
-    if (!checkGeneralConditions()) return;
+    const eligibility = await ensureTeamEligibility(teamId, { checkWallet: true });
+    if (!eligibility.ok) return;
 
     console.log("Joining team tournament with team_id:", teamId);
-    
+
     await apiFetch(`${API_BASE_URL}/api/tournaments/tournaments/${tournament.id}/join/`, {
       method: "POST",
       body: JSON.stringify({ team_id: parseInt(teamId) })
