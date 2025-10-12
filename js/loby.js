@@ -294,6 +294,10 @@ function showSuccess(message) {
   showMessage("success", message);
 }
 
+
+console.log("Sending join request:", JSON.stringify({ team_id: state.selectedTeamId }));
+
+
 async function loadTournament() {
   if (!state.tournamentId) return;
 
@@ -404,6 +408,8 @@ function renderTeamOptions(teams, meta = {}) {
   resetTeamSelection();
 }
 
+// 
+
 async function fetchTeamOptions(searchTerm = "") {
   if (state.teamRequestInFlight) return;
   state.teamRequestInFlight = true;
@@ -412,8 +418,25 @@ async function fetchTeamOptions(searchTerm = "") {
   if (loading) loading.classList.remove("is-hidden");
 
   try {
+    // ✅ استخراج شناسه کاربر از توکن JWT
+    const token = getAuthToken();
+    let userId = null;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1]));
+      userId = payload.user_id || payload.id || payload.sub || null;
+    } catch (e) {
+      console.warn("توکن معتبر نیست یا ساختار JWT ندارد");
+    }
+
+    if (!userId) {
+      showError("شناسه کاربر یافت نشد. لطفاً دوباره وارد شوید.");
+      return;
+    }
+
+    // ✅ ساخت URL با فیلتر رسمی API
     const url = new URL(`${API_BASE_URL}/api/users/teams/`);
     url.searchParams.set("for_registration", state.tournamentId);
+    url.searchParams.set("captain", userId); // 👈 فیلتر فقط برای تیم‌های کاپیتان‌شده توسط کاربر
     if (searchTerm) {
       url.searchParams.set("search", searchTerm);
     }
@@ -426,13 +449,14 @@ async function fetchTeamOptions(searchTerm = "") {
       const description =
         result?.meta?.description ||
         result?.meta?.message ||
-        "یکی از تیم‌هایی که کاپیتان آن هستید را برای ثبت‌نام انتخاب کنید.";
+        "تیم‌هایی که کاپیتان آن‌ها هستید برای ثبت‌نام در اینجا نمایش داده می‌شوند.";
       metaEl.textContent = description;
     }
     if (hintEl) {
       hintEl.textContent = result?.meta?.hint || "";
     }
 
+    // ✅ واکشی تیم‌ها از پاسخ
     const teams = Array.isArray(result?.results)
       ? result.results
       : Array.isArray(result)
@@ -448,6 +472,7 @@ async function fetchTeamOptions(searchTerm = "") {
     if (loading) loading.classList.add("is-hidden");
   }
 }
+  
 
 async function openIndividualJoinModal() {
   if (!isAuthenticated()) {
@@ -514,24 +539,45 @@ async function joinTeamTournament() {
   if (confirmBtn) confirmBtn.disabled = true;
 
   try {
-    await apiFetch(
-      `${API_BASE_URL}/api/tournaments/tournaments/${state.tournamentId}/join/`,
-      {
-        method: "POST",
-        body: JSON.stringify({ team_id: state.selectedTeamId }),
-      },
-    );
+    const payload = { team: Number(state.selectedTeamId) };
+    const url = `${API_BASE_URL}/api/tournaments/tournaments/${state.tournamentId}/join/`;
 
-    showSuccess("تیم با موفقیت ثبت‌نام شد.");
+    await apiFetch(url, {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
+
+    showSuccess("تیم با موفقیت در تورنومنت ثبت‌نام شد ✅");
     closeTeamJoinModal();
     await loadTournament();
   } catch (error) {
-    console.error("Failed to join team tournament", error);
-    showError(error.message || "امکان ثبت‌نام تیم وجود ندارد.");
+    console.error("Failed to join team tournament:", error);
+
+    const msg = (error.message || "").toLowerCase();
+
+    // 🎯 فیلتر انواع خطاهای محتمل از سمت سرور
+    if (
+      msg.includes("member") ||
+      msg.includes("limit") ||
+      msg.includes("full") ||
+      msg.includes("capacity") ||
+      msg.includes("maximum") ||
+      msg.includes("بیش از حد") ||
+      msg.includes("max")
+    ) {
+      showError("تعداد اعضای تیم بیشتر از حد مجاز برای این تورنومنت است ❌");
+    } else if (msg.includes("already") || msg.includes("exists")) {
+      showError("این تیم قبلاً در تورنومنت ثبت‌نام کرده است ⚠️");
+    } else if (msg.includes("permission") || msg.includes("not allowed")) {
+      showError("شما مجاز به ثبت‌نام این تیم در تورنومنت نیستید 🔒");
+    } else {
+      showError("امکان ثبت‌نام تیم وجود ندارد. لطفاً دوباره تلاش کنید.");
+    }
   } finally {
     if (confirmBtn) confirmBtn.disabled = false;
   }
 }
+
 
 function setupModalDismiss() {
   const individualModal = document.getElementById("individualJoinModal");
