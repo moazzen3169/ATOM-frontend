@@ -655,44 +655,31 @@ async function loadUserTeams(profileFromEligibility = null) {
   let profile = profileFromEligibility;
 
   try {
-    const teamsResponse = await apiFetch(`${API_BASE_URL}/api/tournaments/teams/`);
-    const teams = normaliseArray(teamsResponse);
-
     if (!profile) {
       profile = await getUserProfile();
     }
 
     const currentUserId = profile?.id || getCurrentUserId();
 
-    const eligibleTeams = teams.filter(team => {
-      if (!team?.id) return false;
+    const teamsResponse = await apiFetch(`${API_BASE_URL}/api/users/teams/?captain=${currentUserId}`);
+    const teams = normaliseArray(teamsResponse);
 
+    const allTeams = teams.filter(team => team?.id).map(team => {
       teamCache.set(String(team.id), team);
-
       const memberCount = getTeamMemberCount(team);
-      if (teamSize > 0 && memberCount > teamSize) {
-        return false;
-      }
-
-      if (!currentUserId) return true;
-      return isUserTeamCaptain(team, currentUserId);
+      const isEligible = (!currentUserId || isUserTeamCaptain(team, currentUserId)) && (teamSize === 0 || memberCount <= teamSize);
+      return { team, memberCount, members: getTeamMembers(team), isEligible };
     });
 
-    const oversizedCount = teams.reduce((acc, team) => {
-      const memberCount = getTeamMemberCount(team);
-      return acc + (teamSize > 0 && memberCount > teamSize ? 1 : 0);
-    }, 0);
+    const eligibleCount = allTeams.filter(d => d.isEligible).length;
+    const ineligibleCount = allTeams.length - eligibleCount;
 
     const baseHintParts = [];
     if (teamSize > 0) baseHintParts.push(`حداکثر ${teamSize.toLocaleString("fa-IR")} عضو`);
-    baseHintParts.push("فقط تیم‌هایی که کاپیتان آن‌ها هستید نمایش داده می‌شوند");
-    if (oversizedCount > 0) baseHintParts.push(`${oversizedCount.toLocaleString("fa-IR")} تیم به دلیل ظرفیت بالا نمایش داده نشد`);
+    baseHintParts.push(`${eligibleCount.toLocaleString("fa-IR")} تیم واجد شرایط`);
+    if (ineligibleCount > 0) baseHintParts.push(`${ineligibleCount.toLocaleString("fa-IR")} تیم غیرقابل انتخاب`);
 
-    const decorateTeams = eligibleTeams.map(team => ({
-      team,
-      memberCount: getTeamMemberCount(team),
-      members: getTeamMembers(team)
-    }));
+    const decorateTeams = allTeams;
 
     let selectedTeamId = "";
 
@@ -727,16 +714,17 @@ async function loadUserTeams(profileFromEligibility = null) {
 
     const renderTeams = (searchTerm = "") => {
       const term = searchTerm.trim().toLowerCase();
-      const visibleTeams = decorateTeams.filter(({ team }) => {
-        if (!term) return true;
-        const name = (team.name || "").toLowerCase();
-        return name.includes(term);
+      const visibleTeams = decorateTeams.filter(({ team, isEligible }) => {
+        const nameMatch = !term || (team.name || "").toLowerCase().includes(term);
+        return nameMatch;
       });
+
+      const eligibleVisibleTeams = visibleTeams.filter(({ isEligible }) => isEligible);
 
       if (listEl) listEl.innerHTML = "";
       if (selectEl) selectEl.innerHTML = '<option value="">انتخاب تیم</option>';
 
-      if (!visibleTeams.length) {
+      if (!eligibleVisibleTeams.length) {
         if (emptyEl) {
           emptyEl.classList.remove("is-hidden");
           if (emptyTitle && emptySubtitle) {
@@ -753,7 +741,7 @@ async function loadUserTeams(profileFromEligibility = null) {
         emptyEl.classList.add("is-hidden");
       }
 
-      visibleTeams.forEach(({ team, memberCount, members }) => {
+      visibleTeams.forEach(({ team, memberCount, members, isEligible }) => {
         const option = document.createElement("option");
         option.value = team.id;
         option.textContent = `${team.name} (${memberCount.toLocaleString("fa-IR")} عضو)`;
@@ -841,11 +829,11 @@ async function loadUserTeams(profileFromEligibility = null) {
         listEl?.appendChild(card);
       });
 
-      if (!selectedTeamId && visibleTeams.length) {
-        updateSelection(visibleTeams[0].team.id, { silent: true });
+      if (!selectedTeamId && eligibleVisibleTeams.length) {
+        updateSelection(eligibleVisibleTeams[0].team.id, { silent: true });
         if (confirmButton) confirmButton.disabled = false;
       } else {
-        const stillExists = visibleTeams.some(({ team }) => String(team.id) === selectedTeamId);
+        const stillExists = eligibleVisibleTeams.some(({ team }) => String(team.id) === selectedTeamId);
         if (!stillExists) {
           updateSelection("", { silent: true });
           if (confirmButton) confirmButton.disabled = true;
@@ -855,7 +843,7 @@ async function loadUserTeams(profileFromEligibility = null) {
         }
       }
 
-      updateHint(visibleTeams.length);
+      updateHint(eligibleVisibleTeams.length);
     };
 
     renderTeams();
@@ -961,7 +949,7 @@ async function fetchTeamDetails(teamId) {
   const key = String(teamId);
   if (teamCache.has(key)) return teamCache.get(key);
 
-  const url = `${API_BASE_URL}/api/tournaments/teams/${teamId}/`;
+  const url = `${API_BASE_URL}/api/users/teams/${teamId}/`;
   try {
     const team = await apiFetch(url);
     teamCache.set(key, team);
