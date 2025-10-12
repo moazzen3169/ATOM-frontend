@@ -21,6 +21,11 @@ const LEGACY_PROFILE_ENDPOINTS = [
     '/api/auth/me/',
     '/api/auth/user/'
 ];
+const USER_LOOKUP_ENDPOINTS = [
+    (username) => `/api/users/users/?username=${encodeURIComponent(username)}`,
+    (username) => `/api/users/users/?search=${encodeURIComponent(username)}`,
+    (username) => `/api/users/users/?search=${encodeURIComponent(username)}&page_size=1`
+];
 function getProfileUpdateEndpoints() {
     const endpoints = ['/auth/users/me/'];
     if (currentUserId) {
@@ -156,6 +161,17 @@ function toTeamArray(payload) {
     if (Array.isArray(payload)) return payload;
     if (Array.isArray(payload.results)) return payload.results;
     if (Array.isArray(payload.teams)) return payload.teams;
+    return [];
+}
+
+function toUserArray(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+    if (payload && typeof payload === 'object' && typeof payload.username === 'string') {
+        return [payload];
+    }
+    const candidates = extractListFromObject(payload, ['results', 'users', 'data', 'items', 'entries']);
+    if (Array.isArray(candidates)) return candidates;
     return [];
 }
 
@@ -836,6 +852,63 @@ async function fetchUserTournamentHistory(userId) {
         console.error('خطا در دریافت تاریخچه تورنومنت‌های کاربر:', error);
         throw error;
     }
+}
+
+async function lookupUserByUsername(username) {
+    const normalizedUsername = (username || '').toString().trim().toLowerCase();
+    if (!normalizedUsername) {
+        return null;
+    }
+
+    for (const buildPath of USER_LOOKUP_ENDPOINTS) {
+        const endpoint = `${API_BASE_URL}${buildPath(username)}`;
+        try {
+            const response = await fetchWithAuth(endpoint, { method: 'GET' });
+            if (!response.ok) {
+                if (response.status >= 500) {
+                    const message = await extractErrorMessage(response);
+                    throw new Error(message || 'خطا در جستجوی کاربر');
+                }
+                continue;
+            }
+
+            const raw = await response.text();
+            if (!raw) {
+                continue;
+            }
+
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (parseError) {
+                console.warn('خطا در parse نتیجه جستجوی کاربر:', parseError);
+                continue;
+            }
+
+            const candidates = toUserArray(data);
+            if (!candidates.length) {
+                continue;
+            }
+
+            const exactMatch = candidates.find(user =>
+                user && typeof user.username === 'string' && user.username.toLowerCase() === normalizedUsername
+            );
+            if (exactMatch) {
+                return exactMatch;
+            }
+
+            const partialMatch = candidates.find(user =>
+                user && typeof user.username === 'string' && user.username.toLowerCase().startsWith(normalizedUsername)
+            );
+            if (partialMatch) {
+                return partialMatch;
+            }
+        } catch (error) {
+            console.error(`خطا در جستجوی کاربر از طریق ${endpoint}:`, error);
+        }
+    }
+
+    return null;
 }
 
 // تابع برای refresh توکن
@@ -1898,12 +1971,20 @@ async function handleInviteMember(event) {
         return;
     }
 
-    const payload = { username };
-
     const submitButton = form.querySelector('button[type="submit"]');
     toggleButtonLoading(submitButton, true, 'در حال ارسال...');
 
     try {
+        const user = await lookupUserByUsername(username);
+        if (!user) {
+            throw new Error('کاربری با این نام کاربری یافت نشد.');
+        }
+
+        const payload = { username: user.username };
+        if (typeof user.id !== 'undefined' && user.id !== null) {
+            payload.user_id = user.id;
+        }
+
         const response = await fetchWithAuth(`${API_BASE_URL}/api/users/teams/${teamId}/add-member/`, {
             method: 'POST',
             body: JSON.stringify(payload)
@@ -1914,16 +1995,41 @@ async function handleInviteMember(event) {
             throw new Error(message);
         }
 
-        showSuccess('دعوت‌نامه با موفقیت ارسال شد.');
+        let responseData = null;
+        try {
+            responseData = await response.clone().json();
+        } catch (parseError) {
+            if (response.status !== 204) {
+                console.warn('امکان parse پاسخ دعوت وجود ندارد:', parseError);
+            }
+        }
+
+        showSuccess('درخواست عضویت با موفقیت برای کاربر ارسال شد.');
         closeModal('invite_member_modal');
         form.reset();
-        await refreshTeamData();
+
+        if (responseData) {
+            const updatedOutgoing = extractListFromObject(responseData, [
+                'outgoing_invitations',
+                'sent_invitations',
+                'team_invitations'
+            ]);
+            if (Array.isArray(updatedOutgoing)) {
+                outgoingInvitationsState = updatedOutgoing;
+                displayOutgoingInvitations(outgoingInvitationsState);
+            } else {
+                await refreshTeamData();
+            }
+        } else {
+            await refreshTeamData();
+        }
     } catch (error) {
         console.error('خطا در ارسال دعوت:', error);
         showError(error.message || 'خطا در ارسال دعوت');
     } finally {
         toggleButtonLoading(submitButton, false);
     }
+
 }
 
 async function handleDeleteTeam(teamId) {
