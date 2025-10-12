@@ -659,15 +659,18 @@ async function loadUserTeams(profileFromEligibility = null) {
       profile = await getUserProfile();
     }
 
-    const currentUserId = profile?.id || getCurrentUserId();
+    const profileId = profile?.id;
+    if (!profileId) {
+      throw new Error("شناسه کاربر یافت نشد");
+    }
 
-    const teamsResponse = await apiFetch(`${API_BASE_URL}/api/users/teams/?captain=${currentUserId}`);
+    const teamsResponse = await apiFetch(`${API_BASE_URL}/api/users/teams/?captain=${profileId}`);
     const teams = normaliseArray(teamsResponse);
 
     const allTeams = teams.filter(team => team?.id).map(team => {
       teamCache.set(String(team.id), team);
       const memberCount = getTeamMemberCount(team);
-      const isEligible = (!currentUserId || isUserTeamCaptain(team, currentUserId)) && (teamSize === 0 || memberCount <= teamSize);
+      const isEligible = teamSize === 0 || memberCount <= teamSize;
       return { team, memberCount, members: getTeamMembers(team), isEligible };
     });
 
