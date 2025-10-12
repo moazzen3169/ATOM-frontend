@@ -13,6 +13,7 @@ let currentUserProfile = {};
 let cachedTeamsCount = 0;
 let cachedTournamentsCount = 0;
 let teamsInteractionsInitialized = false;
+let verificationCache = null;
 
 const DEFAULT_AVATAR_SRC = "../img/profile.jpg";
 const LEGACY_PROFILE_ENDPOINTS = [
@@ -35,6 +36,68 @@ function getProfileUpdateEndpoints() {
     return Array.from(new Set(endpoints));
 }
 const PROFILE_BIO_KEYS = ['bio', 'about', 'description'];
+
+async function getUserVerificationLevel() {
+    if (verificationCache !== null) {
+        return verificationCache;
+    }
+
+    try {
+        const response = await fetchWithAuth(`${API_BASE_URL}/api/users/verification/`, {
+            method: 'GET'
+        });
+
+        if (!response.ok) {
+            console.warn('Failed to fetch verification level:', response.status);
+            return 0;
+        }
+
+        const data = await response.json();
+        verificationCache = data.verification_level || 0;
+        return verificationCache;
+    } catch (error) {
+        console.error('Error fetching verification level:', error);
+        return 0;
+    }
+}
+
+async function getUserProfile() {
+    let profile = null;
+
+    for (const endpoint of LEGACY_PROFILE_ENDPOINTS) {
+        try {
+            const response = await fetchWithAuth(`${API_BASE_URL}${endpoint}`, {
+                method: 'GET'
+            });
+
+            if (response.ok) {
+                profile = await response.json();
+                break;
+            } else if (response.status === 404) {
+                continue;
+            } else {
+                console.warn(`Profile fetch failed for ${endpoint}:`, response.status);
+            }
+        } catch (error) {
+            console.warn(`Error fetching profile from ${endpoint}:`, error);
+        }
+    }
+
+    if (!profile) {
+        profile = {
+            id: currentUserId || null,
+            username: currentUsername || 'کاربر',
+            email: currentUserEmail || '',
+            verification_level: 0
+        };
+    }
+
+    if (typeof profile.verification_level === 'undefined') {
+        profile.verification_level = await getUserVerificationLevel();
+    }
+
+    return profile;
+}
 
 function getProfileAvatarSrc(profile) {
     if (!profile || typeof profile !== 'object') {
@@ -668,6 +731,20 @@ function translateUserStatus(status) {
     }
 }
 
+function translateVerificationLevel(level) {
+    const numLevel = Number(level) || 0;
+    switch (numLevel) {
+        case 0:
+            return 'تایید نشده';
+        case 1:
+            return 'تایید پایه';
+        case 2:
+            return 'تایید پیشرفته';
+        default:
+            return `سطح ${numLevel}`;
+    }
+}
+
 function resolveUserStatus(user = {}) {
     const statusCandidates = [
         user.status,
@@ -1101,8 +1178,6 @@ function displayUserProfile(data, teamsCount, tournamentsCount) {
     const rawScore = (typeof data.score === 'number' || typeof data.score === 'string') ? Number(data.score) : Number(data.points);
     const scoreValue = Number.isFinite(rawScore) ? rawScore : 0;
     setElementText("user_score", numberFormatter.format(scoreValue));
-
-
 
     const avatarSrc = getProfileAvatarSrc(data);
     localStorage.setItem("profile_picture", avatarSrc);
