@@ -68,7 +68,7 @@
 
 .level_title .label,
 .level_Property .label {
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--white-color);
 }
 
 .level_title .value,
@@ -83,8 +83,8 @@
     gap: 12px;
     padding: 12px 18px;
     border-radius: 12px;
-    background-color: rgba(255, 255, 255, 0.06);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
     width: fit-content;
     transition: background-color 0.3s ease, border-color 0.3s ease;
 }
@@ -95,7 +95,7 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.08);
+    background: rgba(0, 255, 242, 0.229);
     border-radius: 50%;
 }
 
@@ -121,8 +121,8 @@
 }
 
 [data-current-level-status-wrapper].status-success {
-    background-color: rgba(64, 202, 165, 0.22);
-    border-color: rgba(64, 202, 165, 0.6);
+    background-color: var(--color-half);
+    border-color: var(--color-primary);
 }
 
 [data-current-level-status-wrapper].status-pending .status-text {
@@ -142,8 +142,8 @@
     display: flex;
     align-items: stretch;
     gap: 16px;
-    background-color: rgba(11, 22, 45, 0.35);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background-color: var(--background-color);
+    border: 1px solid var(--border-color);
     border-radius: 18px;
 }
 
@@ -157,32 +157,20 @@
     min-width: 0;
 }
 
-/* .progress-step::after {
-    content: "";
-    position: absolute;
-    top: 28px;
-    right: calc(100% + 12px);
-    width: calc(100% + 24px);
-    height: 2px;
-    background: rgba(255, 255, 255, 0.12);
-    opacity: 0.6;
-} */
 
-.progress-step:last-child::after {
-    display: none;
-}
+
 
 .progress-step__badge {
     width: 38px;
     height: 38px;
     border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.25);
+    border: 2px solid var(--border-color);
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: 700;
     font-size: 16px;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--background-color);
     color: var(--white-color);
     transition: all 0.3s ease;
 }
@@ -201,16 +189,17 @@
 }
 
 .progress-step__description {
-    font-size: 14px;
+    font-size: 12px;
     line-height: 1.6;
-    color: rgba(255, 255, 255, 0.65);
+    color: var(--white-color);
+    opacity: 50%;
 }
 
 .progress-step.is-complete .progress-step__badge {
     background: var(--color-primary);
     border-color: transparent;
     color: var(--dark-color);
-    box-shadow: 0 8px 20px rgba(64, 202, 165, 0.35);
+    box-shadow: 0 0px 20px var(--color-half);
 }
 
 .progress-step.is-complete::after {
@@ -220,7 +209,7 @@
 
 .progress-step.is-active .progress-step__badge {
     border-color: var(--color-primary);
-    background: rgba(64, 202, 165, 0.15);
+    background: var(--card-color);
     color: var(--color-primary);
 }
 
@@ -292,7 +281,7 @@
 
 .nemuneh:hover {
     transform: translateY(-2px);
-    box-shadow: 0 12px 28px rgba(255, 200, 87, 0.35);
+    box-shadow: 0 0px 28px rgba(255, 180, 30, 0.279);
 }
 
 .user-verification-grid {
@@ -329,7 +318,7 @@
     justify-content: center;
     padding: 6px 12px;
     border-radius: 999px;
-    background: rgba(64, 202, 165, 0.18);
+    background: var(--color-half);
     color: var(--color-primary);
     font-weight: 700;
     font-size: 14px;
@@ -337,7 +326,8 @@
 
 .level__subtitle {
     font-size: 14px;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--white-color);
+    opacity: 50%;
 }
 
 .level_status {
@@ -414,7 +404,7 @@
 
 .verificatin_btn {
     padding: 10px 28px;
-    background: linear-gradient(135deg, var(--color-primary), rgba(64, 202, 165, 0.6));
+    background: var(--color-primary);
     border-radius: 12px;
     border: none;
     color: var(--dark-color);
@@ -667,11 +657,30 @@
     border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
+@media (max-width: 1300px) {
+    .main_content {
+        grid-column: 2 / 13;
+      }
+
+}
+
+
+
+
 @media (max-width: 1200px) {
     .verification {
         grid-template-columns: repeat(8, minmax(0, 1fr));
     }
 }
+
+@media (max-width: 1065px) {
+    .main_content {
+        grid-column: 1/ 13;
+      }
+
+}
+
+
 
 @media (max-width: 1024px) {
     .user-verification-grid {
