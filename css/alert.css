@@ -80,3 +80,57 @@
 .alert-info {
     border-right: 4px solid #3498db;
 }
+
+/* Inline app messages */
+.app-message {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    background: rgba(15, 20, 35, 0.75);
+    color: var(--white-color);
+    direction: rtl;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+}
+
+.app-message__header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.app-message__title {
+    font-weight: 700;
+    font-size: 16px;
+}
+
+.app-message__body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.app-message__hint {
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.app-message__steps {
+    list-style: disc;
+    padding-right: 18px;
+    margin: 0;
+    color: rgba(255, 255, 255, 0.85);
+}
+
+.app-message--error {
+    border-right: 4px solid #e74c3c;
+}
+
+.app-message--info {
+    border-right: 4px solid #3498db;
+}
+
+.app-message--success {
+    border-right: 4px solid #2ecc71;
+}
