@@ -1,554 +1,347 @@
-// wallet.js
-import { API_BASE_URL } from "/js/config.js";
 import { renderInlineMessage, showAppNotification } from "/js/app-errors.js";
+import WalletService from "/js/services/wallet-service.js";
 
-const notifier = typeof window !== "undefined" ? window.AppNotifier || {} : {};
-const renderInlineMessage = notifier.renderInlineMessage || ((container, _key, overrides = {}) => {
-    if (!container) return;
-    const message = overrides.message || "اطلاعاتی برای نمایش موجود نیست.";
-    container.innerHTML = `<div class="app-message app-message--info" role="alert">${message}</div>`;
-});
-const showAppNotification = notifier.showAppNotification || (() => {});
+const TRANSACTION_TYPE_METADATA = {
+  deposit: { iconClass: "Deposit_icon", rowClass: "Deposit", label: "واریز", sign: "+" },
+  withdrawal: { iconClass: "Withdraw_icon", rowClass: "Withdraw", label: "برداشت", sign: "-" },
+  entry_fee: { iconClass: "EntryFee_icon", rowClass: "EntryFee", label: "هزینه ورود", sign: "-" },
+  prize: { iconClass: "Prize_icon", rowClass: "Prize", label: "جایزه", sign: "+" },
+  spending: { iconClass: "Spending_icon", rowClass: "Spending", label: "خرج شده", sign: "-" },
+};
+
+const DEFAULT_TRANSACTION_METADATA = { iconClass: "Deposit_icon", rowClass: "Deposit", label: "تراکنش", sign: "+" };
+
+const STATUS_LABELS = {
+  success: "انجام شده",
+  done: "انجام شده",
+  pending: "در انتظار",
+  failed: "ناموفق",
+  rejected: "ناموفق",
+};
+
+const STATUS_CLASSNAMES = {
+  success: "done",
+  done: "done",
+  pending: "pending",
+  failed: "Not_done",
+  rejected: "Not_done",
+};
+
+function selectMetadata(transaction) {
+  if (!transaction) return DEFAULT_TRANSACTION_METADATA;
+  const typeKey = (transaction.transaction_type_display || transaction.transaction_type || "").toString().toLowerCase();
+  return TRANSACTION_TYPE_METADATA[typeKey] || DEFAULT_TRANSACTION_METADATA;
+}
+
+function resolveStatusLabel(transaction) {
+  if (!transaction) return STATUS_LABELS.success;
+  const statusKey = (transaction.status_display || transaction.status || "success").toString().toLowerCase();
+  return STATUS_LABELS[statusKey] || "نامشخص";
+}
+
+function resolveStatusClass(transaction) {
+  if (!transaction) return STATUS_CLASSNAMES.success;
+  const statusKey = (transaction.status_display || transaction.status || "success").toString().toLowerCase();
+  return STATUS_CLASSNAMES[statusKey] || "Not_done";
+}
+
+function formatAmount(amount, fallback = "0") {
+  if (!amount && amount !== 0) return fallback;
+  if (typeof amount === "number") {
+    return new Intl.NumberFormat("fa-IR").format(amount);
+  }
+  const numeric = Number(String(amount).replace(/,/g, ""));
+  if (Number.isFinite(numeric)) {
+    return new Intl.NumberFormat("fa-IR").format(numeric);
+  }
+  return amount;
+}
+
+function formatTimestamp(timestamp, fallback = "تاریخ نامشخص") {
+  if (!timestamp) return fallback;
+  try {
+    const date = new Date(timestamp);
+    if (Number.isNaN(date.getTime())) {
+      return timestamp;
+    }
+    return new Intl.DateTimeFormat("fa-IR", {
+      hour: "2-digit",
+      minute: "2-digit",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    }).format(date);
+  } catch (error) {
+    console.error("Failed to format timestamp", error);
+    return fallback;
+  }
+}
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const walletContainer = document.querySelector(".wallet_container");
-    const withdrawableBalanceSpan = document.getElementById("withdrawable-balance");
+  const walletContainer = document.querySelector(".wallet_container");
+  const walletBalanceSpan = document.querySelector(".Wallet_balance_value");
+  const withdrawableSpan = document.querySelector(".Withdrawable_wallet_balance_value");
+  const withdrawableBalanceSpan = document.getElementById("withdrawable-balance");
+  const transactionsContainer = document.querySelector(".Transactions_container");
+  const depositModal = document.querySelector(".Deposit_modal");
+  const withdrawModal = document.querySelector(".Withdraw_modal");
+  const depositBtn = document.querySelector(".Deposit_btn");
+  const withdrawBtn = document.querySelector(".Withdraw_btn");
+  const depositForm = document.getElementById("deposit-form");
+  const withdrawForm = document.getElementById("withdraw-form");
+  const transactionFilterButtons = document.querySelectorAll(".filter_item");
+  const orderingSelect = document.getElementById("ordering");
 
-    const TRANSACTION_TYPE_DETAILS = [
-        {
-            aliases: ["deposit"],
-            className: "Deposit",
-            iconClass: "Deposit_icon",
-            label: "واریز",
-            sign: "+",
-            filter: "deposit",
-        },
-        {
-            aliases: ["withdraw", "withdrawal"],
-            className: "Withdraw",
-            iconClass: "Withdraw_icon",
-            label: "برداشت",
-            sign: "-",
-            filter: "withdraw",
-        },
-        {
-            aliases: ["spending"],
-            className: "Spending",
-            iconClass: "Spending_icon",
-            label: "خرج شده",
-            sign: "-",
-            filter: "spending",
-        },
-        {
-            aliases: ["entry_fee", "entryfee"],
-            className: "EntryFee",
-            iconClass: "EntryFee_icon",
-            label: "هزینه ورود",
-            sign: "-",
-            filter: "entry_fee",
-        },
-        {
-            aliases: ["prize", "reward"],
-            className: "Prize",
-            iconClass: "Prize_icon",
-            label: "جایزه",
-            sign: "+",
-            filter: "prize",
-        },
-    ];
+  const service = new WalletService({});
+  if (!service.accessToken) {
+    showAppNotification("loginRequired");
+    window.location.href = "../register/login.html";
+    return;
+  }
 
-    const DEFAULT_TRANSACTION_TYPE = {
-        className: "Deposit",
-        iconClass: "Deposit_icon",
-        label: "نامشخص",
-        sign: "+",
-        filter: "",
-    };
+  const state = {
+    walletId: null,
+    currentFilter: "all",
+    ordering: "-timestamp",
+    transactions: [],
+  };
 
-    const token = setupToken();
-    if (!token) return;
+  if (orderingSelect) {
+    state.ordering = resolveOrderingValue(orderingSelect.value);
+  }
 
-    let currentWallet = null;
-    let allTransactions = [];
-    let currentFilter = "all";
-    let currentOrdering = "last";
-
+  async function initialiseWallet() {
     try {
-        const wallets = await fetchData(`${API_BASE_URL}/api/wallet/wallets/`, token);
-
-        if (!wallets || !Array.isArray(wallets) || wallets.length === 0) {
-            renderInlineMessage(walletContainer, "walletNotFound");
-            showAppNotification("walletNotFound");
-            return;
-        }
-
-        currentWallet = wallets[0];
-        if (!currentWallet || !currentWallet.id) {
-            renderInlineMessage(walletContainer, "walletNotFound");
-            showAppNotification("walletNotFound");
-            return;
-        }
-
-        updateWalletInfo(currentWallet);
-
-        if (!currentWallet.transactions || !Array.isArray(currentWallet.transactions) || currentWallet.transactions.length === 0) {
-            await loadTransactions(currentWallet.id, token);
-        } else {
-            setTransactions(currentWallet.transactions);
-        }
-
+      if (transactionsContainer) {
+        renderInlineMessage(transactionsContainer, "transactionsEmpty", {
+          title: "در حال بارگذاری",
+          message: "در حال آماده‌سازی اطلاعات کیف پول...",
+          hint: "لطفاً چند لحظه صبر کنید.",
+        });
+      }
+      const wallet = await service.getWalletSummary();
+      if (!wallet || !wallet.id) {
+        renderInlineMessage(walletContainer, "walletNotFound");
+        showAppNotification("walletNotFound");
+        return;
+      }
+      state.walletId = wallet.id;
+      updateWalletSummary(wallet);
+      await loadTransactions();
     } catch (error) {
-        console.error("Error fetching wallet data:", error);
-        renderInlineMessage(walletContainer, "walletLoadFailed");
-        showAppNotification("walletLoadFailed");
+      console.error("Failed to initialise wallet", error);
+      renderInlineMessage(walletContainer, "walletLoadFailed");
+      showAppNotification("walletLoadFailed");
     }
+  }
 
-    // Modals
-    const depositModal = document.querySelector(".Deposit_modal");
-    const withdrawModal = document.querySelector(".Withdraw_modal");
+  function updateWalletSummary(wallet) {
+    const totalBalanceDisplay = wallet.display_total_balance || wallet.total_balance_display || formatAmount(wallet.total_balance || 0);
+    const withdrawableDisplay = wallet.display_withdrawable_balance || wallet.withdrawable_balance_display || formatAmount(wallet.withdrawable_balance || 0);
 
-    // Buttons
-    const depositBtn = document.querySelector(".Deposit_btn");
-    const withdrawBtn = document.querySelector(".Withdraw_btn");
+    if (walletBalanceSpan) {
+      walletBalanceSpan.textContent = totalBalanceDisplay;
+    }
+    if (withdrawableSpan) {
+      withdrawableSpan.textContent = withdrawableDisplay;
+    }
+    if (withdrawableBalanceSpan) {
+      withdrawableBalanceSpan.textContent = `${withdrawableDisplay} تومان`;
+    }
+  }
 
-    // Forms
-    const depositForm = document.getElementById("deposit-form");
-    const withdrawForm = document.getElementById("withdraw-form");
+  function resolveOrderingValue(value) {
+    switch (value) {
+      case "start":
+        return "timestamp";
+      case "end":
+        return "-timestamp";
+      case "last":
+      default:
+        return "-timestamp";
+    }
+  }
 
-    // Withdrawable balance span
-    const transactionFilterButtons = document.querySelectorAll(".filter_item");
-    const orderingSelect = document.getElementById("ordering");
+  async function loadTransactions() {
+    if (!transactionsContainer) return;
+    try {
+      renderInlineMessage(transactionsContainer, "transactionsEmpty", {
+        title: "در حال بارگذاری",
+        message: "در حال دریافت فهرست تراکنش‌ها هستیم.",
+        hint: "این فرآیند ممکن است چند ثانیه زمان ببرد.",
+      });
+      const response = await service.getTransactions(state.walletId, {
+        transactionType: state.currentFilter,
+        ordering: state.ordering,
+        pageSize: 50,
+      });
+      state.transactions = response.results || [];
+      if (!state.transactions.length) {
+        renderInlineMessage(transactionsContainer, "transactionsEmpty");
+        return;
+      }
+      renderTransactions(state.transactions);
+    } catch (error) {
+      console.error("Failed to load transactions", error);
+      renderInlineMessage(transactionsContainer, "transactionsLoadFailed");
+      showAppNotification("transactionsLoadFailed");
+    }
+  }
 
-    transactionFilterButtons.forEach((button) => {
-        button.addEventListener("click", () => {
-            transactionFilterButtons.forEach((btn) => {
-                btn.classList.remove("active_sort");
-                btn.classList.add("none_active");
-            });
-            button.classList.add("active_sort");
-            button.classList.remove("none_active");
-            currentFilter = button.dataset.filter || "all";
-            renderTransactions();
-        });
+  function renderTransactions(transactions) {
+    if (!transactionsContainer) return;
+    transactionsContainer.innerHTML = "";
+
+    transactions.forEach((transaction) => {
+      const metadata = selectMetadata(transaction);
+      const statusLabel = resolveStatusLabel(transaction);
+      const statusClass = resolveStatusClass(transaction);
+      const amountDisplay = transaction.display_amount || formatAmount(transaction.amount);
+      const timestampDisplay = transaction.display_timestamp || formatTimestamp(transaction.timestamp);
+      const sign = transaction.display_sign || metadata.sign || "";
+
+      const template = document.createElement("div");
+      template.className = `Transaction_item ${metadata.rowClass}`;
+      template.innerHTML = `
+        <div class="icon_container">
+          <div class="${metadata.iconClass}"></div>
+        </div>
+        <div class="Transaction_mode_date">
+          <span>${transaction.display_label || metadata.label}</span>
+          <div class="date">${timestampDisplay}</div>
+        </div>
+        <div class="Transaction_prise_status">
+          <div class="prise">
+            <span>${sign}${amountDisplay}</span><span>تومان</span>
+          </div>
+          <div class="status ${statusClass}">
+            <span>${statusLabel}</span>
+          </div>
+        </div>
+      `;
+      transactionsContainer.appendChild(template);
     });
+  }
 
-    if (orderingSelect) {
-        orderingSelect.addEventListener("change", () => {
-            currentOrdering = orderingSelect.value;
-            renderTransactions();
-        });
+  async function refreshWalletData() {
+    try {
+      const wallet = await service.getWalletSummary();
+      if (wallet) {
+        updateWalletSummary(wallet);
+      }
+      await loadTransactions();
+      showAppNotification("walletRefreshed");
+    } catch (error) {
+      console.error("Failed to refresh wallet", error);
+      showAppNotification("walletLoadFailed");
     }
+  }
 
-    // Show modals
+  if (depositBtn && depositModal) {
     depositBtn.addEventListener("click", () => depositModal.classList.add("show"));
+  }
+
+  if (withdrawBtn && withdrawModal) {
     withdrawBtn.addEventListener("click", () => {
-        if (currentWallet) {
-            withdrawableBalanceSpan.textContent =
-                formatCurrency(currentWallet.withdrawable_balance || 0) + " تومان";
-        }
-        withdrawModal.classList.add("show");
+      if (withdrawableBalanceSpan && withdrawableSpan) {
+        withdrawableBalanceSpan.textContent = `${withdrawableSpan.textContent} تومان`;
+      }
+      withdrawModal.classList.add("show");
     });
+  }
 
-    // Close modals
-    [depositModal, withdrawModal].forEach(modal => {
-        modal.addEventListener("click", (e) => {
-            if (e.target.classList.contains("modal-close") || e.target.classList.contains("btn-cancel") || e.target === modal) {
-                modal.classList.remove("show");
-                const form = modal.querySelector("form");
-                if (form) form.reset();
-            }
-        });
+  [depositModal, withdrawModal].forEach((modal) => {
+    if (!modal) return;
+    modal.addEventListener("click", (event) => {
+      if (event.target.classList.contains("modal-close") || event.target.classList.contains("btn-cancel") || event.target === modal) {
+        modal.classList.remove("show");
+        const form = modal.querySelector("form");
+        if (form) {
+          form.reset();
+        }
+      }
     });
+  });
 
-    // ----------------------------
-    // Handle deposit form
-    // ----------------------------
-    depositForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const amount = parseFloat(depositForm.amount.value);
-        const descriptionField = depositForm.querySelector("[name='description']");
-        const description = descriptionField ? descriptionField.value.trim() : "";
+  if (depositForm) {
+    depositForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const submitButton = depositForm.querySelector(".btn-submit");
+      const amount = depositForm.amount?.value?.trim();
+      const description = depositForm.querySelector("[name='description']")?.value?.trim();
 
-        if (isNaN(amount) || amount < 1000) {
-            showAppNotification("invalidDepositAmount");
-            return;
+      if (!amount) {
+        showAppNotification("invalidDepositAmount");
+        return;
+      }
+
+      try {
+        if (submitButton) submitButton.disabled = true;
+        const response = await service.createTransaction("deposit", { amount, description });
+        if (response?.payment_url) {
+          window.location.href = response.payment_url;
+          return;
         }
-
-        try {
-            depositForm.querySelector(".btn-submit").disabled = true;
-
-            const payload = {
-                amount: amount.toFixed(2).toString(),
-            };
-
-            if (description) {
-                payload.description = description;
-            }
-
-            const response = await fetch(`${API_BASE_URL}/api/wallet/deposit/`, {
-                method: "POST",
-                headers: {
-                    "Authorization": "Bearer " + token,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-
-            // لاگ کامل پاسخ سرور
-            const rawText = await response.text();
-            console.log("📌 Deposit API Raw Response:", rawText);
-
-            if (!response.ok) {
-                try {
-                    const errorData = JSON.parse(rawText);
-                    throw new Error(errorData.error || errorData.detail || "خطا در واریز");
-                } catch {
-                    throw new Error(rawText || "خطا در واریز");
-                }
-            }
-
-            const data = JSON.parse(rawText);
-            console.log("📌 Parsed Deposit Response:", data);
-
-            const paymentUrl = data.payment_url;
-            if (!paymentUrl) {
-                throw new Error("لینک پرداخت دریافت نشد");
-            }
-
-            // Redirect به درگاه پرداخت
-            window.location.href = paymentUrl;
-
-        } catch (error) {
-            console.error("Deposit request failed:", error);
-            showAppNotification("depositFailed");
-        } finally {
-            depositForm.querySelector(".btn-submit").disabled = false;
-        }
+        showAppNotification("depositSuccess");
+        depositModal?.classList.remove("show");
+        depositForm.reset();
+        await refreshWalletData();
+      } catch (error) {
+        console.error("Deposit request failed", error);
+        showAppNotification("depositFailed");
+      } finally {
+        if (submitButton) submitButton.disabled = false;
+      }
     });
+  }
 
-    // ----------------------------
-    // Handle withdraw form
-    // ----------------------------
-    withdrawForm.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        const amount = parseFloat(withdrawForm.amount.value);
-        const descriptionField = withdrawForm.querySelector("[name='description']");
-        const description = descriptionField ? descriptionField.value.trim() : "";
+  if (withdrawForm) {
+    withdrawForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const submitButton = withdrawForm.querySelector(".btn-submit");
+      const amount = withdrawForm.amount?.value?.trim();
+      const description = withdrawForm.querySelector("[name='description']")?.value?.trim();
 
-        if (isNaN(amount) || amount < 1000) {
-            showAppNotification("invalidWithdrawAmount");
-            return;
-        }
+      if (!amount) {
+        showAppNotification("invalidWithdrawAmount");
+        return;
+      }
 
-        if (currentWallet && amount > currentWallet.withdrawable_balance) {
-            showAppNotification("withdrawMoreThanBalance");
-            return;
-        }
-
-        try {
-            withdrawForm.querySelector(".btn-submit").disabled = true;
-
-            const payload = {
-                amount: amount.toFixed(2).toString(),
-            };
-
-            if (description) {
-                payload.description = description;
-            }
-
-            const response = await fetch(`${API_BASE_URL}/api/wallet/withdraw/`, {
-                method: "POST",
-                headers: {
-                    "Authorization": "Bearer " + token,
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const rawText = await response.text();
-            console.log("📌 Withdraw API Raw Response:", rawText);
-
-            if (!response.ok) {
-                try {
-                    const errorData = JSON.parse(rawText);
-                    throw new Error(errorData.error || errorData.detail || "خطا در برداشت");
-                } catch {
-                    throw new Error(rawText || "خطا در برداشت");
-                }
-            }
-
-            const data = JSON.parse(rawText);
-            console.info("Withdraw response:", data);
-            showAppNotification("withdrawSuccess");
-            withdrawModal.classList.remove("show");
-            clearForm(withdrawForm);
-
-            await refreshWalletData();
-
-        } catch (error) {
-            console.error("Withdraw request failed:", error);
-            showAppNotification("withdrawFailed");
-        } finally {
-            withdrawForm.querySelector(".btn-submit").disabled = false;
-        }
+      try {
+        if (submitButton) submitButton.disabled = true;
+        await service.createTransaction("withdrawal", { amount, description });
+        showAppNotification("withdrawSuccess");
+        withdrawModal?.classList.remove("show");
+        withdrawForm.reset();
+        await refreshWalletData();
+      } catch (error) {
+        console.error("Withdraw request failed", error);
+        showAppNotification("withdrawFailed");
+      } finally {
+        if (submitButton) submitButton.disabled = false;
+      }
     });
+  }
 
-    // ----------------------------
-    // Helper functions
-    // ----------------------------
-    function clearForm(form) {
-        if (!form) return;
-        form.reset();
-    }
+  transactionFilterButtons.forEach((button) => {
+    button.addEventListener("click", async () => {
+      transactionFilterButtons.forEach((item) => {
+        item.classList.remove("active_sort");
+        item.classList.add("none_active");
+      });
+      button.classList.add("active_sort");
+      button.classList.remove("none_active");
+      state.currentFilter = button.dataset.filter || "all";
+      await loadTransactions();
+    });
+  });
 
-    async function refreshWalletData() {
-        try {
-            const wallets = await fetchData(`${API_BASE_URL}/api/wallet/wallets/`, token);
-            if (!wallets || !Array.isArray(wallets) || wallets.length === 0) {
-                renderInlineMessage(walletContainer, "walletNotFound");
-                return;
-            }
-            currentWallet = wallets[0];
-            updateWalletInfo(currentWallet);
-            await loadTransactions(currentWallet.id, token);
-        } catch (error) {
-            console.error("Error refreshing wallet data:", error);
-            showAppNotification("walletLoadFailed");
-        }
-    }
+  if (orderingSelect) {
+    orderingSelect.addEventListener("change", async () => {
+      state.ordering = resolveOrderingValue(orderingSelect.value);
+      await loadTransactions();
+    });
+  }
 
-    async function loadTransactions(walletId, token) {
-        try {
-            const walletDetail = await fetchData(`${API_BASE_URL}/api/wallet/wallets/${walletId}/`, token);
-            if (walletDetail.transactions && Array.isArray(walletDetail.transactions)) {
-                setTransactions(walletDetail.transactions);
-            } else {
-                const txContainer = document.querySelector(".Transactions_container");
-                renderInlineMessage(txContainer, "transactionsEmpty");
-            }
-        } catch (error) {
-            console.error("Error loading transactions:", error);
-            const txContainer = document.querySelector(".Transactions_container");
-            renderInlineMessage(txContainer, "transactionsLoadFailed");
-            showAppNotification("transactionsLoadFailed");
-        }
-    }
-
-    function setTransactions(transactions) {
-        allTransactions = Array.isArray(transactions) ? [...transactions] : [];
-        renderTransactions();
-    }
-
-    function setupToken() {
-        let token = localStorage.getItem('token') || localStorage.getItem('access_token');
-        if (!token) {
-            showAppNotification("loginRequired");
-            window.location.href = "../register/login.html";
-            return null;
-        }
-        return token;
-    }
-
-    async function fetchData(url, token) {
-        const response = await fetch(url, {
-            headers: {
-                "Authorization": "Bearer " + token,
-                "Content-Type": "application/json",
-            },
-        });
-
-        if (response.status === 401) {
-            await refreshToken();
-            const newToken = localStorage.getItem('token') || localStorage.getItem('access_token');
-            return fetchData(url, newToken);
-        }
-
-        if (!response.ok) {
-            const error = new Error("REQUEST_FAILED");
-            error.status = response.status;
-            throw error;
-        }
-
-        return await response.json();
-    }
-
-    async function refreshToken() {
-        try {
-            const refreshToken = localStorage.getItem('refresh_token');
-            if (!refreshToken) throw new Error('Refresh token not found');
-
-            const response = await fetch(`${API_BASE_URL}/auth/jwt/refresh/`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ refresh: refreshToken })
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                localStorage.setItem('token', data.access);
-                localStorage.setItem('access_token', data.access);
-                console.log('Token refreshed successfully');
-            } else {
-                throw new Error('Failed to refresh token');
-            }
-        } catch (error) {
-            console.error('Error refreshing token:', error);
-            localStorage.clear();
-            window.location.href = "../register/login.html";
-        }
-    }
-
-    function updateWalletInfo(wallet) {
-        const walletBalanceSpan = document.querySelector(".Wallet_balance_value");
-        const withdrawableSpan = document.querySelector(".Withdrawable_wallet_balance_value");
-
-        if (walletBalanceSpan) {
-            walletBalanceSpan.textContent = formatCurrency(wallet.total_balance || 0);
-        }
-
-        if (withdrawableSpan) {
-            withdrawableSpan.textContent = formatCurrency(wallet.withdrawable_balance || 0);
-        }
-
-        if (withdrawableBalanceSpan) {
-            withdrawableBalanceSpan.textContent =
-                formatCurrency(wallet.withdrawable_balance || 0) + " تومان";
-        }
-
-        currentWallet = { ...(currentWallet || {}), ...wallet };
-
-        if (currentWallet) {
-            currentWallet.total_balance = wallet.total_balance;
-            currentWallet.withdrawable_balance = wallet.withdrawable_balance;
-        }
-    }
-
-    function renderTransactions() {
-        const container = document.querySelector(".Transactions_container");
-        container.innerHTML = "";
-
-        const transactionsToRender = prepareTransactions();
-
-        if (!transactionsToRender || transactionsToRender.length === 0) {
-            renderInlineMessage(container, "transactionsEmpty");
-            return;
-        }
-
-        transactionsToRender.forEach((tx) => {
-            const typeInfo = getTransactionTypeInfo(tx.transaction_type);
-            const typeClass = typeInfo.className;
-            const statusClass = getStatusClass(tx.status);
-            const amountValue = normalizeAmount(tx.amount);
-            const sign = typeInfo.sign;
-            const formattedAmount = formatCurrency(Math.abs(amountValue));
-
-            const item = `
-                <div class="Transaction_item ${typeClass}">
-                    <div class="icon_container">
-                        <div class="${typeInfo.iconClass}"></div>
-                    </div>
-                    <div class="Transaction_mode_date">
-                        <span>${typeInfo.label}</span>
-                        <div class="date">${formatDate(tx.timestamp)}</div>
-                    </div>
-                    <div class="Transaction_prise_status">
-                        <div class="prise">
-                            <span>${sign}${formattedAmount}</span><span>تومان</span>
-                        </div>
-                        <div class="status ${statusClass}">
-                            <span>${translateStatus(tx.status)}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-            container.insertAdjacentHTML("beforeend", item);
-        });
-    }
-
-    function prepareTransactions() {
-        if (!allTransactions || allTransactions.length === 0) return [];
-
-        const filtered = allTransactions.filter((tx) => {
-            if (currentFilter === "all") return true;
-            const info = getTransactionTypeInfo(tx.transaction_type);
-            return info.filter === currentFilter;
-        });
-
-        return filtered.sort((a, b) => sortTransactions(a, b));
-    }
-
-    function sortTransactions(a, b) {
-        if (currentOrdering === "start") {
-            return getTimestamp(a) - getTimestamp(b);
-        }
-
-        if (currentOrdering === "end" || currentOrdering === "last") {
-            return getTimestamp(b) - getTimestamp(a);
-        }
-
-        return 0;
-    }
-
-    function getTimestamp(transaction) {
-        if (!transaction || !transaction.timestamp) return 0;
-        const time = new Date(transaction.timestamp).getTime();
-        return Number.isNaN(time) ? 0 : time;
-    }
-
-    function getTransactionTypeInfo(type) {
-        const normalized = (type || "").toLowerCase();
-        const match = TRANSACTION_TYPE_DETAILS.find((detail) =>
-            detail.aliases.some((alias) => alias.toLowerCase() === normalized)
-        );
-
-        return match || DEFAULT_TRANSACTION_TYPE;
-    }
-
-    function getStatusClass(status) {
-        const normalized = (status || "done").toLowerCase();
-        return normalized === "done" || normalized === "success" ? "done" : "Not_done";
-    }
-
-    function translateStatus(status) {
-        switch ((status || "done").toLowerCase()) {
-            case "done":
-            case "success":
-                return "انجام شده";
-            case "pending":
-                return "در انتظار";
-            case "failed":
-            case "rejected":
-                return "ناموفق";
-            default:
-                return "نامشخص";
-        }
-    }
-
-    function formatDate(isoDate) {
-        if (!isoDate) return "تاریخ نامشخص";
-        try {
-            const date = new Date(isoDate);
-            return date.toLocaleString("fa-IR", {
-                hour: "2-digit",
-                minute: "2-digit",
-                day: "numeric",
-                month: "long",
-                year: "numeric",
-            });
-        } catch (error) {
-            console.error("Error formatting date:", error);
-            return "تاریخ نامشخص";
-        }
-    }
-
-    function formatCurrency(amount) {
-        const numericAmount = normalizeAmount(amount);
-        return numericAmount.toLocaleString("fa-IR");
-    }
-
-    function normalizeAmount(amount) {
-        const numericAmount = Number(typeof amount === "string" ? amount.replace(/,/g, "") : amount);
-        return Number.isNaN(numericAmount) ? 0 : numericAmount;
-    }
-
+  await initialiseWallet();
 });
