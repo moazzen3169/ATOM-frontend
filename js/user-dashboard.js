@@ -14,6 +14,7 @@ let cachedTeamsCount = 0;
 let cachedTournamentsCount = 0;
 let teamsInteractionsInitialized = false;
 let verificationCache = null;
+let incomingInvitationsLoadedFromApi = false;
 
 const DEFAULT_AVATAR_SRC = "../img/profile.jpg";
 const LEGACY_PROFILE_ENDPOINTS = [
@@ -36,6 +37,15 @@ function getProfileUpdateEndpoints() {
     return Array.from(new Set(endpoints));
 }
 const PROFILE_BIO_KEYS = ['bio', 'about', 'description'];
+
+const TEAM_INVITATIONS_ENDPOINTS = [
+    '/api/users/teams/invitations/received/',
+    '/api/users/teams/invitations/',
+    '/api/users/team-invitations/',
+    '/api/users/teams/pending-invitations/',
+    '/api/users/teams/incoming-invitations/',
+    '/api/users/teams/invitations/active/'
+];
 
 async function getUserVerificationLevel() {
     if (verificationCache !== null) {
@@ -224,6 +234,69 @@ function toTeamArray(payload) {
     if (Array.isArray(payload)) return payload;
     if (Array.isArray(payload.results)) return payload.results;
     if (Array.isArray(payload.teams)) return payload.teams;
+    return [];
+}
+
+function toInvitationArray(payload) {
+    if (!payload) return [];
+    if (Array.isArray(payload)) return payload;
+
+    const primaryCandidates = [
+        'results',
+        'data',
+        'items',
+        'entries',
+        'list',
+        'invitations',
+        'incoming_invitations',
+        'received_invitations',
+        'team_invitations',
+        'pending_invitations',
+        'active_invitations',
+        'received'
+    ];
+
+    for (const key of primaryCandidates) {
+        if (!Object.prototype.hasOwnProperty.call(payload, key)) {
+            continue;
+        }
+        const value = payload[key];
+        if (Array.isArray(value)) {
+            return value;
+        }
+        if (value && typeof value === 'object') {
+            const nestedCandidates = ['results', 'data', 'items', 'entries', 'list', 'received'];
+            for (const nestedKey of nestedCandidates) {
+                const nestedValue = value[nestedKey];
+                if (Array.isArray(nestedValue)) {
+                    return nestedValue;
+                }
+            }
+        }
+    }
+
+    if (payload.invitations && typeof payload.invitations === 'object') {
+        const nested = payload.invitations;
+        if (Array.isArray(nested)) {
+            return nested;
+        }
+        const nestedCandidates = ['results', 'data', 'items', 'entries', 'list', 'received'];
+        for (const nestedKey of nestedCandidates) {
+            const nestedValue = nested[nestedKey];
+            if (Array.isArray(nestedValue)) {
+                return nestedValue;
+            }
+        }
+    }
+
+    if (payload.detail && typeof payload.detail === 'string') {
+        return [];
+    }
+
+    if (typeof payload === 'object' && (Object.prototype.hasOwnProperty.call(payload, 'id') || Object.prototype.hasOwnProperty.call(payload, 'invitation_id'))) {
+        return [payload];
+    }
+
     return [];
 }
 
@@ -648,12 +721,14 @@ function isTeamCaptain(team) {
 function getTeamNameFromItem(item) {
     if (!item) return '';
     if (item.team && typeof item.team === 'object') {
-        return item.team.name || item.team.title || item.team.slug || item.team.team_name || '';
+        return item.team.name || item.team.title || item.team.slug || item.team.team_name || item.team.display_name || '';
     }
     if (typeof item.team === 'string') return item.team;
     if (item.team_name) return item.team_name;
     if (item.teamTitle) return item.teamTitle;
     if (item.team_info && item.team_info.name) return item.team_info.name;
+    if (typeof item.name === 'string') return item.name;
+    if (typeof item.title === 'string') return item.title;
     return '';
 }
 
@@ -666,6 +741,17 @@ function getUsernameFromItem(item) {
         || item.sender?.username
         || item.invitee_username
         || item.invited_username
+        || item.sender_name
+        || item.inviter?.username
+        || item.inviter_name
+        || item.approved_by?.username
+        || item.approved_by_name
+        || item.owner?.username
+        || item.created_by?.username
+        || item.captain?.username
+        || item.captain_username
+        || item.requester_name
+        || item.requested_by
         || (typeof item.user === 'string' ? item.user : '')
         || '';
 }
@@ -1232,6 +1318,10 @@ async function loadDashboardData() {
         }
 
         handleTeamExtrasFromDashboard(dashboardData);
+        await ensureIncomingInvitationsLoaded({
+            force: !incomingInvitationsLoadedFromApi || !Array.isArray(incomingInvitationsState) || incomingInvitationsState.length === 0,
+            fallbackData: incomingInvitationsState
+        });
 
         const userId = dashboardData?.user_profile?.id || currentUserId;
         const teamsPromise = fetchUserTeams();
@@ -1287,6 +1377,8 @@ async function loadDashboardData() {
 
     } catch (error) {
         console.error("خطا در لود کردن اطلاعات داشبورد:", error);
+
+        await ensureIncomingInvitationsLoaded({ force: true });
 
         // اگر خطا داریم، از داده‌های localStorage استفاده می‌کنیم
         const userData = localStorage.getItem('user_data');
@@ -1570,6 +1662,7 @@ function handleTeamExtrasFromDashboard(dashboardData) {
     ]);
     if (incoming !== undefined) {
         incomingInvitationsState = Array.isArray(incoming) ? incoming : [];
+        incomingInvitationsLoadedFromApi = false;
     }
 
     const joinRequests = extractListFromObject(dashboardData, [
@@ -1616,6 +1709,95 @@ function displayIncomingInvitations(invitations) {
     container.appendChild(fragment);
 }
 
+async function fetchIncomingTeamInvitations() {
+    let lastError = null;
+
+    for (const endpoint of TEAM_INVITATIONS_ENDPOINTS) {
+        try {
+            const response = await fetchWithAuth(`${API_BASE_URL}${endpoint}`, {
+                method: 'GET'
+            });
+
+            if (!response.ok) {
+                if (response.status >= 500) {
+                    let message = null;
+                    try {
+                        message = await extractErrorMessage(response);
+                    } catch (error) {
+                        message = null;
+                    }
+                    console.warn(`خطا در دریافت دعوت‌نامه‌ها از ${endpoint}:`, message || response.status);
+                }
+                continue;
+            }
+
+            const raw = await response.text();
+            if (!raw) {
+                return [];
+            }
+
+            let data;
+            try {
+                data = JSON.parse(raw);
+            } catch (parseError) {
+                console.warn(`امکان parse پاسخ دعوت‌نامه‌ها از ${endpoint} وجود ندارد:`, parseError);
+                continue;
+            }
+
+            if (data && typeof data === 'object' && !Array.isArray(data) && typeof data.detail === 'string') {
+                continue;
+            }
+
+            const invitations = toInvitationArray(data);
+            if (Array.isArray(invitations)) {
+                return invitations;
+            }
+        } catch (error) {
+            lastError = error;
+            console.warn(`خطا در تلاش برای دریافت دعوت‌نامه‌ها از ${endpoint}:`, error);
+        }
+    }
+
+    if (lastError) {
+        throw lastError;
+    }
+
+    return [];
+}
+
+async function ensureIncomingInvitationsLoaded({ force = false, fallbackData = null } = {}) {
+    const hasFallback = Array.isArray(fallbackData) && fallbackData.length > 0;
+
+    if (hasFallback && !force && !incomingInvitationsLoadedFromApi) {
+        incomingInvitationsState = fallbackData;
+        displayIncomingInvitations(incomingInvitationsState);
+        return incomingInvitationsState;
+    }
+
+    if (incomingInvitationsLoadedFromApi && !force) {
+        displayIncomingInvitations(incomingInvitationsState);
+        return incomingInvitationsState;
+    }
+
+    try {
+        const invitations = await fetchIncomingTeamInvitations();
+        incomingInvitationsState = Array.isArray(invitations) ? invitations : [];
+        incomingInvitationsLoadedFromApi = true;
+        displayIncomingInvitations(incomingInvitationsState);
+        return incomingInvitationsState;
+    } catch (error) {
+        console.error('خطا در دریافت دعوت‌نامه‌های تیم:', error);
+        incomingInvitationsLoadedFromApi = false;
+
+        if (Array.isArray(fallbackData)) {
+            incomingInvitationsState = fallbackData;
+        }
+
+        displayIncomingInvitations(incomingInvitationsState);
+        return incomingInvitationsState;
+    }
+}
+
 function displayJoinRequests(requests) {
     const container = document.getElementById('team_join_requests_container');
     if (!container) return;
@@ -1658,7 +1840,8 @@ function renderInvitationCard(invitation) {
     const card = document.createElement('div');
     card.className = 'mini_card';
     const teamName = getTeamNameFromItem(invitation) || 'تیم ناشناخته';
-    const senderName = getUsernameFromItem(invitation.sender ? invitation.sender : invitation) || '';
+    const senderSource = invitation.sender || invitation.invited_by || invitation.inviter || invitation.owner || invitation;
+    const senderName = getUsernameFromItem(senderSource) || invitation.sender_name || invitation.inviter_name || '';
     const status = getInvitationStatus(invitation);
     const createdAt = invitation?.created_at || invitation?.created || invitation?.sent_at;
     const message = invitation?.message || invitation?.note || '';
@@ -1857,10 +2040,15 @@ async function refreshTeamData() {
             displayUserProfile(dashboardData.user_profile, teamsCount, tournamentsCount);
         }
         handleTeamExtrasFromDashboard(dashboardData);
+        await ensureIncomingInvitationsLoaded({
+            force: !incomingInvitationsLoadedFromApi || !Array.isArray(incomingInvitationsState) || incomingInvitationsState.length === 0,
+            fallbackData: incomingInvitationsState
+        });
     } else {
         displayIncomingInvitations(incomingInvitationsState);
         displayJoinRequests(joinRequestsState);
         displayOutgoingInvitations(outgoingInvitationsState);
+        await ensureIncomingInvitationsLoaded({ force: true });
     }
 }
 
@@ -2162,7 +2350,9 @@ async function respondToInvitationAction(inviteId, action) {
 
         showSuccess(action === 'accept' ? 'دعوت‌نامه پذیرفته شد.' : 'دعوت‌نامه رد شد.');
         incomingInvitationsState = incomingInvitationsState.filter(item => String(item.id || item.invitation_id) !== String(inviteId));
+        incomingInvitationsLoadedFromApi = false;
         await refreshTeamData();
+        await ensureIncomingInvitationsLoaded({ force: true });
     } catch (error) {
         console.error('خطا در پاسخ به دعوت‌نامه:', error);
         showError(error.message || 'خطا در پاسخ به دعوت‌نامه');
