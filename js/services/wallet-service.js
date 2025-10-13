@@ -2,6 +2,8 @@ import { API_BASE_URL } from "/js/config.js";
 
 const WALLET_ENDPOINT = "/api/wallet/wallets/";
 const TRANSACTIONS_ENDPOINT = "/api/wallet/transactions/";
+const DEPOSIT_ENDPOINT = "/api/wallet/deposit/";
+const WITHDRAW_ENDPOINT = "/api/wallet/withdraw/";
 
 function buildQuery(query) {
   if (!query || typeof query !== "object") {
@@ -191,14 +193,26 @@ export class WalletService {
     if (!transactionType) {
       throw new Error("TRANSACTION_TYPE_REQUIRED");
     }
-    const payload = { transaction_type: transactionType };
+    const payload = {};
+    let endpoint = TRANSACTIONS_ENDPOINT;
+
+    if (transactionType === "deposit") {
+      endpoint = DEPOSIT_ENDPOINT;
+    } else if (transactionType === "withdrawal") {
+      endpoint = WITHDRAW_ENDPOINT;
+    } else {
+      payload.transaction_type = transactionType;
+    }
+
     if (amount !== undefined) {
       payload.amount = amount;
     }
-    if (description) {
+
+    if (description && endpoint === TRANSACTIONS_ENDPOINT) {
       payload.description = description;
     }
-    return this.fetchJson(TRANSACTIONS_ENDPOINT, {
+
+    return this.fetchJson(endpoint, {
       method: "POST",
       body: payload,
     });
