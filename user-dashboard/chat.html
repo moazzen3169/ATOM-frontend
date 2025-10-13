@@ -1,93 +1,103 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>chat page</title>
-        <link rel="stylesheet" href="/css/colors.css">
-        <link rel="stylesheet" href="/fonts/fonts.css">
-        <link rel="stylesheet" href="/css/chat.css">
+    <title>گفتگوهای کاربر</title>
+    <link rel="stylesheet" href="/css/colors.css">
+    <link rel="stylesheet" href="/fonts/fonts.css">
+    <link rel="stylesheet" href="/css/chat.css">
 </head>
-
-
-
-<body>
-
-
-
-  <div class="chat_container">
-
-    <!-- ساید بار برای نمایش لیست کاربران -->
-    <div class="chat_contacts_list">
-
-
-
-        <div class="chat_header">
-            <div class="user_info">
-                <div class="user_profile">
-                    <img src="/img/profile.jpg" alt="profile">
+<body class="chat-page">
+    <div class="chat-layout chat_container">
+        <aside class="chat-sidebar" aria-label="لیست گفتگوها">
+            <header class="chat-sidebar__header">
+                <div class="chat-sidebar__profile">
+                    <figure class="chat-avatar chat-avatar--md">
+                        <img src="/img/profile.jpg" alt="نمایه کاربر">
+                    </figure>
+                    <div class="chat-sidebar__info">
+                        <span class="chat-sidebar__label">حساب شما</span>
+                        <span class="chat-sidebar__username" id="current-username">کاربر</span>
+                    </div>
                 </div>
-                <span>You</span>
+                <div class="chat-sidebar__header-actions">
+                    <button type="button" class="icon-button" id="new-conversation-btn" aria-haspopup="dialog" title="ایجاد گفتگوی جدید">
+                        <img src="/img/icons/add-user.svg" alt="ایجاد گفتگوی جدید">
+                    </button>
+                </div>
+            </header>
+            <div class="chat-sidebar__body">
+                <div class="chat-sidebar__title">گفتگوهای من</div>
+                <div class="chat-sidebar__list" id="chat-contact-list" role="list"></div>
+                <div class="chat-sidebar__empty" id="contacts-empty-state" hidden>
+                    <img src="/img/icons/message.svg" alt="بدون گفتگو">
+                    <p>هنوز گفتگویی آغاز نکرده‌اید. از دکمه بالا برای شروع استفاده کنید.</p>
+                </div>
             </div>
-            <div class="chat_menu">
-                <button class="menu_btn" id="new-conversation-btn">
-                    <img src="/img/icons/plus.svg" alt="New Conversation">
+        </aside>
+        <section class="chat-thread" aria-live="polite">
+            <header class="chat-thread__header">
+                <button type="button" class="icon-button chat-thread__back" aria-label="بازگشت" title="بازگشت">
+                    <img src="/img/icons/back.svg" alt="بازگشت">
                 </button>
-            </div>
-        </div>
-        <div class="contact_list">
-            <!-- Dynamic contacts will be rendered here -->
-        </div>
-
-
-
-
-    </div>
-
-    <!-- برای نمایش چت کاربر انتخاب شده -->
-    <div class="chat_contact_messages">
-        <div class="contact_messages_header">
-            <div class="logo">
-                <img src="/img/logo.png" alt="logo">
-            </div>
-            <div class="selected_contact">
-                <div class="contact_content">
-                    <span>contact name</span>
+                <div class="chat-thread__meta">
+                    <figure class="chat-avatar chat-avatar--lg" id="selected-contact-avatar">
+                        <img src="/img/icons/profile.svg" alt="نمایه مخاطب">
+                    </figure>
+                    <div class="chat-thread__info">
+                        <span class="chat-thread__name" id="selected-contact-name">یک گفتگو انتخاب کنید</span>
+                        <span class="chat-thread__status" id="selected-contact-status">در انتظار انتخاب گفتگو</span>
+                    </div>
                 </div>
-                <div class="contact_profile">
-                    <img src="/img/icons/user-icon.svg" alt="profile">
-                </div>
-                <button class="back"><img src="/img/icons/back.svg" alt="back"></button>
+            </header>
+            <div class="chat-thread__empty" id="chat-empty-state">
+                <img src="/img/icons/chat.svg" alt="پنجره گفتگو">
+                <h2>گفتگویی انتخاب نشده است</h2>
+                <p>برای مشاهده پیام‌ها یکی از گفتگوهای سمت راست را انتخاب کنید یا گفتگوی جدیدی بسازید.</p>
             </div>
-        </div>
-
-        <div class="messages_container"></div>
-
-        <div class="data_sending_section" >
-
-                <form id="data_sender_form" class="data_sender_form" method="post">
-                    <label class="files" for="file_input"><img src="/img/icons/file-input.svg" alt="file"></label>
-                    <input type="file" name="file" id="file_input" style="display: none;">
-                    
-                    <input class="chat_input" type="text" name="chat-input" id="chat-input" placeholder="متن خودرا وارد کنید..">
-                    <button type="submit" class="sender">
-                        <img src="/img/icons/send.svg" alt="send">
+            <div class="chat-thread__messages" id="messages-container" role="log" aria-live="polite" aria-relevant="additions"></div>
+            <div class="chat-thread__typing" id="typing-indicator" hidden></div>
+            <footer class="chat-thread__composer">
+                <form id="data_sender_form" class="composer" autocomplete="off">
+                    <label class="icon-button icon-button--muted" for="file_input" title="افزودن پیوست">
+                        <img src="/img/icons/file-input.svg" alt="افزودن فایل">
+                    </label>
+                    <input type="file" name="file" id="file_input" class="composer__file-input" hidden>
+                    <input class="composer__input" type="text" name="chat-input" id="chat-input" placeholder="پیام خود را بنویسید…" autocomplete="off" aria-label="متن پیام">
+                    <button type="submit" class="icon-button icon-button--primary" title="ارسال پیام" aria-label="ارسال پیام">
+                        <img src="/img/icons/send.svg" alt="ارسال">
                     </button>
                 </form>
-        </div>
-
-
-
+            </footer>
+        </section>
     </div>
 
-  </div>
+    <div class="chat-modal" id="chat-modal" hidden>
+        <div class="chat-modal__overlay" data-modal-dismiss></div>
+        <div class="chat-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="chat-modal-title">
+            <button type="button" class="icon-button icon-button--muted chat-modal__close" data-modal-dismiss aria-label="بستن">
+                <img src="/img/icons/close.svg" alt="بستن">
+            </button>
+            <div class="chat-modal__header">
+                <h2 id="chat-modal-title"></h2>
+                <p id="chat-modal-description"></p>
+            </div>
+            <form class="chat-modal__form" id="chat-modal-form">
+                <div class="chat-modal__content" id="chat-modal-content"></div>
+                <div class="chat-modal__footer">
+                    <button type="button" class="btn btn--ghost" data-modal-cancel>انصراف</button>
+                    <button type="submit" class="btn btn--primary" data-modal-confirm>تایید</button>
+                </div>
+            </form>
+        </div>
+    </div>
 
-
-
+    <div class="chat-toast" id="chat-toast" role="status" aria-live="polite" hidden></div>
 
     <script src="/js/chat/api.js" type="module"></script>
     <script src="/js/chat/chat.js" type="module"></script>
-    <script src="/js/chat//ui.js" type="module"></script>
+    <script src="/js/chat/ui.js" type="module"></script>
     <script src="/js/chat/websocket.js" type="module"></script>
 </body>
 </html>

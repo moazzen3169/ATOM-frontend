@@ -1,7 +1,14 @@
 import { AUTH_TOKEN } from './api.js';
-import { handleNewMessage, handleEditedMessage, handleDeletedMessage, handleTypingIndicator } from './ui.js';
+import {
+    handleNewMessage,
+    handleEditedMessage,
+    handleDeletedMessage,
+    handleTypingIndicator,
+    showToast,
+} from './ui.js';
 
-const WEBSOCKET_BASE_URL = `ws://${window.location.host}/ws/chat`;
+const protocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
+const WEBSOCKET_BASE_URL = `${protocol}://${window.location.host}/ws/chat`;
 let webSocket = null;
 
 export function connectWebSocket(conversationId) {
@@ -9,7 +16,8 @@ export function connectWebSocket(conversationId) {
         webSocket.close();
     }
 
-    const url = `${WEBSOCKET_BASE_URL}/${conversationId}/?token=${AUTH_TOKEN}`;
+    const tokenQuery = AUTH_TOKEN ? `?token=${encodeURIComponent(AUTH_TOKEN)}` : '';
+    const url = `${WEBSOCKET_BASE_URL}/${conversationId}/${tokenQuery}`;
     webSocket = new WebSocket(url);
 
     webSocket.onopen = () => {
@@ -37,18 +45,28 @@ export function connectWebSocket(conversationId) {
     };
 
     webSocket.onclose = () => {
-        console.log("WebSocket disconnected.");
+        console.log('WebSocket disconnected.');
     };
 
-    webSocket.onerror = (error) => {
-        console.error("WebSocket error:", error);
+    webSocket.onerror = error => {
+        console.error('WebSocket error:', error);
+        showToast('ارتباط زنده پیام‌رسان قطع شد.', 'error');
     };
 }
 
-export function sendWebSocketMessage(message) {
-    if (webSocket && webSocket.readyState === WebSocket.OPEN) {
-        webSocket.send(JSON.stringify(message));
-    } else {
-        console.error("WebSocket is not connected.");
+export function sendWebSocketMessage(message, { silent = false } = {}) {
+    if (!isConnected()) {
+        console.error('WebSocket is not connected.');
+        if (!silent) {
+            showToast('ارسال پیام از طریق وب‌سوکت ممکن نشد.', 'error');
+        }
+        return false;
     }
+
+    webSocket.send(JSON.stringify(message));
+    return true;
+}
+
+export function isConnected() {
+    return Boolean(webSocket && webSocket.readyState === WebSocket.OPEN);
 }
