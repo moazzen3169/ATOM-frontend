@@ -409,6 +409,65 @@ function extractUserDisplayName(user) {
     return '';
 }
 
+function extractUserAvatar(user) {
+    if (!user || (typeof user !== 'object' && typeof user !== 'function')) {
+        return DEFAULT_AVATAR_SRC;
+    }
+
+    const inspected = new Set();
+    const queue = [user];
+    const avatarKeys = [
+        'profile_picture',
+        'profilePicture',
+        'avatar',
+        'avatar_url',
+        'avatarUrl',
+        'profile_image',
+        'profileImage',
+        'image',
+        'picture',
+        'photo',
+        'thumbnail',
+        'profilePic'
+    ];
+    const nestedKeys = [
+        'profile',
+        'user',
+        'member',
+        'player',
+        'account',
+        'details'
+    ];
+
+    while (queue.length) {
+        const current = queue.shift();
+        if (!current || typeof current !== 'object') {
+            continue;
+        }
+
+        if (inspected.has(current)) {
+            continue;
+        }
+        inspected.add(current);
+
+        for (const key of avatarKeys) {
+            const value = current[key];
+            if (typeof value === 'string' && value.trim()) {
+                return value;
+            }
+        }
+
+        for (const key of nestedKeys) {
+            const nested = current[key];
+            if (nested && typeof nested === 'object') {
+                queue.push(nested);
+            }
+        }
+    }
+
+    return DEFAULT_AVATAR_SRC;
+}
+
 function getTeamMembersMeta(team) {
     const membersList = team.members_detail || team.members_info || team.members_data || team.members;
     const supplementalNames = Array.isArray(team.members_usernames)
@@ -429,35 +488,45 @@ function getTeamMembersMeta(team) {
                     ? team.members.length
                     : 0;
 
-    let memberNames = [];
+    let memberDetails = [];
 
     if (Array.isArray(membersList)) {
-        memberNames = membersList
-            .map(member => extractUserDisplayName(member))
-            .filter(Boolean);
+        memberDetails = membersList
+            .map(member => ({
+                name: extractUserDisplayName(member),
+                avatar: extractUserAvatar(member)
+            }))
+            .filter(detail => detail.name || detail.avatar);
     }
 
-    if (!memberNames.length && supplementalNames.length) {
-        memberNames = supplementalNames.map(name => String(name)).filter(Boolean);
+    if (!memberDetails.length && supplementalNames.length) {
+        memberDetails = supplementalNames
+            .map(name => ({ name: String(name), avatar: DEFAULT_AVATAR_SRC }))
+            .filter(detail => detail.name);
     }
 
-    if (!memberNames.length) {
-        return { count: memberCount, chips: '' };
+    if (!memberDetails.length) {
+        return { count: memberCount, preview: '' };
     }
 
-    const previewNames = memberNames.slice(0, 5);
-    let chips = previewNames
-        .map(name => `<span class="team_member_chip">${escapeHTML(name)}</span>`)
+    const previewMembers = memberDetails.slice(0, 6);
+    let preview = previewMembers
+        .map(member => {
+            const displayName = member.name ? escapeHTML(member.name) : 'عضو تیم';
+            const avatarSrc = escapeHTML((member.avatar || DEFAULT_AVATAR_SRC).trim() || DEFAULT_AVATAR_SRC);
+            return `<div class="team_member_avatar" role="listitem" title="${displayName}"><img src="${avatarSrc}" alt="آواتار ${displayName}" onerror="this.src='${DEFAULT_AVATAR_SRC}'; this.onerror=null;"></div>`;
+        })
         .join('');
 
-    const remaining = memberCount - previewNames.length;
+    const totalKnownMembers = memberCount > 0 ? memberCount : memberDetails.length;
+    const remaining = totalKnownMembers - previewMembers.length;
     if (remaining > 0) {
-        chips += `<span class="team_member_chip team_member_chip--more">+${remaining}</span>`;
-    } else if (memberNames.length > previewNames.length) {
-        chips += `<span class="team_member_chip team_member_chip--more">+${memberNames.length - previewNames.length}</span>`;
+        preview += `<div class="team_member_avatar team_member_avatar--more" role="listitem" aria-label="اعضای بیشتر">+${remaining}</div>`;
+    } else if (memberDetails.length > previewMembers.length) {
+        preview += `<div class="team_member_avatar team_member_avatar--more" role="listitem" aria-label="اعضای بیشتر">+${memberDetails.length - previewMembers.length}</div>`;
     }
 
-    return { count: memberCount, chips };
+    return { count: memberCount, preview };
 }
 
 function getCaptainName(team) {
@@ -1615,18 +1684,18 @@ function createTeamCard(team) {
             ${isCaptain ? '<span class="team_badge">کاپیتان</span>' : ''}
         </header>
         <div class="team_card__body">
-            <dl class="team_meta">
-                <div>
-                    <dt>تعداد اعضا</dt>
-                    <dd>${membersMeta.count}</dd>
+            <div class="team_card__summary">
+                <div class="team_stat">
+                    <span class="team_stat__label">تعداد اعضا</span>
+                    <span class="team_stat__value">${membersMeta.count}</span>
                 </div>
-                <div>
-                    <dt>کاپیتان</dt>
-                    <dd>${escapeHTML(captainName || '-')}</dd>
+                <div class="team_stat">
+                    <span class="team_stat__label">کاپیتان</span>
+                    <span class="team_stat__value">${escapeHTML(captainName || '-')}</span>
                 </div>
-                ${createdAt ? `<div><dt>تاریخ ایجاد</dt><dd>${escapeHTML(formatDate(createdAt))}</dd></div>` : ''}
-            </dl>
-            ${membersMeta.chips ? `<div class="team_members_chips">${membersMeta.chips}</div>` : ''}
+                ${createdAt ? `<div class="team_stat"><span class="team_stat__label">تاریخ ایجاد</span><span class="team_stat__value">${escapeHTML(formatDate(createdAt))}</span></div>` : ''}
+            </div>
+            ${membersMeta.preview ? `<div class="team_members_preview" role="list" aria-label="اعضای تیم">${membersMeta.preview}</div>` : ''}
             ${description ? `<p class="team_description">${escapeHTML(description)}</p>` : ''}
         </div>
     `;
