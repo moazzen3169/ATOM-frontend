@@ -7,10 +7,6 @@
     box-sizing: border-box;
 }
 
-.input--hidden{
-    display: none;
-}
-
 .chat_container{
     display: flex;
     align-items: start;

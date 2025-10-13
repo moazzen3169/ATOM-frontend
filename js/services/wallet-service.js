@@ -84,9 +84,11 @@ export class WalletService {
 
     let response = await fetch(url, requestInit);
 
+    // 🟢 اصلاح مهم: پس از Refresh، هدر Authorization مجدداً اعمال می‌شود
     if (response.status === 401 && this.refreshToken) {
       await this.refreshAccessToken();
       headers.set("Authorization", `Bearer ${this.accessToken}`);
+      requestInit.headers = headers; // ✅ اضافه‌شده برای رفع خطا
       response = await fetch(url, requestInit);
     }
 
@@ -189,26 +191,33 @@ export class WalletService {
     return { results: Array.isArray(response) ? response : [], count: Array.isArray(response) ? response.length : 0 };
   }
 
-  async createTransaction(transactionType, { amount, description } = {}) {
+  // 🟢 نسخه‌ی اصلاح‌شده و کامل متد createTransaction
+  async createTransaction(
+    transactionType,
+    { amount, description, walletId, currency = "IRR", method = "gateway" } = {}
+  ) {
     if (!transactionType) {
       throw new Error("TRANSACTION_TYPE_REQUIRED");
     }
-    const payload = {};
-    let endpoint = TRANSACTIONS_ENDPOINT;
+
+    let endpoint;
+    const payload = {
+      amount,
+      wallet: walletId,
+      currency,
+      method,
+    };
 
     if (transactionType === "deposit") {
       endpoint = DEPOSIT_ENDPOINT;
     } else if (transactionType === "withdrawal") {
       endpoint = WITHDRAW_ENDPOINT;
     } else {
+      endpoint = TRANSACTIONS_ENDPOINT;
       payload.transaction_type = transactionType;
     }
 
-    if (amount !== undefined) {
-      payload.amount = amount;
-    }
-
-    if (description && endpoint === TRANSACTIONS_ENDPOINT) {
+    if (description) {
       payload.description = description;
     }
 

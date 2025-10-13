@@ -22,114 +22,21 @@
 
 
 
+        <div class="chat_header">
+            <div class="user_info">
+                <div class="user_profile">
+                    <img src="/img/profile.jpg" alt="profile">
+                </div>
+                <span>You</span>
+            </div>
+            <div class="chat_menu">
+                <button class="menu_btn" id="new-conversation-btn">
+                    <img src="/img/icons/plus.svg" alt="New Conversation">
+                </button>
+            </div>
+        </div>
         <div class="contact_list">
-
-            <div class="chat_header">
-                <div class="user_info">
-                    <div class="user_profile">
-                        <img src="/img/profile.jpg" alt="profile">
-                    </div>
-                    <span>شما</span>
-                </div>
-                <div class="chat_menu">
-                    <button class="menu_btn">
-                        <img src="/img/icons/menu.svg" alt="menu">
-                    </button>
-                </div>
-            </div>
-
-                    <!-- قسمت پشتیبانی -->
-            <div class="supports_chat_pin">
-            <div class="support_contant_right">
-                <div class="support_profile">
-                    <img src="/img/icons/support.svg" alt="support">
-                </div>
-                <div class="support_content">
-                    <span>پشتیبانی</span>
-                    <div class="last_message">
-                        <span>چطور می‌توانم به شما کمک کنم؟</span>
-                    </div>
-                </div>
-            </div>
-            <!-- قسمت نمایش ئضعییت   پین شده یا دارای پیام جدید -->
-            <div class="chat_status ">
-                <div class="pin"></div>
-            </div>
-            </div>
-
-
-            <div class="contact   ">
-            <div class="contact_contant_right">
-                <div class="contact_profile">
-                    <img src="/img/icons/profile.svg" alt="contact">
-                </div>
-                <div class="contact_content">
-                    <span>username</span>
-                    <div class="last_message">
-                        <span>فایل‌ها رو برات فرستادم</span>
-                    </div>
-                </div>
-            </div>
-            <!-- قسمت نمایش ئضعییت   پین شده یا دارای پیام جدید -->
-            <div class="chat_status ">
-                <div class="new_message"></div>
-            </div>
-            </div>
-            <div class="contact   ">
-                <div class="contact_contant_right">
-                    <div class="contact_profile">
-                        <img src="/img/icons/profile.svg" alt="contact">
-                    </div>
-                    <div class="contact_content">
-                        <span>username</span>
-                        <div class="last_message">
-                            <span>فایل‌ها رو برات فرستادم</span>
-                        </div>
-                    </div>
-                </div>
-                <!-- قسمت نمایش ئضعییت   پین شده یا دارای پیام جدید -->
-                <div class="chat_status ">
-                    <div class="none_message"></div>
-                </div>
-                </div>
-
-                <div class="contact open  ">
-                    <div class="contact_contant_right">
-                        <div class="contact_profile">
-                            <img src="/img/icons/profile.svg" alt="contact">
-                        </div>
-                        <div class="contact_content">
-                            <span>username</span>
-                            <div class="last_message">
-                                <span>فایل‌ها رو برات فرستادم</span>
-                            </div>
-                        </div>
-                    </div>
-                    <!-- قسمت نمایش ئضعییت   پین شده یا دارای پیام جدید -->
-                    <div class="chat_status ">
-                        <div class="none_message"></div>
-                    </div>
-                    </div>
-
-                    <div class="contact   ">
-                        <div class="contact_contant_right">
-                            <div class="contact_profile">
-                                <img src="/img/icons/profile.svg" alt="contact">
-                            </div>
-                            <div class="contact_content">
-                                <span>username</span>
-                                <div class="last_message">
-                                    <span>فایل‌ها رو برات فرستادم</span>
-                                </div>
-                            </div>
-                        </div>
-                        <!-- قسمت نمایش ئضعییت   پین شده یا دارای پیام جدید -->
-                        <div class="chat_status ">
-                            <div class="new_message"></div>
-                        </div>
-                        </div>
-
-
+            <!-- Dynamic contacts will be rendered here -->
         </div>
 
 
@@ -158,12 +65,12 @@
 
         <div class="data_sending_section" >
 
-                <form action="#" class="data_sender_form" method="post">
-                    <label class="files" for="file"><img src="/img/icons/file-input.svg" alt="file"></label>
-                    <input type="file" name="file" id="file" class="input--hidden">
+                <form id="data_sender_form" class="data_sender_form" method="post">
+                    <label class="files" for="file_input"><img src="/img/icons/file-input.svg" alt="file"></label>
+                    <input type="file" name="file" id="file_input" style="display: none;">
                     
                     <input class="chat_input" type="text" name="chat-input" id="chat-input" placeholder="متن خودرا وارد کنید..">
-                    <button class="sender" onsubmit="chatsend">
+                    <button type="submit" class="sender">
                         <img src="/img/icons/send.svg" alt="send">
                     </button>
                 </form>
@@ -178,6 +85,9 @@
 
 
 
-    <script src="/js/chat-data.js"></script>
+    <script src="/js/chat/api.js" type="module"></script>
+    <script src="/js/chat/chat.js" type="module"></script>
+    <script src="/js/chat//ui.js" type="module"></script>
+    <script src="/js/chat/websocket.js" type="module"></script>
 </body>
 </html>
