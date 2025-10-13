@@ -478,7 +478,7 @@ function getTeamMembersMeta(team) {
                 ? team.members_names
                 : [];
 
-    const memberCount = typeof team.members_count === 'number'
+    const baseMemberCount = typeof team.members_count === 'number'
         ? team.members_count
         : Array.isArray(membersList)
             ? membersList.length
@@ -488,45 +488,233 @@ function getTeamMembersMeta(team) {
                     ? team.members.length
                     : 0;
 
-    let memberDetails = [];
+    const captainCandidates = [
+        team.captain_detail,
+        team.captain_info,
+        team.captain_user,
+        team.captain_profile,
+        team.captain_data,
+        team.captain
+    ];
+
+    const fallbackCaptainName = team.captain_username
+        || team.captain_name
+        || team.captain_display_name
+        || (typeof team.captain === 'string' ? team.captain : '');
+
+    function createMemberDetail(member, { isCaptain = false, fallbackName = '' } = {}) {
+        const identifiers = new Set();
+        let username = '';
+        let label = '';
+        let avatar = DEFAULT_AVATAR_SRC;
+
+        const fallbackLabel = fallbackName || (isCaptain ? 'کاپیتان' : 'عضو تیم');
+
+        if (member && typeof member === 'object') {
+            username = getUsernameFromItem(member) || '';
+            label = extractUserDisplayName(member) || username || fallbackLabel;
+            avatar = extractUserAvatar(member) || DEFAULT_AVATAR_SRC;
+
+            const idFields = [
+                'id',
+                'user',
+                'user_id',
+                'member_id',
+                'player_id',
+                'profile_id',
+                'account_id',
+                'participant_id',
+                'memberId',
+                'userId',
+                'pk'
+            ];
+
+            idFields.forEach((field) => {
+                if (typeof member[field] === 'undefined' || member[field] === null) {
+                    return;
+                }
+
+                const value = member[field];
+                if (typeof value === 'object' && value !== null) {
+                    if (typeof value.id !== 'undefined' && value.id !== null) {
+                        identifiers.add(String(value.id));
+                    }
+                } else {
+                    identifiers.add(String(value));
+                }
+            });
+
+            const nestedKeys = ['user', 'member', 'player', 'profile', 'account', 'participant', 'captain'];
+            nestedKeys.forEach((key) => {
+                const nested = member[key];
+                if (nested && typeof nested === 'object') {
+                    if (typeof nested.id !== 'undefined' && nested.id !== null) {
+                        identifiers.add(String(nested.id));
+                    }
+                    if (typeof nested.user_id !== 'undefined' && nested.user_id !== null) {
+                        identifiers.add(String(nested.user_id));
+                    }
+                    if (typeof nested.user !== 'undefined' && nested.user !== null && typeof nested.user !== 'object') {
+                        identifiers.add(String(nested.user));
+                    }
+                }
+            });
+        } else if (typeof member === 'string') {
+            username = member;
+            label = member || fallbackLabel;
+        } else if (typeof member === 'number') {
+            identifiers.add(String(member));
+        }
+
+        const finalLabel = (label || username || fallbackLabel || '').toString().trim();
+        const normalizedUsername = (username || finalLabel).toString().trim().toLowerCase();
+
+        if (!finalLabel && !identifiers.size && !normalizedUsername) {
+            return null;
+        }
+
+        return {
+            label: finalLabel || fallbackLabel,
+            avatar: (avatar || DEFAULT_AVATAR_SRC).trim() || DEFAULT_AVATAR_SRC,
+            isCaptain,
+            identifiers: Array.from(identifiers),
+            normalizedUsername
+        };
+    }
+
+    function detailsMatch(a, b) {
+        if (!a || !b) return false;
+        const idsA = new Set((a.identifiers || []).map(String));
+        const idsB = new Set((b.identifiers || []).map(String));
+        for (const id of idsA) {
+            if (idsB.has(id)) {
+                return true;
+            }
+        }
+        if (a.normalizedUsername && b.normalizedUsername && a.normalizedUsername === b.normalizedUsername) {
+            return true;
+        }
+        return false;
+    }
+
+    let captainSource = null;
+    for (const candidate of captainCandidates) {
+        if (candidate) {
+            captainSource = candidate;
+            break;
+        }
+    }
+
+    let captainDetail = createMemberDetail(captainSource, {
+        isCaptain: true,
+        fallbackName: fallbackCaptainName
+    });
+
+    if (!captainDetail && fallbackCaptainName) {
+        captainDetail = createMemberDetail(fallbackCaptainName, { isCaptain: true, fallbackName: fallbackCaptainName });
+    }
+
+    if (!captainDetail && typeof team.captain === 'number') {
+        captainDetail = createMemberDetail(team.captain, { isCaptain: true, fallbackName: 'کاپیتان' });
+    }
+
+    let rawMemberDetails = [];
 
     if (Array.isArray(membersList)) {
-        memberDetails = membersList
-            .map(member => ({
-                name: extractUserDisplayName(member),
-                avatar: extractUserAvatar(member)
-            }))
-            .filter(detail => detail.name || detail.avatar);
+        rawMemberDetails = membersList
+            .map(member => createMemberDetail(member))
+            .filter(detail => detail && detail.label);
     }
 
-    if (!memberDetails.length && supplementalNames.length) {
-        memberDetails = supplementalNames
-            .map(name => ({ name: String(name), avatar: DEFAULT_AVATAR_SRC }))
-            .filter(detail => detail.name);
+    if (!rawMemberDetails.length && supplementalNames.length) {
+        rawMemberDetails = supplementalNames
+            .map(name => createMemberDetail(String(name)))
+            .filter(detail => detail && detail.label);
     }
 
-    if (!memberDetails.length) {
-        return { count: memberCount, preview: '' };
+    const uniqueMemberDetails = [];
+    const seenIds = new Set();
+    const seenUsernames = new Set();
+
+    rawMemberDetails.forEach(detail => {
+        const hasDuplicateId = (detail.identifiers || []).some(id => seenIds.has(String(id)));
+        const normalizedUsername = detail.normalizedUsername || '';
+        const hasDuplicateUsername = normalizedUsername && seenUsernames.has(normalizedUsername);
+        if (hasDuplicateId || hasDuplicateUsername) {
+            return;
+        }
+
+        (detail.identifiers || []).forEach(id => seenIds.add(String(id)));
+        if (normalizedUsername) {
+            seenUsernames.add(normalizedUsername);
+        }
+        uniqueMemberDetails.push(detail);
+    });
+
+    let captainIncludedInMembers = false;
+    if (captainDetail) {
+        const existingIndex = uniqueMemberDetails.findIndex(detail => detailsMatch(detail, captainDetail));
+        if (existingIndex !== -1) {
+            captainIncludedInMembers = true;
+            uniqueMemberDetails.splice(existingIndex, 1);
+        }
     }
 
-    const previewMembers = memberDetails.slice(0, 6);
+    const combinedMembers = captainDetail
+        ? [captainDetail, ...uniqueMemberDetails]
+        : uniqueMemberDetails.slice();
+
+    if (!combinedMembers.length) {
+        return { count: baseMemberCount, preview: '' };
+    }
+
+    const previewMembers = combinedMembers.slice(0, 6);
     let preview = previewMembers
         .map(member => {
-            const displayName = member.name ? escapeHTML(member.name) : 'عضو تیم';
+            const displayName = escapeHTML(member.label || 'عضو تیم');
             const avatarSrc = escapeHTML((member.avatar || DEFAULT_AVATAR_SRC).trim() || DEFAULT_AVATAR_SRC);
-            return `<div class="team_member_avatar" role="listitem" title="${displayName}"><img src="${avatarSrc}" alt="آواتار ${displayName}" onerror="this.src='${DEFAULT_AVATAR_SRC}'; this.onerror=null;"></div>`;
+            const modifier = member.isCaptain ? ' team_member--captain' : '';
+            return `
+                <div class="team_member${modifier}" role="listitem" title="${displayName}">
+                    <div class="team_member_avatar">
+                        <img src="${avatarSrc}" alt="آواتار ${displayName}" onerror="this.src='${DEFAULT_AVATAR_SRC}'; this.onerror=null;">
+                    </div>
+                    <span class="team_member_name">${displayName}</span>
+                </div>
+            `;
         })
         .join('');
 
-    const totalKnownMembers = memberCount > 0 ? memberCount : memberDetails.length;
+    const effectiveCount = (() => {
+        if (baseMemberCount > 0) {
+            if (captainDetail && !captainIncludedInMembers) {
+                return baseMemberCount + 1;
+            }
+            return baseMemberCount;
+        }
+        return combinedMembers.length;
+    })();
+
+    const totalKnownMembers = effectiveCount;
     const remaining = totalKnownMembers - previewMembers.length;
     if (remaining > 0) {
-        preview += `<div class="team_member_avatar team_member_avatar--more" role="listitem" aria-label="اعضای بیشتر">+${remaining}</div>`;
-    } else if (memberDetails.length > previewMembers.length) {
-        preview += `<div class="team_member_avatar team_member_avatar--more" role="listitem" aria-label="اعضای بیشتر">+${memberDetails.length - previewMembers.length}</div>`;
+        preview += `
+            <div class="team_member team_member--more" role="listitem" aria-label="اعضای بیشتر">
+                <div class="team_member_avatar team_member_avatar--more">+${remaining}</div>
+                <span class="team_member_name">بیشتر</span>
+            </div>
+        `;
+    } else if (combinedMembers.length > previewMembers.length) {
+        const extraCount = combinedMembers.length - previewMembers.length;
+        preview += `
+            <div class="team_member team_member--more" role="listitem" aria-label="اعضای بیشتر">
+                <div class="team_member_avatar team_member_avatar--more">+${extraCount}</div>
+                <span class="team_member_name">بیشتر</span>
+            </div>
+        `;
     }
 
-    return { count: memberCount, preview };
+    return { count: effectiveCount, preview };
 }
 
 function getCaptainName(team) {
