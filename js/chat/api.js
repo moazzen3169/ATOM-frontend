@@ -2,15 +2,6 @@
 export const API_BASE_URL = '/api/chat';
 export const AUTH_TOKEN = localStorage.getItem('jwt_token');
 
-export class ApiError extends Error {
-    constructor(message, { status, detail } = {}) {
-        super(message);
-        this.name = 'ApiError';
-        this.status = status;
-        this.detail = detail;
-    }
-}
-
 const JSON_HEADERS = {
     'Accept': 'application/json'
 };
@@ -52,10 +43,7 @@ async function request(path, { method = 'GET', body = null, headers = {} } = {})
         } catch (error) {
             // بدنه خطا json نبود
         }
-        throw new ApiError(
-            `خطا در ارتباط با سرور (${response.status}): ${detail}`,
-            { status: response.status, detail }
-        );
+        throw new Error(`خطا در ارتباط با سرور (${response.status}): ${detail}`);
     }
 
     if (response.status === 204) {
@@ -69,30 +57,8 @@ async function request(path, { method = 'GET', body = null, headers = {} } = {})
     }
 }
 
-async function requestWithFallback(paths, options) {
-    let lastError;
-
-    for (const path of paths) {
-        try {
-            return await request(path, options);
-        } catch (error) {
-            if (error instanceof ApiError && [404, 405].includes(error.status)) {
-                lastError = error;
-                continue;
-            }
-            throw error;
-        }
-    }
-
-    if (lastError) {
-        throw lastError;
-    }
-
-    return null;
-}
-
 export async function getConversations() {
-    return requestWithFallback(['/conversations/', '/conversations']);
+    return request('/conversations/');
 }
 
 export async function getCurrentUser() {
@@ -113,47 +79,33 @@ export async function getCurrentUser() {
 }
 
 export async function createConversation(participantIds) {
-    return requestWithFallback(['/conversations/', '/conversations'], {
+    return request('/conversations/', {
         method: 'POST',
         body: { participants: participantIds }
     });
 }
 
 export async function deleteConversation(conversationId) {
-    await requestWithFallback(
-        [`/conversations/${conversationId}/`, `/conversations/${conversationId}`],
-        { method: 'DELETE' }
-    );
+    await request(`/conversations/${conversationId}/`, { method: 'DELETE' });
 }
 
 export async function getMessages(conversationId) {
-    return requestWithFallback(
-        [`/conversations/${conversationId}/messages/`, `/conversations/${conversationId}/messages`]
-    );
+    return request(`/conversations/${conversationId}/messages/`);
 }
 
 export async function sendMessage(conversationId, content) {
-    return requestWithFallback(
-        [`/conversations/${conversationId}/messages/`, `/conversations/${conversationId}/messages`],
-        {
-            method: 'POST',
-            body: { content }
-        }
-    );
+    return request(`/conversations/${conversationId}/messages/`, {
+        method: 'POST',
+        body: { content }
+    });
 }
 
 export async function uploadAttachment(conversationId, messageId, formData) {
-    return requestWithFallback(
-        [
-            `/conversations/${conversationId}/messages/${messageId}/attachments/`,
-            `/conversations/${conversationId}/messages/${messageId}/attachments`
-        ],
-        {
-            method: 'POST',
-            body: formData,
-            headers: {
-                // در زمان ارسال فرم دیتا نیازی به تعیین type نیست
-            }
+    return request(`/conversations/${conversationId}/messages/${messageId}/attachments/`, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            // در زمان ارسال فرم دیتا نیازی به تعیین type نیست
         }
-    );
+    });
 }
