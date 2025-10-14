@@ -212,20 +212,25 @@ body{
     cursor: pointer;
 }
 
-.none_active{
+.Transaction_filters .none_active{
     background-color: var(--background-color);
     color: var(--white-color);
+    border: 1px solid var(--border-color);
     font-weight: 300;
+    transition: 0.3s ease;
 }
+
+.none_active:hover{
+    background-color: var(--card-color);
+}
+
 .active_sort{
     background-color: var(--color-primary);
     color: var(--background-color);
     font-weight: normal;
 }
 
-.none_active:hover{
-    border:1px solid var(--border-color);
-}
+
 
 .all{}
 .filter_item{}
@@ -307,7 +312,8 @@ body{
     position: absolute;
     right: 100px;
     display: flex;
-    min-width: 100px;
+    min-width: 200px;
+    align-items: center;
 }
 
 
