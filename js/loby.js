@@ -1,9 +1,17 @@
 import { API_BASE_URL } from "/js/config.js";
 
+const STORAGE_KEYS = {
+  inGameIds: "atom_in_game_ids",
+};
+
+const MAX_SAVED_INGAME_IDS = 10;
+
 const state = {
   tournamentId: null,
+  tournament: null,
   selectedTeamId: "",
   teamRequestInFlight: false,
+  lastUsedInGameId: "",
 };
 
 function getAuthToken() {
@@ -176,7 +184,9 @@ function createPlayerSlot(player) {
     <div class="team_name">${player.username || player.name || "کاربر"}</div>
     <div class="team_players">
       <div class="player">
-        <img src="${player.avatar || player.profile_picture || "img/profile.jpg"}" alt="player">
+        <img src="${
+          player.avatar || player.profile_picture || "img/profile.jpg"
+        }" alt="player" loading="lazy">
       </div>
     </div>
   `;
@@ -198,7 +208,9 @@ function renderTeamSlot(team) {
     .map(
       (member) => `
         <div class="player">
-          <img src="${member.avatar || member.profile_picture || "img/profile.jpg"}" alt="member">
+          <img src="${
+            member.avatar || member.profile_picture || "img/profile.jpg"
+          }" alt="member" loading="lazy">
         </div>
       `,
     )
@@ -284,6 +296,18 @@ function notify(key, fallbackMessage, type = "info", overrides = {}) {
   }
 }
 
+function showModalError(elementId, message) {
+  const element = document.getElementById(elementId);
+  if (!element) return;
+
+  const text = message?.toString().trim() || "";
+  element.textContent = text;
+  element.classList.toggle("is-hidden", !text);
+}
+
+function clearModalError(elementId) {
+  showModalError(elementId, "");
+}
 
 function openJoinSuccessModal(message) {
   const modal = document.getElementById("joinSuccessModal");
@@ -316,6 +340,104 @@ function showJoinSuccessFeedback({ isTeam } = {}) {
   openJoinSuccessModal(message);
 }
 
+function getStoredInGameIds() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.inGameIds);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .map((value) => (typeof value === "string" ? value.trim() : ""))
+      .filter((value) => value.length > 0);
+  } catch (error) {
+    console.warn("Failed to parse stored in-game IDs", error);
+    return [];
+  }
+}
+
+function storeInGameIds(values) {
+  try {
+    localStorage.setItem(
+      STORAGE_KEYS.inGameIds,
+      JSON.stringify(values.slice(0, MAX_SAVED_INGAME_IDS)),
+    );
+  } catch (error) {
+    console.warn("Failed to store in-game IDs", error);
+  }
+}
+
+function populateInGameIdOptions(selectedValue = "") {
+  const select = document.getElementById("inGameIdSelect");
+  const wrapper = document.getElementById("inGameIdSavedWrapper");
+  if (!select || !wrapper) return;
+
+  const saved = getStoredInGameIds();
+  select.innerHTML = '<option value="">یکی از نام‌های قبلی را انتخاب کنید</option>';
+
+  if (!saved.length) {
+    wrapper.classList.add("is-hidden");
+    return;
+  }
+
+  wrapper.classList.remove("is-hidden");
+
+  saved.forEach((item) => {
+    const option = document.createElement("option");
+    option.value = item;
+    option.textContent = item;
+    if (selectedValue && item === selectedValue) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+}
+
+function setInGameIdInputValue(value) {
+  const input = document.getElementById("inGameIdInput");
+  if (!input) return;
+  input.value = value || "";
+}
+
+function rememberInGameId(value) {
+  const trimmed = value.trim();
+  if (!trimmed) return;
+
+  const saved = getStoredInGameIds();
+  const filtered = saved.filter((item) => item !== trimmed);
+  filtered.unshift(trimmed);
+  storeInGameIds(filtered);
+  state.lastUsedInGameId = trimmed;
+  populateInGameIdOptions(trimmed);
+}
+
+function useSavedInGameId() {
+  const select = document.getElementById("inGameIdSelect");
+  if (!select) return;
+
+  const chosen = select.value?.trim();
+  if (!chosen) {
+    showModalError(
+      "individualJoinError",
+      "لطفاً یک نام ذخیره‌شده را انتخاب کنید یا نام جدیدی وارد نمایید.",
+    );
+    return;
+  }
+
+  clearModalError("individualJoinError");
+  setInGameIdInputValue(chosen);
+}
+
+function resetIndividualJoinModal() {
+  const form = document.querySelector("#individualJoinModal form");
+  if (form) {
+    form.reset();
+  }
+
+  const defaultValue = state.lastUsedInGameId || getStoredInGameIds()[0] || "";
+  setInGameIdInputValue(defaultValue);
+  populateInGameIdOptions(defaultValue);
+  clearModalError("individualJoinError");
+}
 
 async function loadTournament() {
   if (!state.tournamentId) return;
@@ -324,13 +446,16 @@ async function loadTournament() {
     const url = `${API_BASE_URL}/api/tournaments/tournaments/${state.tournamentId}/`;
     const tournament = await apiFetch(url);
 
+    state.tournament = tournament;
     renderTournamentSummary(tournament);
     renderAdminInfo(tournament);
     renderParticipants(tournament);
     showLobbyPage();
   } catch (error) {
     console.error("Failed to load tournament", error);
-    notify("tournamentFetchFailed", "امکان دریافت اطلاعات تورنومنت وجود ندارد.", "error");
+    const message =
+      error.message || "امکان دریافت اطلاعات تورنومنت وجود ندارد. لطفاً بعداً دوباره تلاش کنید.";
+    notify("tournamentFetchFailed", message, "error");
   } finally {
     hidePreloader();
   }
@@ -435,20 +560,25 @@ async function fetchTeamOptions(searchTerm = "") {
 
   const loading = document.getElementById("teamModalLoading");
   if (loading) loading.classList.remove("is-hidden");
+  clearModalError("teamJoinError");
 
   try {
     // ✅ استخراج شناسه کاربر از توکن JWT
     const token = getAuthToken();
     let userId = null;
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1]));
-      userId = payload.user_id || payload.id || payload.sub || null;
-    } catch (e) {
-      console.warn("توکن معتبر نیست یا ساختار JWT ندارد");
+    if (token) {
+      try {
+        const payload = JSON.parse(atob(token.split(".")[1]));
+        userId = payload.user_id || payload.id || payload.sub || null;
+      } catch (e) {
+        console.warn("توکن معتبر نیست یا ساختار JWT ندارد");
+      }
     }
 
     if (!userId) {
-      notify("loginRequired", "شناسه کاربر یافت نشد. لطفاً دوباره وارد شوید.");
+      const message = "شناسه کاربر یافت نشد. لطفاً دوباره وارد شوید.";
+      notify("loginRequired", message);
+      showModalError("teamJoinError", message);
       return;
     }
 
@@ -485,7 +615,10 @@ async function fetchTeamOptions(searchTerm = "") {
     renderTeamOptions(teams, result?.meta || {});
   } catch (error) {
     console.error("Failed to load teams", error);
-    notify("tournamentFetchFailed", "امکان دریافت تیم‌ها وجود ندارد.", "error");
+    const message =
+      error.message || "امکان دریافت تیم‌ها وجود ندارد. لطفاً بعداً دوباره تلاش کنید.";
+    notify("tournamentFetchFailed", message, "error");
+    showModalError("teamJoinError", message);
   } finally {
     state.teamRequestInFlight = false;
     if (loading) loading.classList.add("is-hidden");
@@ -500,7 +633,11 @@ async function openIndividualJoinModal() {
   }
 
   const modal = document.getElementById("individualJoinModal");
-  if (modal) modal.style.display = "flex";
+  if (!modal) return;
+
+  resetIndividualJoinModal();
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
 }
 
 async function openTeamJoinModal() {
@@ -513,47 +650,97 @@ async function openTeamJoinModal() {
   if (!modal) return;
 
   modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
+  clearModalError("teamJoinError");
   await fetchTeamOptions();
 }
 
 function closeIndividualJoinModal() {
   const modal = document.getElementById("individualJoinModal");
-  if (modal) modal.style.display = "none";
+  if (!modal) return;
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden", "true");
+  resetIndividualJoinModal();
 }
 
 function closeTeamJoinModal() {
   const modal = document.getElementById("teamJoinModal");
-  if (modal) modal.style.display = "none";
+  if (!modal) return;
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden", "true");
+  clearModalError("teamJoinError");
+  resetTeamSelection();
 }
 
-async function joinIndividualTournament() {
+async function joinIndividualTournament(event) {
+  if (event?.preventDefault) {
+    event.preventDefault();
+  }
+
   if (!state.tournamentId) return;
 
+  clearModalError("individualJoinError");
+
+  const input = document.getElementById("inGameIdInput");
+  const select = document.getElementById("inGameIdSelect");
+  const submitBtn = document.querySelector("#individualJoinModal button[type='submit']");
+
+  let inGameId = input?.value?.trim() || "";
+  if (!inGameId && select) {
+    inGameId = select.value?.trim() || "";
+  }
+
+  if (!inGameId) {
+    showModalError("individualJoinError", "لطفاً نام کاربری خود در بازی را وارد کنید.");
+    input?.focus();
+    return;
+  }
+
+  if (inGameId.length < 3) {
+    showModalError("individualJoinError", "نام وارد شده باید حداقل ۳ کاراکتر باشد.");
+    input?.focus();
+    return;
+  }
+
+  if (submitBtn) submitBtn.disabled = true;
+
   try {
+    const payload = { in_game_id: inGameId };
+
     await apiFetch(
       `${API_BASE_URL}/api/tournaments/tournaments/${state.tournamentId}/join/`,
       {
         method: "POST",
-        body: JSON.stringify({}),
+        body: JSON.stringify(payload),
       },
     );
 
     notify("tournamentJoinSuccess", null, "success");
+    rememberInGameId(inGameId);
     closeIndividualJoinModal();
     showJoinSuccessFeedback({ isTeam: false });
     await loadTournament();
   } catch (error) {
     console.error("Failed to join tournament", error);
-    notify("tournamentJoinFailed", "امکان ثبت‌نام وجود ندارد.", "error");
+    const message =
+      error.message || "امکان ثبت‌نام وجود ندارد. لطفاً بعداً دوباره تلاش کنید.";
+    notify("tournamentJoinFailed", message, "error");
+    showModalError("individualJoinError", message);
   }
+
+  if (submitBtn) submitBtn.disabled = false;
 }
 
 async function joinTeamTournament() {
   if (!state.tournamentId) return;
   if (!state.selectedTeamId) {
-    notify("teamSelectionRequired", "لطفاً یک تیم انتخاب کنید.");
+    const message = "لطفاً یک تیم انتخاب کنید.";
+    notify("teamSelectionRequired", message);
+    showModalError("teamJoinError", message);
     return;
   }
+
+  clearModalError("teamJoinError");
 
   const confirmBtn = document.getElementById("teamJoinConfirmButton");
   if (confirmBtn) confirmBtn.disabled = true;
@@ -575,6 +762,7 @@ async function joinTeamTournament() {
     console.error("Failed to join team tournament:", error);
 
     const msg = (error.message || "").toLowerCase();
+    let errorMessage = "امکان ثبت‌نام تیم وجود ندارد. لطفاً دوباره تلاش کنید.";
 
     // 🎯 فیلتر انواع خطاهای محتمل از سمت سرور
     if (
@@ -586,14 +774,19 @@ async function joinTeamTournament() {
       msg.includes("بیش از حد") ||
       msg.includes("max")
     ) {
-      notify("teamTooLarge", "تعداد اعضای تیم بیشتر از حد مجاز برای این تورنومنت است ❌", "error");
+      errorMessage = "تعداد اعضای تیم بیشتر از حد مجاز برای این تورنومنت است.";
+      notify("teamTooLarge", errorMessage, "error");
     } else if (msg.includes("already") || msg.includes("exists")) {
-      notify("teamAlreadyRegistered", "این تیم قبلاً در تورنومنت ثبت‌نام کرده است ⚠️");
+      errorMessage = "این تیم قبلاً در تورنومنت ثبت‌نام کرده است.";
+      notify("teamAlreadyRegistered", errorMessage);
     } else if (msg.includes("permission") || msg.includes("not allowed")) {
-      notify("teamJoinUnauthorized", "شما مجاز به ثبت‌نام این تیم در تورنومنت نیستید 🔒", "error");
+      errorMessage = "شما مجاز به ثبت‌نام این تیم در تورنومنت نیستید.";
+      notify("teamJoinUnauthorized", errorMessage, "error");
     } else {
-      notify("tournamentJoinFailed", "امکان ثبت‌نام تیم وجود ندارد. لطفاً دوباره تلاش کنید.", "error");
+      notify("tournamentJoinFailed", errorMessage, "error");
     }
+
+    showModalError("teamJoinError", errorMessage);
   } finally {
     if (confirmBtn) confirmBtn.disabled = false;
   }
@@ -639,6 +832,27 @@ function setupTeamSearch() {
   });
 }
 
+function setupInGameIdHandlers() {
+  const input = document.getElementById("inGameIdInput");
+  const select = document.getElementById("inGameIdSelect");
+
+  if (input) {
+    input.addEventListener("input", () => {
+      clearModalError("individualJoinError");
+    });
+  }
+
+  if (select) {
+    select.addEventListener("change", () => {
+      const value = select.value?.trim() || "";
+      if (value) {
+        setInGameIdInputValue(value);
+        clearModalError("individualJoinError");
+      }
+    });
+  }
+}
+
 function initialise() {
   const params = new URLSearchParams(window.location.search);
   state.tournamentId = params.get("id");
@@ -658,6 +872,8 @@ function initialise() {
 
   setupModalDismiss();
   setupTeamSearch();
+  setupInGameIdHandlers();
+  populateInGameIdOptions();
 }
 
 document.addEventListener("DOMContentLoaded", initialise);
@@ -669,3 +885,4 @@ window.closeTeamJoinModal = closeTeamJoinModal;
 window.closeJoinSuccessModal = closeJoinSuccessModal;
 window.joinIndividualTournament = joinIndividualTournament;
 window.joinTeamTournament = joinTeamTournament;
+window.useSavedInGameId = useSavedInGameId;
