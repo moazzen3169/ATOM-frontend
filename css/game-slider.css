@@ -177,7 +177,7 @@ body{
     align-items: center;
     justify-content: start;
     gap: 10px;
-    background-color: var(--card-color);
+    /* background-color: var(--card-color); */
     border-radius: 10px;
 
 }
