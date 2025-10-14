@@ -479,16 +479,6 @@
     pointer-events: auto;
 }
 
-.hidden {
-    display: none !important;
-}
-
-.modal.hidden {
-    display: none !important;
-    opacity: 0;
-    pointer-events: none;
-}
-
 .level_2_modal {
     width: min(560px, 92vw);
 }
