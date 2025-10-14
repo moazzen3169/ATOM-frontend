@@ -19,16 +19,7 @@
         <!-- محتوای اصلی -->
         <main class="main_content">
             <!-- هدر -->
-            <header class="dashboard_header" id="dashboard_header">
-              <script>
-                // بارگذاری محتوای هدر
-                fetch('dashboard-header.html')
-                  .then(response => response.text())
-                  .then(html => {
-                    document.getElementById('dashboard_header').innerHTML = html;
-                  });
-              </script>
-            </header>
+            <header class="dashboard_header" id="dashboard_header"></header>
 
             <!-- verification -->
             <section class="verification" aria-labelledby="verification-title">
@@ -239,7 +230,8 @@
         </div>
     </div>
 
-    <script src="../js/sidebar.js"></script>
+<script src="../js/dashboard-header.js"></script>
+<script src="../js/sidebar.js"></script>
     <script type="module" src="../js/user-dashboard.js"></script>
     <script type="module" src="/js/verification.js"></script>
 </body>
