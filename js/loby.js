@@ -506,42 +506,6 @@ function selectTeam(teamId) {
 function resolveTeamId(team) {
   if (!team || typeof team !== "object") return null;
 
-  const normalise = (value) => {
-    if (value === null || value === undefined) return null;
-
-    if (typeof value === "number") {
-      return Number.isFinite(value) ? String(value) : null;
-    }
-
-    if (typeof value === "string") {
-      const trimmed = value.trim();
-      return trimmed.length ? trimmed : null;
-    }
-
-    if (typeof value === "object") {
-      const nestedCandidates = [
-        value.id,
-        value.team_id,
-        value.teamId,
-        value.team,
-        value.uuid,
-        value.slug,
-        value.pk,
-      ];
-
-      for (const nested of nestedCandidates) {
-        const resolved = normalise(nested);
-        if (resolved) {
-          return resolved;
-        }
-      }
-
-      return null;
-    }
-
-    return null;
-  };
-
   const candidates = [
     team.id,
     team.team_id,
@@ -549,13 +513,16 @@ function resolveTeamId(team) {
     team.team,
     team.uuid,
     team.slug,
-    team.pk,
   ];
 
   for (const value of candidates) {
-    const resolved = normalise(value);
-    if (resolved) {
-      return resolved;
+    if (value === undefined || value === null) {
+      continue;
+    }
+
+    const stringValue = String(value).trim();
+    if (stringValue) {
+      return stringValue;
     }
   }
 
