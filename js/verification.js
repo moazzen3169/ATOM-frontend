@@ -9,6 +9,7 @@ const nemunehBtn = document.querySelector(".nemuneh");
 const nemunehModal = document.querySelector(".nemuneh_modal");
 const guideButtons = Array.from(document.querySelectorAll("[data-open-guide]"));
 const progressSteps = Array.from(document.querySelectorAll("[data-progress-step]"));
+const modalCloseButtons = Array.from(document.querySelectorAll("[data-close-modal]"));
 
 const levelSummary = document.querySelector(".your_level");
 const currentLevelLabel = document.querySelector("[data-current-level-label]");
@@ -57,27 +58,31 @@ const REJECTED_STATUS_VALUES = [
   "canceled",
 ];
 
-function openModal(modalElement, initializeFilesCallback) {
-  if (overlay) {
-    overlay.classList.remove("hidden");
-  }
-  if (modalElement) {
-    modalElement.classList.remove("hidden");
-    modalElement.scrollTop = 0;
-  }
-  if (typeof initializeFilesCallback === "function") {
-    initializeFilesCallback();
-  }
-}
-
-function closeAllModals() {
+function closeAllModals({ hideOverlay = true } = {}) {
   [level2Modal, level3Modal, nemunehModal].forEach((modal) => {
     if (modal) {
       modal.classList.add("hidden");
     }
   });
-  if (overlay) {
+  if (hideOverlay && overlay) {
     overlay.classList.add("hidden");
+  }
+}
+
+function openModal(modalElement, initializeFilesCallback) {
+  if (!modalElement) return;
+
+  closeAllModals({ hideOverlay: false });
+
+  if (overlay) {
+    overlay.classList.remove("hidden");
+  }
+
+  modalElement.classList.remove("hidden");
+  modalElement.scrollTop = 0;
+
+  if (typeof initializeFilesCallback === "function") {
+    initializeFilesCallback();
   }
 }
 
@@ -96,7 +101,13 @@ if (level3btn) {
 }
 
 if (overlay) {
-  overlay.addEventListener("click", closeAllModals);
+  overlay.addEventListener("click", () => closeAllModals());
+}
+
+if (modalCloseButtons.length) {
+  modalCloseButtons.forEach((button) => {
+    button.addEventListener("click", () => closeAllModals());
+  });
 }
 
 if (nemunehBtn) {

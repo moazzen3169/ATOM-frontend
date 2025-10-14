@@ -458,10 +458,6 @@
     z-index: 90;
 }
 
-.hidden {
-    display: none;
-}
-
 .modal {
     position: fixed;
     top: 50%;
