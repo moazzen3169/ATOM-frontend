@@ -1,10 +1,10 @@
-import { API_BASE_URL } from "../js/config.js";
+import { API_ENDPOINTS } from "./services/api-client.js";
 
 const DEFAULT_AVATAR_SRC = "../img/profile.jpg";
 
 const TEAM_INVITATIONS_ENDPOINTS = [
     '/api/users/teams/invitations/received/',
-    '/api/users/teams/invitations/',
+    API_ENDPOINTS.users.teamInvitations,
     '/api/users/team-invitations/',
     '/api/users/teams/pending-invitations/',
     '/api/users/teams/incoming-invitations/',
@@ -12,9 +12,9 @@ const TEAM_INVITATIONS_ENDPOINTS = [
 ];
 
 const USER_LOOKUP_ENDPOINTS = [
-    (username) => `/api/users/users/?username=${encodeURIComponent(username)}`,
-    (username) => `/api/users/users/?search=${encodeURIComponent(username)}`,
-    (username) => `/api/users/users/?search=${encodeURIComponent(username)}&page_size=1`
+    (username) => `${API_ENDPOINTS.users.search}?username=${encodeURIComponent(username)}`,
+    (username) => `${API_ENDPOINTS.users.search}?search=${encodeURIComponent(username)}`,
+    (username) => `${API_ENDPOINTS.users.search}?search=${encodeURIComponent(username)}&page_size=1`
 ];
 
 const helperDefaults = {
@@ -1024,7 +1024,7 @@ async function fetchIncomingTeamInvitations() {
 
     for (const endpoint of TEAM_INVITATIONS_ENDPOINTS) {
         try {
-            const response = await helpers.fetchWithAuth(`${API_BASE_URL}${endpoint}`, {
+            const response = await helpers.fetchWithAuth(endpoint, {
                 method: 'GET'
             });
 
@@ -1234,7 +1234,7 @@ async function lookupUserByUsername(username) {
     }
 
     for (const buildPath of USER_LOOKUP_ENDPOINTS) {
-        const endpoint = `${API_BASE_URL}${buildPath(username)}`;
+        const endpoint = buildPath(username);
         try {
             const response = await helpers.fetchWithAuth(endpoint, { method: 'GET' });
             if (!response.ok) {
@@ -1288,7 +1288,7 @@ export async function fetchUserTeams() {
     try {
         console.log('دریافت تیم‌های کاربر از API...');
 
-        const response = await helpers.fetchWithAuth(`${API_BASE_URL}/api/users/teams/`, {
+        const response = await helpers.fetchWithAuth(API_ENDPOINTS.users.teams, {
             method: 'GET'
         });
 
@@ -1425,7 +1425,7 @@ async function handleCreateTeam(event) {
     helpers.toggleButtonLoading(submitButton, true, 'در حال ایجاد...');
 
     try {
-        const response = await helpers.fetchWithAuth(`${API_BASE_URL}/api/users/teams/`, {
+        const response = await helpers.fetchWithAuth(API_ENDPOINTS.users.teams, {
             method: 'POST',
             body: payload
         });
@@ -1477,7 +1477,7 @@ async function handleEditTeam(event) {
     helpers.toggleButtonLoading(submitButton, true, 'در حال ذخیره...');
 
     try {
-        const response = await helpers.fetchWithAuth(`${API_BASE_URL}/api/users/teams/${teamId}/`, {
+        const response = await helpers.fetchWithAuth(API_ENDPOINTS.users.team(teamId), {
             method: 'PATCH',
             body: payload
         });
@@ -1531,7 +1531,7 @@ async function handleInviteMember(event) {
             payload.user_id = user.id;
         }
 
-        const response = await helpers.fetchWithAuth(`${API_BASE_URL}/api/users/teams/${teamId}/add-member/`, {
+        const response = await helpers.fetchWithAuth(API_ENDPOINTS.users.teamAddMember(teamId), {
             method: 'POST',
             body: JSON.stringify(payload)
         });
@@ -1558,7 +1558,7 @@ async function handleDeleteTeam(teamId) {
     if (!teamId) throw new Error('شناسه تیم نامعتبر است.');
 
     try {
-        const response = await helpers.fetchWithAuth(`${API_BASE_URL}/api/users/teams/${teamId}/`, {
+        const response = await helpers.fetchWithAuth(API_ENDPOINTS.users.team(teamId), {
             method: 'DELETE'
         });
 
@@ -1580,7 +1580,7 @@ async function handleLeaveTeam(teamId) {
     if (!teamId) throw new Error('شناسه تیم نامعتبر است.');
 
     try {
-        const response = await helpers.fetchWithAuth(`${API_BASE_URL}/api/users/teams/${teamId}/leave_team/`, {
+        const response = await helpers.fetchWithAuth(API_ENDPOINTS.users.teamLeave(teamId), {
             method: 'POST'
         });
 
@@ -1608,7 +1608,7 @@ async function respondToInvitationAction(inviteId, action) {
     const payload = { invitation_id: inviteId, status };
 
     try {
-        const response = await helpers.fetchWithAuth(`${API_BASE_URL}/api/users/teams/respond-invitation/`, {
+        const response = await helpers.fetchWithAuth(API_ENDPOINTS.users.respondTeamInvitation, {
             method: 'POST',
             body: JSON.stringify(payload)
         });
