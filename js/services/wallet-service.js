@@ -192,24 +192,38 @@ export class WalletService {
   }
 
   // 🟢 نسخه‌ی اصلاح‌شده و کامل متد createTransaction
-  async createTransaction(
-    transactionType,
-    { amount, description, walletId, currency = "IRR", method = "gateway" } = {}
-  ) {
+  async createTransaction(transactionType, options = {}) {
     if (!transactionType) {
       throw new Error("TRANSACTION_TYPE_REQUIRED");
     }
 
-    let endpoint;
-    const payload = {
+    const {
       amount,
-      wallet: walletId,
-      currency,
-      method,
-    };
+      description,
+      walletId,
+      currency = "IRR",
+      method = "gateway",
+      ...extraFields
+    } = options;
+
+    let endpoint;
+    const payload = {};
+
+    if (amount !== undefined && amount !== null && amount !== "") {
+      payload.amount = amount;
+    }
+    if (walletId) {
+      payload.wallet = walletId;
+    }
+    if (currency) {
+      payload.currency = currency;
+    }
 
     if (transactionType === "deposit") {
       endpoint = DEPOSIT_ENDPOINT;
+      if (method) {
+        payload.method = method;
+      }
     } else if (transactionType === "withdrawal") {
       endpoint = WITHDRAW_ENDPOINT;
     } else {
@@ -220,6 +234,12 @@ export class WalletService {
     if (description) {
       payload.description = description;
     }
+
+    Object.entries(extraFields).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        payload[key] = value;
+      }
+    });
 
     return this.fetchJson(endpoint, {
       method: "POST",

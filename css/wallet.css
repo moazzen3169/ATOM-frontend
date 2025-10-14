@@ -497,6 +497,20 @@ body{
     color: var(--color-primary);
 }
 
+.form-note {
+    padding: 16px;
+    border-radius: 8px;
+    background-color: var(--surface-tint-10, rgba(255, 255, 255, 0.04));
+    border: 1px solid var(--border-color);
+    color: var(--white-color);
+    font-size: 14px;
+    line-height: 2;
+}
+
+.form-note p {
+    margin: 0;
+}
+
 .wallet-form {
     display: flex;
     flex-direction: column;
@@ -533,6 +547,12 @@ body{
     box-shadow: 0 0 0 2px var(--color-primary-20);
 }
 
+.wallet-form input.is-invalid,
+.wallet-form textarea.is-invalid {
+    border-color: var(--error-color, #ff4d4f);
+    box-shadow: 0 0 0 2px rgba(255, 77, 79, 0.25);
+}
+
 .form-group input::placeholder,
 .form-group textarea::placeholder {
     color: var(--disabled-button-text);
@@ -543,6 +563,27 @@ body{
     gap: 12px;
     justify-content: flex-end;
     margin-top: 8px;
+}
+
+.form-messages {
+    margin-top: -4px;
+}
+
+.wallet-form .app-message {
+    margin: 0;
+}
+
+.wallet-form .app-message__text,
+.wallet-form .app-message__hint {
+    font-size: 14px;
+    line-height: 1.8;
+}
+
+.wallet-form .input-hint {
+    color: var(--disabled-button-text);
+    font-size: 13px;
+    display: block;
+    margin-top: -2px;
 }
 
 .btn-cancel,
@@ -583,6 +624,13 @@ body{
     opacity: 0.6;
     cursor: not-allowed;
     transform: none;
+}
+
+.Withdraw_btn.is-disabled,
+.Withdraw_btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    box-shadow: none;
 }
 
 /* Animations */
