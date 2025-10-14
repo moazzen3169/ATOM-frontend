@@ -4,8 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lobby</title>
-  <link rel="stylesheet" href="css/loby.css">
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
   <link rel="stylesheet" href="css/colors.css">
+  <link rel="stylesheet" href="css/loby.css">
   <link rel="stylesheet" href="fonts/fonts.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
@@ -67,7 +68,7 @@
             <div class="admin_fullname"><span id="adminFullName">نام: ---</span></div>
           </div>
           <div class="admin_profile">
-            <img id="adminProfilePicture" src="img/profile.jpg" alt="profile">
+            <img id="adminProfilePicture" src="img/profile.jpg" alt="profile" loading="lazy">
           </div>
         </div>
         <hr>
@@ -83,7 +84,7 @@
       <div class="loby_left">
         <div class="loby_banner">
           <div class="banner">
-            <img id="tournament_banner" src="" alt="banner">
+            <img id="tournament_banner" src="" alt="banner" decoding="async">
           </div>
           <div class="contant">
             <div class="countdown" id="countdown_section">
@@ -116,16 +117,50 @@
   <div id="individualJoinModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="individualJoinModalTitle">
     <div class="modal_content modal_content--compact">
       <div class="modal_header">
-        <h2 id="individualJoinModalTitle" class="modal_title">ثبت‌نام در تورنومنت</h2>
+        <div>
+          <h2 id="individualJoinModalTitle" class="modal_title">ثبت‌نام در تورنومنت</h2>
+          <p class="modal_desc" id="individualJoinModalDescription">
+            برای ورود به این تورنومنت لطفاً نام کاربری خود در بازی (In-Game ID) را وارد یا انتخاب کنید.
+          </p>
+        </div>
         <button type="button" class="modal_close" onclick="closeIndividualJoinModal()" aria-label="بستن">
           &times;
         </button>
       </div>
-      <p class="modal_desc">برای ورود به این تورنومنت کافیست شرایط لازم را داشته باشید. با تایید، حساب شما به عنوان شرکت‌کننده ثبت می‌شود.</p>
-      <div class="modal_actions">
-        <button type="button" class="modal_button modal_button--secondary" onclick="closeIndividualJoinModal()">انصراف</button>
-        <button type="button" class="modal_button modal_button--primary" onclick="joinIndividualTournament()">تایید ثبت‌نام</button>
-      </div>
+
+      <form class="modal_form" onsubmit="joinIndividualTournament(event)">
+        <div class="modal_field">
+          <label class="modal_label" for="inGameIdInput">نام کاربری شما در بازی</label>
+          <input
+            id="inGameIdInput"
+            class="modal_input"
+            type="text"
+            name="inGameId"
+            maxlength="64"
+            autocomplete="off"
+            placeholder="مثال: Gamer#1234"
+            required
+          >
+          <p id="inGameIdHint" class="modal_hint">این نام برای هماهنگی با ادمین تورنومنت استفاده می‌شود.</p>
+        </div>
+
+        <div class="modal_field" id="inGameIdSavedWrapper">
+          <label class="modal_label" for="inGameIdSelect">نام‌های ذخیره‌شده شما</label>
+          <div class="modal_select_wrapper">
+            <select id="inGameIdSelect" class="modal_select" aria-describedby="inGameIdHint">
+              <option value="">یکی از نام‌های قبلی را انتخاب کنید</option>
+            </select>
+            <button type="button" class="modal_button modal_button--ghost" onclick="useSavedInGameId()">انتخاب</button>
+          </div>
+        </div>
+
+        <div id="individualJoinError" class="modal_alert modal_alert--error is-hidden" role="alert" aria-live="assertive"></div>
+
+        <div class="modal_actions">
+          <button type="button" class="modal_button modal_button--secondary" onclick="closeIndividualJoinModal()">انصراف</button>
+          <button type="submit" class="modal_button modal_button--primary">تایید و ثبت‌نام</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -161,9 +196,11 @@
         <span>تیم انتخابی باید با ظرفیت تورنومنت هم‌خوانی داشته باشد و شما کاپیتان آن باشید.</span>
       </div>
 
-      <div id="teamModalList" class="team-modal__list"></div>
+      <div id="teamModalList" class="team-modal__list" role="listbox" aria-label="تیم‌های در دسترس"></div>
 
       <select id="teamSelect" class="team-modal__select" aria-hidden="true" tabindex="-1"></select>
+
+      <div id="teamJoinError" class="modal_alert modal_alert--error is-hidden" role="alert" aria-live="assertive"></div>
 
       <div class="modal_actions">
         <button type="button" class="modal_button modal_button--secondary" onclick="closeTeamJoinModal()">انصراف</button>
