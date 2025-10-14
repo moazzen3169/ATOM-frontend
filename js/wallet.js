@@ -27,9 +27,91 @@ const STATUS_CLASSNAMES = {
   rejected: "Not_done",
 };
 
+function toEnglishDigits(value) {
+  if (value === null || value === undefined) return "";
+  return String(value)
+    .replace(/[۰-۹]/g, (digit) => String(digit.charCodeAt(0) - 1776))
+    .replace(/[٠-٩]/g, (digit) => String(digit.charCodeAt(0) - 1632));
+}
+
+function parseAmountValue(value) {
+  if (value === null || value === undefined || value === "") {
+    return null;
+  }
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+  const numeric = Number(toEnglishDigits(value).replace(/[^0-9.-]/g, ""));
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function normaliseCardNumber(value) {
+  if (!value) return "";
+  const digits = toEnglishDigits(value).replace(/\D/g, "");
+  return digits.slice(0, 16);
+}
+
+function normaliseIban(value) {
+  if (!value) return "";
+  let normalized = toEnglishDigits(value).toUpperCase().replace(/[^A-Z0-9]/g, "");
+  if (!normalized) return "";
+  while (normalized.startsWith("IR")) {
+    normalized = normalized.slice(2);
+  }
+  if (normalized.startsWith("I")) {
+    normalized = normalized.slice(1);
+  }
+  if (normalized.startsWith("R")) {
+    normalized = normalized.slice(1);
+  }
+  normalized = `IR${normalized}`;
+  return normalized.slice(0, 26);
+}
+
+function extractErrorMessage(detail) {
+  if (!detail) return null;
+  if (typeof detail === "string") return detail;
+  if (Array.isArray(detail)) {
+    const parts = detail.map(extractErrorMessage).filter(Boolean);
+    return parts.join(" ") || null;
+  }
+  if (typeof detail === "object") {
+    if (detail.detail) {
+      return extractErrorMessage(detail.detail);
+    }
+    const [firstKey] = Object.keys(detail);
+    if (firstKey) {
+      return extractErrorMessage(detail[firstKey]);
+    }
+  }
+  return null;
+}
+
+function clearInlineMessage(container) {
+  if (container) {
+    container.innerHTML = "";
+  }
+}
+
+function showInlineMessage(container, key, overrides) {
+  if (!container) return;
+  renderInlineMessage(container, key, overrides || {});
+}
+
+function setFieldValidity(field, isValid = true) {
+  if (!field) return;
+  if (isValid) {
+    field.classList.remove("is-invalid");
+  } else {
+    field.classList.add("is-invalid");
+  }
+}
+
 function selectMetadata(transaction) {
   if (!transaction) return DEFAULT_TRANSACTION_METADATA;
-  const typeKey = (transaction.transaction_type_display || transaction.transaction_type || "").toString().toLowerCase();
+  const typeKey = (transaction.transaction_type_display || transaction.transaction_type || "")
+    .toString()
+    .toLowerCase();
   return TRANSACTION_TYPE_METADATA[typeKey] || DEFAULT_TRANSACTION_METADATA;
 }
 
@@ -46,15 +128,14 @@ function resolveStatusClass(transaction) {
 }
 
 function formatAmount(amount, fallback = "0") {
-  if (!amount && amount !== 0) return fallback;
-  if (typeof amount === "number") {
-    return new Intl.NumberFormat("fa-IR").format(amount);
+  if (amount === null || amount === undefined || amount === "") {
+    return fallback;
   }
-  const numeric = Number(String(amount).replace(/,/g, ""));
-  if (Number.isFinite(numeric)) {
-    return new Intl.NumberFormat("fa-IR").format(numeric);
+  const numeric = parseAmountValue(amount);
+  if (numeric === null) {
+    return typeof amount === "string" ? amount : fallback;
   }
-  return amount;
+  return new Intl.NumberFormat("fa-IR").format(numeric);
 }
 
 function formatTimestamp(timestamp, fallback = "تاریخ نامشخص") {
@@ -89,8 +170,15 @@ document.addEventListener("DOMContentLoaded", async () => {
   const withdrawBtn = document.querySelector(".Withdraw_btn");
   const depositForm = document.getElementById("deposit-form");
   const withdrawForm = document.getElementById("withdraw-form");
+  const depositMessages = document.getElementById("deposit-form-messages");
+  const withdrawMessages = document.getElementById("withdraw-form-messages");
+  const withdrawCardInput = document.getElementById("withdraw-card-number");
+  const withdrawIbanInput = document.getElementById("withdraw-iban");
+  const withdrawCardHolderInput = document.getElementById("withdraw-card-holder");
   const transactionFilterButtons = document.querySelectorAll(".filter_item");
   const orderingSelect = document.getElementById("ordering");
+  const depositAmountInput = depositForm?.querySelector("[name='amount']");
+  const withdrawAmountInput = withdrawForm?.querySelector("[name='amount']");
 
   const service = new WalletService({});
   if (!service.accessToken) {
@@ -101,10 +189,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const state = {
     walletId: null,
+    wallet: null,
     currentFilter: "all",
     ordering: "-timestamp",
     transactions: [],
+    totalBalance: 0,
+    withdrawableBalance: 0,
   };
+
+  updateWithdrawButtonState();
 
   if (orderingSelect) {
     state.ordering = resolveOrderingValue(orderingSelect.value);
@@ -135,9 +228,41 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  function updateWithdrawButtonState() {
+    if (!withdrawBtn) return;
+    const disabled = !state.withdrawableBalance || state.withdrawableBalance <= 0;
+    withdrawBtn.disabled = disabled;
+    withdrawBtn.classList.toggle("is-disabled", disabled);
+  }
+
   function updateWalletSummary(wallet) {
-    const totalBalanceDisplay = wallet.display_total_balance || wallet.total_balance_display || formatAmount(wallet.total_balance || 0);
-    const withdrawableDisplay = wallet.display_withdrawable_balance || wallet.withdrawable_balance_display || formatAmount(wallet.withdrawable_balance || 0);
+    if (!wallet) return;
+
+    state.wallet = wallet;
+    if (wallet.id) {
+      state.walletId = wallet.id;
+    }
+
+    const totalNumeric =
+      parseAmountValue(wallet.total_balance) ??
+      parseAmountValue(wallet.total_balance_display) ??
+      parseAmountValue(wallet.display_total_balance);
+    const withdrawableNumeric =
+      parseAmountValue(wallet.withdrawable_balance) ??
+      parseAmountValue(wallet.withdrawable_balance_display) ??
+      parseAmountValue(wallet.display_withdrawable_balance);
+
+    state.totalBalance = totalNumeric ?? 0;
+    state.withdrawableBalance = withdrawableNumeric ?? 0;
+
+    const totalBalanceDisplay =
+      wallet.display_total_balance ||
+      wallet.total_balance_display ||
+      formatAmount(state.totalBalance);
+    const withdrawableDisplay =
+      wallet.display_withdrawable_balance ||
+      wallet.withdrawable_balance_display ||
+      formatAmount(state.withdrawableBalance);
 
     if (walletBalanceSpan) {
       walletBalanceSpan.textContent = totalBalanceDisplay;
@@ -148,6 +273,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (withdrawableBalanceSpan) {
       withdrawableBalanceSpan.textContent = `${withdrawableDisplay} تومان`;
     }
+
+    updateWithdrawButtonState();
   }
 
   function resolveOrderingValue(value) {
@@ -164,6 +291,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function loadTransactions() {
     if (!transactionsContainer) return;
+    if (!state.walletId) {
+      transactionsContainer.innerHTML = "";
+      return;
+    }
     try {
       renderInlineMessage(transactionsContainer, "transactionsEmpty", {
         title: "در حال بارگذاری",
@@ -237,14 +368,48 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  function resetFormState(form, messagesContainer) {
+    if (form) {
+      form.reset();
+      form.querySelectorAll(".is-invalid").forEach((element) => element.classList.remove("is-invalid"));
+    }
+    if (messagesContainer) {
+      clearInlineMessage(messagesContainer);
+    }
+  }
+
+  if (withdrawCardInput) {
+    withdrawCardInput.addEventListener("input", () => {
+      const normalized = normaliseCardNumber(withdrawCardInput.value);
+      const grouped = normalized.replace(/(\d{4})(?=\d)/g, "$1 ");
+      withdrawCardInput.value = grouped;
+    });
+  }
+
+  if (withdrawIbanInput) {
+    withdrawIbanInput.addEventListener("input", () => {
+      const normalized = normaliseIban(withdrawIbanInput.value);
+      const grouped = normalized.replace(/(.{4})(?=.)/g, "$1 ");
+      withdrawIbanInput.value = grouped;
+    });
+  }
+
   if (depositBtn && depositModal) {
-    depositBtn.addEventListener("click", () => depositModal.classList.add("show"));
+    depositBtn.addEventListener("click", () => {
+      resetFormState(depositForm, depositMessages);
+      depositModal.classList.add("show");
+    });
   }
 
   if (withdrawBtn && withdrawModal) {
     withdrawBtn.addEventListener("click", () => {
-      if (withdrawableBalanceSpan && withdrawableSpan) {
-        withdrawableBalanceSpan.textContent = `${withdrawableSpan.textContent} تومان`;
+      if (withdrawBtn.disabled) {
+        return;
+      }
+      resetFormState(withdrawForm, withdrawMessages);
+      if (withdrawableBalanceSpan) {
+        const display = formatAmount(state.withdrawableBalance);
+        withdrawableBalanceSpan.textContent = `${display} تومان`;
       }
       withdrawModal.classList.add("show");
     });
@@ -253,11 +418,17 @@ document.addEventListener("DOMContentLoaded", async () => {
   [depositModal, withdrawModal].forEach((modal) => {
     if (!modal) return;
     modal.addEventListener("click", (event) => {
-      if (event.target.classList.contains("modal-close") || event.target.classList.contains("btn-cancel") || event.target === modal) {
+      if (
+        event.target.classList.contains("modal-close") ||
+        event.target.classList.contains("btn-cancel") ||
+        event.target === modal
+      ) {
         modal.classList.remove("show");
-        const form = modal.querySelector("form");
-        if (form) {
-          form.reset();
+        if (modal.contains(depositForm)) {
+          resetFormState(depositForm, depositMessages);
+        }
+        if (modal.contains(withdrawForm)) {
+          resetFormState(withdrawForm, withdrawMessages);
         }
       }
     });
@@ -266,29 +437,62 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (depositForm) {
     depositForm.addEventListener("submit", async (event) => {
       event.preventDefault();
+      clearInlineMessage(depositMessages);
+      setFieldValidity(depositAmountInput, true);
+
       const submitButton = depositForm.querySelector(".btn-submit");
-      const amount = depositForm.amount?.value?.trim();
+      const amountValue = parseAmountValue(depositAmountInput?.value);
+      const normalizedAmount = amountValue !== null ? Math.floor(amountValue) : null;
       const description = depositForm.querySelector("[name='description']")?.value?.trim();
 
-      if (!amount) {
+      if (!normalizedAmount || normalizedAmount < 1000) {
+        setFieldValidity(depositAmountInput, false);
         showAppNotification("invalidDepositAmount");
+        showInlineMessage(depositMessages, "invalidDepositAmount");
+        depositAmountInput?.focus();
+        return;
+      }
+
+      if (!state.walletId) {
+        showAppNotification("walletLoadFailed");
+        showInlineMessage(depositMessages, "walletLoadFailed");
         return;
       }
 
       try {
         if (submitButton) submitButton.disabled = true;
-        const response = await service.createTransaction("deposit", { amount, description });
+        const response = await service.createTransaction("deposit", {
+          amount: String(normalizedAmount),
+          description,
+          walletId: state.walletId,
+        });
         if (response?.payment_url) {
           window.location.href = response.payment_url;
           return;
         }
         showAppNotification("depositSuccess");
+        resetFormState(depositForm, depositMessages);
         depositModal?.classList.remove("show");
-        depositForm.reset();
         await refreshWalletData();
       } catch (error) {
         console.error("Deposit request failed", error);
-        showAppNotification("depositFailed");
+        const detail = error?.detail;
+        const friendlyMessage = extractErrorMessage(detail) || extractErrorMessage(error?.message);
+        let notificationKey = "depositFailed";
+        let inlineKey = "depositFailed";
+        let overrides;
+
+        if (detail && typeof detail === "object" && !Array.isArray(detail) && detail.amount) {
+          notificationKey = "invalidDepositAmount";
+          inlineKey = "invalidDepositAmount";
+          overrides = { message: extractErrorMessage(detail.amount), hint: null };
+          setFieldValidity(depositAmountInput, false);
+        } else if (friendlyMessage) {
+          overrides = { message: friendlyMessage, hint: null };
+        }
+
+        showAppNotification(notificationKey);
+        showInlineMessage(depositMessages, inlineKey, overrides);
       } finally {
         if (submitButton) submitButton.disabled = false;
       }
@@ -298,25 +502,118 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (withdrawForm) {
     withdrawForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const submitButton = withdrawForm.querySelector(".btn-submit");
-      const amount = withdrawForm.amount?.value?.trim();
-      const description = withdrawForm.querySelector("[name='description']")?.value?.trim();
+      clearInlineMessage(withdrawMessages);
+      setFieldValidity(withdrawAmountInput, true);
+      setFieldValidity(withdrawCardInput, true);
+      setFieldValidity(withdrawIbanInput, true);
 
-      if (!amount) {
+      const submitButton = withdrawForm.querySelector(".btn-submit");
+      const amountValue = parseAmountValue(withdrawAmountInput?.value);
+      const normalizedAmount = amountValue !== null ? Math.floor(amountValue) : null;
+      const description = withdrawForm.querySelector("[name='description']")?.value?.trim();
+      const cardNumber = normaliseCardNumber(withdrawCardInput?.value);
+      const iban = normaliseIban(withdrawIbanInput?.value);
+      const cardHolderName = withdrawCardHolderInput?.value?.trim();
+
+      if (!normalizedAmount || normalizedAmount < 1000) {
+        setFieldValidity(withdrawAmountInput, false);
         showAppNotification("invalidWithdrawAmount");
+        showInlineMessage(withdrawMessages, "invalidWithdrawAmount");
+        withdrawAmountInput?.focus();
+        return;
+      }
+
+      if (
+        state.withdrawableBalance !== null &&
+        normalizedAmount > Number(state.withdrawableBalance || 0)
+      ) {
+        setFieldValidity(withdrawAmountInput, false);
+        showAppNotification("withdrawMoreThanBalance");
+        showInlineMessage(withdrawMessages, "withdrawMoreThanBalance");
+        withdrawAmountInput?.focus();
+        return;
+      }
+
+      if (!state.walletId) {
+        showAppNotification("walletLoadFailed");
+        showInlineMessage(withdrawMessages, "walletLoadFailed");
+        return;
+      }
+
+      if (!cardNumber || cardNumber.length !== 16) {
+        setFieldValidity(withdrawCardInput, false);
+        showAppNotification("withdrawInvalidCard");
+        showInlineMessage(withdrawMessages, "withdrawInvalidCard");
+        withdrawCardInput?.focus();
+        return;
+      }
+
+      if (!iban || iban.length !== 26) {
+        setFieldValidity(withdrawIbanInput, false);
+        showAppNotification("withdrawInvalidIban");
+        showInlineMessage(withdrawMessages, "withdrawInvalidIban");
+        withdrawIbanInput?.focus();
         return;
       }
 
       try {
         if (submitButton) submitButton.disabled = true;
-        await service.createTransaction("withdrawal", { amount, description });
+        await service.createTransaction("withdrawal", {
+          amount: String(normalizedAmount),
+          description,
+          walletId: state.walletId,
+          card_number: cardNumber,
+          iban,
+          card_holder_name: cardHolderName || undefined,
+        });
         showAppNotification("withdrawSuccess");
+        resetFormState(withdrawForm, withdrawMessages);
         withdrawModal?.classList.remove("show");
-        withdrawForm.reset();
         await refreshWalletData();
       } catch (error) {
         console.error("Withdraw request failed", error);
-        showAppNotification("withdrawFailed");
+        const detail = error?.detail;
+        const friendlyMessage = extractErrorMessage(detail) || extractErrorMessage(error?.message);
+        let notificationKey = "withdrawFailed";
+        let inlineKey = "withdrawFailed";
+        let overrides;
+
+        if (detail && typeof detail === "object" && !Array.isArray(detail)) {
+          if (detail.card_number) {
+            notificationKey = "withdrawInvalidCard";
+            inlineKey = "withdrawInvalidCard";
+            overrides = { message: extractErrorMessage(detail.card_number), hint: null };
+            setFieldValidity(withdrawCardInput, false);
+          } else if (detail.iban) {
+            notificationKey = "withdrawInvalidIban";
+            inlineKey = "withdrawInvalidIban";
+            overrides = { message: extractErrorMessage(detail.iban), hint: null };
+            setFieldValidity(withdrawIbanInput, false);
+          } else if (detail.amount || detail.withdrawable_balance) {
+            notificationKey = "withdrawMoreThanBalance";
+            inlineKey = "withdrawMoreThanBalance";
+            overrides = {
+              message: extractErrorMessage(detail.amount || detail.withdrawable_balance),
+              hint: null,
+            };
+            setFieldValidity(withdrawAmountInput, false);
+          }
+        }
+
+        if (!overrides && friendlyMessage) {
+          overrides = { message: friendlyMessage, hint: null };
+          if (/موجودی|balance/i.test(friendlyMessage)) {
+            notificationKey = "withdrawMoreThanBalance";
+            inlineKey = "withdrawMoreThanBalance";
+            setFieldValidity(withdrawAmountInput, false);
+          } else if (notificationKey === "withdrawFailed") {
+            notificationKey = "withdrawValidationFailed";
+            inlineKey = "withdrawValidationFailed";
+          }
+        }
+
+        showAppNotification(notificationKey);
+        showInlineMessage(withdrawMessages, inlineKey, overrides);
       } finally {
         if (submitButton) submitButton.disabled = false;
       }
