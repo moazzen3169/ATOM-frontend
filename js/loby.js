@@ -9,7 +9,7 @@ const MAX_SAVED_INGAME_IDS = 10;
 const state = {
   tournamentId: null,
   tournament: null,
-  selectedTeamId: "",
+  selectedTeamId: null,
   teamRequestInFlight: false,
   lastUsedInGameId: "",
 };
@@ -461,8 +461,13 @@ async function loadTournament() {
   }
 }
 
+function hasTeamSelectionValue(value) {
+  if (value === null || value === undefined) return false;
+  return String(value).trim().length > 0;
+}
+
 function resetTeamSelection() {
-  state.selectedTeamId = "";
+  state.selectedTeamId = null;
   const confirmBtn = document.getElementById("teamJoinConfirmButton");
   if (confirmBtn) confirmBtn.disabled = true;
 
@@ -476,22 +481,52 @@ function resetTeamSelection() {
 }
 
 function selectTeam(teamId) {
-  state.selectedTeamId = teamId;
+  const normalisedValue = hasTeamSelectionValue(teamId)
+    ? String(teamId).trim()
+    : null;
+
+  state.selectedTeamId = normalisedValue;
 
   const confirmBtn = document.getElementById("teamJoinConfirmButton");
-  if (confirmBtn) confirmBtn.disabled = !teamId;
+  if (confirmBtn) confirmBtn.disabled = !hasTeamSelectionValue(normalisedValue);
 
   const list = document.getElementById("teamModalList");
   if (!list) return;
 
   list.querySelectorAll(".team-option").forEach((btn) => {
-    const isSelected = String(btn.dataset.teamId) === String(teamId);
+    const isSelected = String(btn.dataset.teamId) === String(normalisedValue);
     btn.classList.toggle("selected", isSelected);
     btn.setAttribute("aria-pressed", isSelected ? "true" : "false");
   });
 
   const selectEl = document.getElementById("teamSelect");
-  if (selectEl) selectEl.value = teamId || "";
+  if (selectEl) selectEl.value = hasTeamSelectionValue(normalisedValue) ? normalisedValue : "";
+}
+
+function resolveTeamId(team) {
+  if (!team || typeof team !== "object") return null;
+
+  const candidates = [
+    team.id,
+    team.team_id,
+    team.teamId,
+    team.team,
+    team.uuid,
+    team.slug,
+  ];
+
+  for (const value of candidates) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+
+    const stringValue = String(value).trim();
+    if (stringValue) {
+      return stringValue;
+    }
+  }
+
+  return null;
 }
 
 function renderTeamOptions(teams, meta = {}) {
@@ -522,6 +557,11 @@ function renderTeamOptions(teams, meta = {}) {
   if (emptyState) emptyState.classList.add("is-hidden");
 
   teams.forEach((team) => {
+    const identifier = resolveTeamId(team);
+    if (!identifier) {
+      return;
+    }
+
     const metaText =
       team.meta ??
       team.members_count ??
@@ -531,19 +571,19 @@ function renderTeamOptions(teams, meta = {}) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "team-option";
-    button.dataset.teamId = team.id;
+    button.dataset.teamId = identifier;
     button.innerHTML = `
       <div class="team-option__info">
         <span class="team-option__name">${team.name}</span>
         <span class="team-option__meta">${metaText || ""}</span>
       </div>
     `;
-    button.addEventListener("click", () => selectTeam(team.id));
+    button.addEventListener("click", () => selectTeam(identifier));
     list?.appendChild(button);
 
     if (selectEl) {
       const option = document.createElement("option");
-      option.value = team.id;
+      option.value = identifier;
       option.textContent = team.name;
       selectEl.appendChild(option);
     }
@@ -733,7 +773,7 @@ async function joinIndividualTournament(event) {
 
 async function joinTeamTournament() {
   if (!state.tournamentId) return;
-  if (!state.selectedTeamId) {
+  if (!hasTeamSelectionValue(state.selectedTeamId)) {
     const message = "لطفاً یک تیم انتخاب کنید.";
     notify("teamSelectionRequired", message);
     showModalError("teamJoinError", message);
@@ -746,7 +786,25 @@ async function joinTeamTournament() {
   if (confirmBtn) confirmBtn.disabled = true;
 
   try {
-    const payload = { team: Number(state.selectedTeamId) };
+    const normalisedTeamId = (() => {
+      const raw = state.selectedTeamId;
+      if (raw === null || raw === undefined) return null;
+
+      const stringValue = String(raw).trim();
+      if (!stringValue) return null;
+
+      if (/^\d+$/.test(stringValue)) {
+        return Number.parseInt(stringValue, 10);
+      }
+
+      return stringValue;
+    })();
+
+    if (normalisedTeamId === null || Number.isNaN(normalisedTeamId)) {
+      throw new Error("شناسه تیم انتخاب شده نامعتبر است. لطفاً دوباره تلاش کنید.");
+    }
+
+    const payload = { team: normalisedTeamId };
     const url = `${API_BASE_URL}/api/tournaments/tournaments/${state.tournamentId}/join/`;
 
     await apiFetch(url, {
