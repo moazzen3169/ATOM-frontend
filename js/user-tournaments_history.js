@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../js/config.js";
+import { API_ENDPOINTS } from "./services/api-client.js";
 
 const helperDefaults = {
     fetchWithAuth: async () => { throw new Error('fetchWithAuth helper is not configured.'); },
@@ -42,7 +42,7 @@ export async function fetchUserTournamentHistory(userId) {
     try {
         console.log('دریافت تاریخچه تورنومنت‌های کاربر از API...');
 
-        const response = await helpers.fetchWithAuth(`${API_BASE_URL}/api/users/users/${userId}/match-history/`, {
+        const response = await helpers.fetchWithAuth(API_ENDPOINTS.users.userMatchHistory(userId), {
             method: 'GET'
         });
 

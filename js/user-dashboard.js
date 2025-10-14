@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../js/config.js";
+import { API_ENDPOINTS, createAuthApiClient, extractApiError } from "./services/api-client.js";
 import {
     configureTeamModule,
     setTeamUserContext,
@@ -17,7 +17,7 @@ import {
     getTournamentMatchesCount
 } from "./user-tournaments_history.js";
 
-let authTokenCache = null;
+const apiClient = createAuthApiClient();
 let currentUserId = null;
 let currentUsername = '';
 let currentUserEmail = '';
@@ -30,15 +30,15 @@ let unreadNotificationsCount = 0;
 
 const DEFAULT_AVATAR_SRC = "../img/profile.jpg";
 const LEGACY_PROFILE_ENDPOINTS = [
-    '/api/users/users/me/',
+    API_ENDPOINTS.users.me,
     '/api/auth/users/me/',
     '/api/auth/me/',
     '/api/auth/user/'
 ];
 function getProfileUpdateEndpoints() {
-    const endpoints = ['/auth/users/me/'];
+    const endpoints = [API_ENDPOINTS.auth.profile];
     if (currentUserId) {
-        endpoints.push(`/api/users/users/${currentUserId}/`);
+        endpoints.push(API_ENDPOINTS.users.detail(currentUserId));
     }
     endpoints.push(...LEGACY_PROFILE_ENDPOINTS);
     return Array.from(new Set(endpoints));
@@ -46,7 +46,7 @@ function getProfileUpdateEndpoints() {
 const PROFILE_BIO_KEYS = ['bio', 'about', 'description'];
 
 const NOTIFICATIONS_ENDPOINTS = [
-    '/api/users/notifications/',
+    API_ENDPOINTS.users.notifications,
     '/api/notifications/',
     '/api/users/user-notifications/',
     '/api/notifications/user/',
@@ -59,7 +59,7 @@ async function getUserVerificationLevel() {
     }
 
     try {
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/users/verification/`, {
+        const response = await fetchWithAuth(API_ENDPOINTS.users.verification, {
             method: 'GET'
         });
 
@@ -82,7 +82,7 @@ async function getUserProfile() {
 
     for (const endpoint of LEGACY_PROFILE_ENDPOINTS) {
         try {
-            const response = await fetchWithAuth(`${API_BASE_URL}${endpoint}`, {
+            const response = await fetchWithAuth(endpoint, {
                 method: 'GET'
             });
 
@@ -183,7 +183,7 @@ async function submitProfileUpdate(bodyFactory, isMultipart = false) {
     const endpoints = getProfileUpdateEndpoints();
 
     for (const endpointPath of endpoints) {
-        const endpoint = `${API_BASE_URL}${endpointPath}`;
+        const endpoint = endpointPath;
         try {
             const headers = new Headers();
 
@@ -192,20 +192,11 @@ async function submitProfileUpdate(bodyFactory, isMultipart = false) {
             }
             headers.set('Accept', 'application/json');
 
-            let response = await fetchWithAuth(endpoint, {
+            const response = await fetchWithAuth(endpoint, {
                 method: 'PATCH',
                 body: bodyFactory(),
                 headers
-            }, false);
-
-            if (response.status === 401) {
-                await refreshToken();
-                response = await fetchWithAuth(endpoint, {
-                    method: 'PATCH',
-                    body: bodyFactory(),
-                    headers
-                }, false);
-            }
+            });
 
             if (!response.ok) {
                 const message = await extractErrorMessage(response);
@@ -347,21 +338,22 @@ function setEditUserMessage(type, message) {
 
 // تابع برای بررسی و تنظیم توکن
 function setupToken() {
-    // بررسی انواع مختلف ذخیره‌سازی توکن
-    let token = localStorage.getItem('token');
+    let token = apiClient.getAccessToken();
 
-    if (!token) {
-        token = localStorage.getItem('access_token');
+    if (!token && typeof localStorage !== 'undefined') {
+        const storedToken = localStorage.getItem('token') || localStorage.getItem('access_token');
+        if (storedToken) {
+            apiClient.setAccessToken(storedToken);
+            token = storedToken;
+        }
     }
 
     if (!token) {
-        // اگر توکن پیدا نشد، به صفحه لاگین هدایت شو
         showError("ابتدا وارد حساب کاربری شوید");
         window.location.href = "../register/login.html";
         return null;
     }
 
-    authTokenCache = token;
     return token;
 }
 
@@ -370,7 +362,7 @@ async function fetchDashboardData() {
     try {
         console.log('دریافت اطلاعات داشبورد از API...');
 
-        const response = await fetchWithAuth(`${API_BASE_URL}/api/users/dashboard/`, {
+        const response = await fetchWithAuth(API_ENDPOINTS.users.dashboard, {
             method: 'GET'
         });
 
@@ -397,107 +389,91 @@ async function fetchDashboardData() {
         }
     } catch (error) {
         console.error("خطا در دریافت داده‌های داشبورد:", error);
-        throw error;
-    }
-}
-
-// تابع برای refresh توکن
-async function refreshToken() {
-    try {
-        const refreshToken = localStorage.getItem('refresh_token');
-        if (!refreshToken) {
-            throw new Error('Refresh token not found');
+        const message = await extractErrorMessage(error);
+        if (error instanceof Error) {
+            error.message = message || error.message || 'خطا در دریافت داده‌های داشبورد.';
+            throw error;
         }
-
-        const response = await fetch(`${API_BASE_URL}/auth/jwt/refresh/`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                refresh: refreshToken
-            })
-        });
-
-        if (response.ok) {
-            const data = await response.json();
-            localStorage.setItem('token', data.access);
-            localStorage.setItem('access_token', data.access);
-            authTokenCache = data.access;
-            console.log('Token refreshed successfully');
-        } else {
-            throw new Error('Failed to refresh token');
-        }
-    } catch (error) {
-        console.error('Error refreshing token:', error);
-        // اگر refresh failed، کاربر باید دوباره لاگین کند
-        localStorage.clear();
-        window.location.href = "../register/login.html";
+        throw new Error(message || 'خطا در دریافت داده‌های داشبورد.');
     }
 }
 
 async function fetchWithAuth(url, options = {}, retry = true) {
-    const token = authTokenCache || setupToken();
+    const token = apiClient.getAccessToken() || setupToken();
     if (!token) {
         throw new Error('برای انجام این عملیات ابتدا وارد حساب کاربری شوید.');
     }
 
-    const headers = new Headers(options.headers || {});
-    headers.set('Authorization', 'Bearer ' + token);
-
-    const isJsonBody = options.body && !(options.body instanceof FormData);
-    if (isJsonBody && !headers.has('Content-Type')) {
-        headers.set('Content-Type', 'application/json');
+    try {
+        return await apiClient.fetch(url, { ...options, retry });
+    } catch (error) {
+        if (error && error.code === 'AUTH_REQUIRED') {
+            throw new Error('برای انجام این عملیات ابتدا وارد حساب کاربری شوید.');
+        }
+        throw error;
     }
-    if (!headers.has('Accept')) {
-        headers.set('Accept', 'application/json');
-    }
-
-    const response = await fetch(url, { ...options, headers });
-
-    if (response.status === 401 && retry) {
-        await refreshToken();
-        return fetchWithAuth(url, options, false);
-    }
-
-    return response;
 }
 
-async function extractErrorMessage(response) {
-    if (!response) return 'خطای ناشناخته رخ داد.';
+function flattenErrorDetail(detail) {
+    if (!detail) return '';
+    if (typeof detail === 'string') {
+        return detail;
+    }
+    if (Array.isArray(detail)) {
+        return detail
+            .map(item => flattenErrorDetail(item))
+            .filter(Boolean)
+            .join(' | ');
+    }
+    if (typeof detail === 'object') {
+        return Object.values(detail)
+            .map(value => flattenErrorDetail(value))
+            .filter(Boolean)
+            .join(' | ');
+    }
+    return String(detail);
+}
 
-    const contentType = response.headers.get('content-type');
-    try {
-        if (contentType && contentType.includes('application/json')) {
-            const data = await response.json();
-            if (typeof data === 'string') return data;
-            if (data.detail) return data.detail;
-            const messages = [];
-            Object.entries(data).forEach(([key, value]) => {
-                if (Array.isArray(value)) {
-                    messages.push(value.join(' '));
-                } else if (value && typeof value === 'object') {
-                    Object.values(value).forEach(v => {
-                        if (Array.isArray(v)) {
-                            messages.push(v.join(' '));
-                        } else if (v) {
-                            messages.push(String(v));
-                        }
-                    });
-                } else if (value) {
-                    messages.push(String(value));
-                }
-            });
-            if (messages.length) return messages.join(' | ');
-        } else {
-            const text = await response.text();
-            if (text) return text;
-        }
-    } catch (error) {
-        console.warn('Failed to parse error message', error);
+async function extractErrorMessage(errorOrResponse) {
+    if (!errorOrResponse) {
+        return 'خطای ناشناخته رخ داد.';
     }
 
-    return response.statusText || 'خطای ناشناخته رخ داد.';
+    const isResponseLike = typeof errorOrResponse === 'object'
+        && typeof errorOrResponse.headers === 'object'
+        && typeof errorOrResponse.text === 'function';
+
+    if (isResponseLike) {
+        return extractApiError(errorOrResponse);
+    }
+
+    if (typeof errorOrResponse === 'string') {
+        return errorOrResponse;
+    }
+
+    if (typeof errorOrResponse === 'object') {
+        const detailCandidates = [errorOrResponse.detail, errorOrResponse.error];
+        for (const candidate of detailCandidates) {
+            const detailMessage = flattenErrorDetail(candidate);
+            if (detailMessage) {
+                return detailMessage;
+            }
+        }
+
+        if (errorOrResponse instanceof Error) {
+            if (errorOrResponse.message && errorOrResponse.message !== 'REQUEST_FAILED') {
+                return errorOrResponse.message;
+            }
+        } else if (typeof errorOrResponse.message === 'string' && errorOrResponse.message !== 'REQUEST_FAILED') {
+            return errorOrResponse.message;
+        }
+    }
+
+    if (errorOrResponse instanceof Error && errorOrResponse.message && errorOrResponse.message !== 'REQUEST_FAILED') {
+        return errorOrResponse.message;
+    }
+
+    return 'خطای ناشناخته رخ داد.';
 }
 
 function toggleButtonLoading(button, isLoading, loadingText = 'لطفاً صبر کنید...') {
