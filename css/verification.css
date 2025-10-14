@@ -466,6 +466,8 @@
     position: fixed;
     top: 50%;
     left: 50%;
+    right: auto;
+    bottom: auto;
     transform: translate(-50%, -50%);
     background-color: var(--card-color);
     border: 1px solid rgba(255, 255, 255, 0.12);
@@ -476,6 +478,9 @@
     overflow-y: auto;
     box-shadow: 0 40px 70px rgba(0, 0, 0, 0.45);
     z-index: 100;
+    display: block;
+    opacity: 1;
+    pointer-events: auto;
 }
 
 .level_2_modal {
