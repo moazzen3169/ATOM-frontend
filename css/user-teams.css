@@ -739,6 +739,16 @@
 
   .team_card__body {
     grid-template-columns: 1fr;
+    text-align: center;
+    justify-items: center;
+  }
+
+  .team_badge {
+    margin-right: 0;
+  }
+
+  .team_members_preview {
+    justify-content: center;
   }
 
   .team_card__footer_content {

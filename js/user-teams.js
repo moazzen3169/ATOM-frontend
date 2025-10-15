@@ -381,11 +381,129 @@ function getTeamMembersMeta(team) {
         let label = '';
         let avatar = DEFAULT_AVATAR_SRC;
 
-        const fallbackLabel = fallbackName || (isCaptain ? 'کاپیتان' : 'عضو تیم');
+        function hasCaptainIndicator(value, depth = 0) {
+            if (!value || depth > 3) return false;
+
+            if (typeof value === 'boolean') {
+                return value;
+            }
+
+            if (typeof value === 'number') {
+                return value === 1;
+            }
+
+            if (typeof value === 'string') {
+                const normalized = value.trim().toLowerCase();
+                if (!normalized) return false;
+                if (['1', 'true', 'yes'].includes(normalized)) {
+                    return true;
+                }
+
+                const captainKeywords = [
+                    'captain',
+                    'leader',
+                    'lead',
+                    'owner',
+                    'founder',
+                    'coach',
+                    'host',
+                    'کاپیتان',
+                    'سرپرست',
+                    'رهبر'
+                ];
+
+                return captainKeywords.some((keyword) => normalized.includes(keyword));
+            }
+
+            if (Array.isArray(value)) {
+                return value.some((item) => hasCaptainIndicator(item, depth + 1));
+            }
+
+            if (typeof value === 'object') {
+                const directKeys = [
+                    'is_captain',
+                    'isCaptain',
+                    'captain',
+                    'is_leader',
+                    'isLeader',
+                    'leader',
+                    'is_owner',
+                    'isOwner',
+                    'owner',
+                    'is_head',
+                    'isHead',
+                    'head',
+                    'is_founder',
+                    'isFounder',
+                    'founder',
+                    'is_host',
+                    'isHost',
+                    'host'
+                ];
+
+                for (const key of directKeys) {
+                    if (hasCaptainIndicator(value[key], depth + 1)) {
+                        return true;
+                    }
+                }
+
+                const roleKeys = [
+                    'role',
+                    'member_role',
+                    'team_role',
+                    'position',
+                    'title',
+                    'type',
+                    'status',
+                    'designation',
+                    'membership_role'
+                ];
+
+                for (const key of roleKeys) {
+                    if (hasCaptainIndicator(value[key], depth + 1)) {
+                        return true;
+                    }
+                }
+
+                const nestedKeys = [
+                    'membership',
+                    'membership_info',
+                    'membership_detail',
+                    'membership_data',
+                    'user',
+                    'member',
+                    'player',
+                    'profile',
+                    'account',
+                    'participant'
+                ];
+
+                for (const key of nestedKeys) {
+                    if (hasCaptainIndicator(value[key], depth + 1)) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        let resolvedIsCaptain = Boolean(isCaptain);
+
+        const fallbackLabel = () => {
+            if (resolvedIsCaptain) {
+                return 'کاپیتان';
+            }
+            return (fallbackName && String(fallbackName).trim()) || 'عضو تیم';
+        };
 
         if (member && typeof member === 'object') {
+            if (!resolvedIsCaptain && hasCaptainIndicator(member)) {
+                resolvedIsCaptain = true;
+            }
+
             username = getUsernameFromItem(member) || '';
-            label = extractUserDisplayName(member) || username || fallbackLabel;
+            label = extractUserDisplayName(member) || username || '';
             avatar = extractUserAvatar(member) || DEFAULT_AVATAR_SRC;
 
             const idFields = [
@@ -421,6 +539,9 @@ function getTeamMembersMeta(team) {
             nestedKeys.forEach((key) => {
                 const nested = member[key];
                 if (nested && typeof nested === 'object') {
+                    if (!resolvedIsCaptain && hasCaptainIndicator(nested)) {
+                        resolvedIsCaptain = true;
+                    }
                     if (typeof nested.id !== 'undefined' && nested.id !== null) {
                         identifiers.add(String(nested.id));
                     }
@@ -434,12 +555,21 @@ function getTeamMembersMeta(team) {
             });
         } else if (typeof member === 'string') {
             username = member;
-            label = member || fallbackLabel;
+            label = member || '';
+            if (!resolvedIsCaptain && hasCaptainIndicator(member)) {
+                resolvedIsCaptain = true;
+            }
         } else if (typeof member === 'number') {
             identifiers.add(String(member));
         }
 
-        const finalLabel = (label || username || fallbackLabel || '').toString().trim();
+        if (!label) {
+            label = fallbackLabel();
+        } else if (resolvedIsCaptain && label.trim() === 'عضو تیم') {
+            label = fallbackLabel();
+        }
+
+        const finalLabel = (label || username || fallbackLabel() || '').toString().trim();
         const normalizedUsername = (username || finalLabel).toString().trim().toLowerCase();
 
         if (!finalLabel && !identifiers.size && !normalizedUsername) {
@@ -447,9 +577,9 @@ function getTeamMembersMeta(team) {
         }
 
         return {
-            label: finalLabel || fallbackLabel,
+            label: finalLabel || fallbackLabel(),
             avatar: (avatar || DEFAULT_AVATAR_SRC).trim() || DEFAULT_AVATAR_SRC,
-            isCaptain,
+            isCaptain: resolvedIsCaptain,
             identifiers: Array.from(identifiers),
             normalizedUsername
         };
@@ -485,8 +615,21 @@ function getTeamMembersMeta(team) {
         .map(member => createMemberDetail(member, { fallbackName: 'عضو تیم' }))
         .filter(Boolean);
 
+    if (!captainSource) {
+        const flaggedDetail = details.find((detail) => detail.isCaptain);
+        if (flaggedDetail) {
+            captainSource = flaggedDetail;
+        }
+    }
+
     if (captainSource && !details.some(detail => detailsMatch(detail, captainSource))) {
         details.unshift(captainSource);
+    } else if (captainSource) {
+        details.forEach((detail) => {
+            if (detailsMatch(detail, captainSource)) {
+                detail.isCaptain = true;
+            }
+        });
     }
 
     const combinedMembers = details.length
