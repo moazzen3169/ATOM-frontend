@@ -493,9 +493,14 @@ function getTeamMembersMeta(team) {
         ? details
         : supplementalNames.map(name => ({ label: name, avatar: DEFAULT_AVATAR_SRC }));
 
-    const previewMembers = combinedMembers.slice(0, 3);
+    const orderedMembers = combinedMembers.slice().sort((a, b) => {
+        if (a.isCaptain === b.isCaptain) {
+            return 0;
+        }
+        return a.isCaptain ? -1 : 1;
+    });
 
-    let preview = previewMembers
+    let preview = orderedMembers
         .map((member) => {
             const displayName = escapeHTML(member.label || 'عضو تیم');
             const avatarSrc = escapeHTML((member.avatar || DEFAULT_AVATAR_SRC).trim() || DEFAULT_AVATAR_SRC);
@@ -521,26 +526,7 @@ function getTeamMembersMeta(team) {
         return combinedMembers.length;
     })();
 
-    const totalKnownMembers = effectiveCount;
-    const remaining = totalKnownMembers - previewMembers.length;
-    if (remaining > 0) {
-        preview += `
-            <div class="team_member team_member--more" role="listitem" aria-label="اعضای بیشتر">
-                <div class="team_member_avatar team_member_avatar--more">+${remaining}</div>
-                <span class="team_member_name">بیشتر</span>
-            </div>
-        `;
-    } else if (combinedMembers.length > previewMembers.length) {
-        const extraCount = combinedMembers.length - previewMembers.length;
-        preview += `
-            <div class="team_member team_member--more" role="listitem" aria-label="اعضای بیشتر">
-                <div class="team_member_avatar team_member_avatar--more">+${extraCount}</div>
-                <span class="team_member_name">بیشتر</span>
-            </div>
-        `;
-    }
-
-    return { count: effectiveCount, preview };
+    return { count: effectiveCount, preview, members: orderedMembers };
 }
 
 function getCaptainName(team) {
@@ -779,6 +765,130 @@ function getTeamNameFromItem(item) {
     return item.name || item.title || '';
 }
 
+function getTeamDetailsFromItem(item) {
+    const details = {
+        name: getTeamNameFromItem(item) || 'تیم ناشناخته',
+        picture: DEFAULT_AVATAR_SRC,
+        captain: ''
+    };
+
+    const candidates = [];
+    if (item && typeof item === 'object') {
+        candidates.push(item);
+        const nestedKeys = [
+            'team',
+            'team_info',
+            'team_detail',
+            'team_details',
+            'team_data',
+            'team_profile',
+            'team_obj',
+            'teamObject',
+            'teamProfile'
+        ];
+
+        nestedKeys.forEach((key) => {
+            const value = item[key];
+            if (value && typeof value === 'object') {
+                candidates.push(value);
+            }
+        });
+    }
+
+    for (const candidate of candidates) {
+        if (!candidate || typeof candidate !== 'object') {
+            continue;
+        }
+
+        const nameCandidates = [
+            candidate.name,
+            candidate.title,
+            candidate.team_name,
+            candidate.display_name,
+            candidate.slug,
+            candidate.teamTitle
+        ].filter(Boolean);
+        if (nameCandidates.length && !details.name) {
+            details.name = nameCandidates[0];
+        }
+
+        const pictureCandidates = [
+            candidate.team_picture,
+            candidate.picture,
+            candidate.logo,
+            candidate.image,
+            candidate.avatar,
+            candidate.team_logo,
+            candidate.team_avatar,
+            candidate.profile_picture
+        ];
+
+        const picture = pictureCandidates.find((value) => typeof value === 'string' && value.trim());
+        if (picture) {
+            details.picture = picture;
+        }
+
+        if (!details.captain) {
+            const captainSources = [
+                candidate.captain,
+                candidate.captain_user,
+                candidate.captain_detail,
+                candidate.captain_info,
+                candidate.owner,
+                candidate.leader,
+                candidate.manager
+            ];
+
+            for (const source of captainSources) {
+                const name = extractUserDisplayName(source);
+                if (name) {
+                    details.captain = name;
+                    break;
+                }
+            }
+
+            if (!details.captain && typeof candidate.captain_name === 'string') {
+                details.captain = candidate.captain_name;
+            }
+        }
+    }
+
+    if (!details.captain && item && typeof item === 'object') {
+        const invitationCaptainSources = [
+            item.captain,
+            item.captain_detail,
+            item.captain_info,
+            item.captain_user,
+            item.team_captain,
+            item.team_owner,
+            item.owner,
+            item.created_by
+        ];
+
+        for (const source of invitationCaptainSources) {
+            const name = extractUserDisplayName(source);
+            if (name) {
+                details.captain = name;
+                break;
+            }
+        }
+
+        if (!details.captain && typeof item.captain_name === 'string') {
+            details.captain = item.captain_name;
+        }
+    }
+
+    if (!details.picture || !details.picture.trim()) {
+        details.picture = DEFAULT_AVATAR_SRC;
+    }
+
+    details.name = escapeHTML(details.name || 'تیم ناشناخته');
+    details.picture = escapeHTML(details.picture);
+    details.captain = escapeHTML(details.captain || '');
+
+    return details;
+}
+
 function getInvitationStatus(invitation) {
     if (!invitation || typeof invitation !== 'object') {
         return '';
@@ -903,6 +1013,20 @@ function createTeamCard(team) {
     const gameName = team?.game?.name || team?.game_name || '';
     const description = team?.bio || team?.description || '';
 
+    const summaryHTML = `
+        <div class="team_card__summary">
+            <div class="team_stat">
+                <span class="team_stat__label">تعداد اعضا</span>
+                <span class="team_stat__value">${membersMeta.count}</span>
+            </div>
+            <div class="team_stat">
+                <span class="team_stat__label">کاپیتان</span>
+                <span class="team_stat__value">${escapeHTML(captainName || '-')}</span>
+            </div>
+            ${createdAt ? `<div class="team_stat"><span class="team_stat__label">تاریخ ایجاد</span><span class="team_stat__value">${escapeHTML(helpers.formatDate(createdAt))}</span></div>` : ''}
+        </div>
+    `;
+
     card.innerHTML = `
         <header class="team_card__header">
             <div class="team_avatar">
@@ -915,21 +1039,13 @@ function createTeamCard(team) {
             ${isCaptain ? '<span class="team_badge">کاپیتان</span>' : ''}
         </header>
         <div class="team_card__body">
-            <div class="team_card__summary">
-                <div class="team_stat">
-                    <span class="team_stat__label">تعداد اعضا</span>
-                    <span class="team_stat__value">${membersMeta.count}</span>
-                </div>
-                <div class="team_stat">
-                    <span class="team_stat__label">کاپیتان</span>
-                    <span class="team_stat__value">${escapeHTML(captainName || '-')}</span>
-                </div>
-                ${createdAt ? `<div class="team_stat"><span class="team_stat__label">تاریخ ایجاد</span><span class="team_stat__value">${escapeHTML(helpers.formatDate(createdAt))}</span></div>` : ''}
-            </div>
+            ${summaryHTML}
             ${membersMeta.preview ? `<div class="team_members_preview" role="list" aria-label="اعضای تیم">${membersMeta.preview}</div>` : ''}
             ${description ? `<p class="team_description">${escapeHTML(description)}</p>` : ''}
         </div>
     `;
+
+    const summaryElement = card.querySelector('.team_card__summary');
 
     const isTeamsPage = window.location.pathname.includes('teams');
     const hasValidTeamId = typeof team?.id !== 'undefined' && team?.id !== null;
@@ -937,6 +1053,14 @@ function createTeamCard(team) {
     if (isTeamsPage && hasValidTeamId) {
         const footer = document.createElement('footer');
         footer.className = 'team_card__footer';
+
+        const footerContent = document.createElement('div');
+        footerContent.className = 'team_card__footer_content';
+
+        if (summaryElement) {
+            summaryElement.classList.add('team_card__summary--inline');
+            footerContent.appendChild(summaryElement);
+        }
 
         const actions = document.createElement('div');
         actions.className = 'team_card__actions';
@@ -954,8 +1078,11 @@ function createTeamCard(team) {
             `;
         }
 
-        footer.appendChild(actions);
+        footerContent.appendChild(actions);
+        footer.appendChild(footerContent);
         card.appendChild(footer);
+    } else if (summaryElement) {
+        summaryElement.classList.remove('team_card__summary--inline');
     }
 
     return card;
@@ -988,10 +1115,14 @@ export function applyDashboardTeamData(dashboardData) {
     const outgoing = extractListFromObject(dashboardData, [
         'sent_team_invitations',
         'outgoing_invitations',
-        'sent_invitations'
+        'sent_invitations',
+        'outgoing_requests',
+        'sent_requests',
+        'requests_sent',
+        'team_invitations_sent'
     ]);
     if (outgoing !== undefined) {
-        outgoingInvitationsState = Array.isArray(outgoing) ? outgoing : [];
+        outgoingInvitationsState = Array.isArray(outgoing) ? outgoing : toInvitationArray(outgoing);
     }
 
     displayIncomingInvitations(incomingInvitationsState);
@@ -1149,7 +1280,7 @@ export function displayOutgoingInvitations(invitations) {
 function renderInvitationCard(invitation) {
     const card = document.createElement('div');
     card.className = 'mini_card';
-    const teamName = getTeamNameFromItem(invitation) || 'تیم ناشناخته';
+    const teamDetails = getTeamDetailsFromItem(invitation);
     const senderSource = invitation.sender || invitation.invited_by || invitation.inviter || invitation.owner || invitation;
     const senderName = getUsernameFromItem(senderSource) || invitation.sender_name || invitation.inviter_name || '';
     const status = getInvitationStatus(invitation);
@@ -1161,13 +1292,17 @@ function renderInvitationCard(invitation) {
     const hasIdentifier = Boolean(card.dataset.invitationId);
 
     card.innerHTML = `
-        <div class="mini_card__header">
-            <div class="mini_card__title">${escapeHTML(teamName)}</div>
-            ${senderName ? `<div class="mini_card__subtitle">ارسال از ${escapeHTML(senderName)}</div>` : ''}
+        <div class="mini_card__primary">
+            <div class="mini_card__avatar">
+                <img src="${teamDetails.picture}" alt="لوگوی ${teamDetails.name}" onerror="this.src='${DEFAULT_AVATAR_SRC}'; this.onerror=null;">
+            </div>
+            <div class="mini_card__content">
+                <div class="mini_card__title">${teamDetails.name}</div>
+                ${teamDetails.captain ? `<div class="mini_card__subtitle">کاپیتان: ${teamDetails.captain}</div>` : ''}
+                ${senderName ? `<div class="mini_card__subtitle">ارسال از ${escapeHTML(senderName)}</div>` : ''}
+            </div>
         </div>
-        <div class="mini_card__body">
-            ${message ? `<div class="mini_card__subtitle">${escapeHTML(message)}</div>` : ''}
-        </div>
+        ${message ? `<div class="mini_card__message">${escapeHTML(message)}</div>` : ''}
         <div class="mini_card__footer">
             <span class="badge ${getStatusBadgeClass(status)}">${escapeHTML(getStatusLabel(status))}</span>
             ${createdAt ? `<span class="mini_card__subtitle">${escapeHTML(helpers.formatDate(createdAt))}</span>` : ''}
@@ -1192,9 +1327,11 @@ function renderJoinRequestCard(request) {
     const createdAt = request?.created_at || request?.created || request?.requested_at;
 
     card.innerHTML = `
-        <div class="mini_card__header">
-            <div class="mini_card__title">${escapeHTML(username)}</div>
-            <div class="mini_card__subtitle">در انتظار تایید برای تیم ${escapeHTML(teamName)}</div>
+        <div class="mini_card__primary">
+            <div class="mini_card__content">
+                <div class="mini_card__title">${escapeHTML(username)}</div>
+                <div class="mini_card__subtitle">در انتظار تایید برای تیم ${escapeHTML(teamName)}</div>
+            </div>
         </div>
         <div class="mini_card__footer">
             <span class="badge ${getStatusBadgeClass(status)}">${escapeHTML(getStatusLabel(status))}</span>
@@ -1214,9 +1351,11 @@ function renderOutgoingInvitationCard(invitation) {
     const createdAt = invitation?.created_at || invitation?.created || invitation?.sent_at;
 
     card.innerHTML = `
-        <div class="mini_card__header">
-            <div class="mini_card__title">${escapeHTML(username)}</div>
-            <div class="mini_card__subtitle">دعوت شده به ${escapeHTML(teamName)}</div>
+        <div class="mini_card__primary">
+            <div class="mini_card__content">
+                <div class="mini_card__title">${escapeHTML(username)}</div>
+                <div class="mini_card__subtitle">دعوت شده به ${escapeHTML(teamName)}</div>
+            </div>
         </div>
         <div class="mini_card__footer">
             <span class="badge ${getStatusBadgeClass(status)}">${escapeHTML(getStatusLabel(status))}</span>
