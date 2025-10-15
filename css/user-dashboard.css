@@ -398,8 +398,26 @@
   .team_members_preview {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
-    gap: 8px;
+    align-items: flex-start;
+    gap: 12px;
+    max-height: 220px;
+    overflow-y: auto;
+    padding: 4px 2px;
+    direction: rtl;
+    scrollbar-width: thin;
+  }
+
+  .team_members_preview::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .team_members_preview::-webkit-scrollbar-thumb {
+    background: var(--surface-tint-08);
+    border-radius: 999px;
+  }
+
+  .team_members_preview::-webkit-scrollbar-track {
+    background: transparent;
   }
 
   .team_member_avatar {
