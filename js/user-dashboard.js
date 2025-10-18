@@ -27,47 +27,10 @@ function ensureAuthToken() {
   return null;
 }
 
-const SIMPLE_IDENTIFIER_PATTERN = /^[A-Za-z_][\w:-]*$/;
-
-function resolveSelector(input) {
-  if (!input) {
-    return null;
-  }
-  if (typeof input === "string") {
-    return input.trim();
-  }
-  if (typeof input === "object") {
-    if (typeof input.selector === "string" && input.selector.trim()) {
-      return input.selector.trim();
-    }
-    if (typeof input.id === "string" && input.id.trim()) {
-      return `#${input.id.trim()}`;
-    }
-  }
-  return null;
-}
-
-function selectElement(input) {
-  const selector = resolveSelector(input);
+function selectElement(selector) {
   if (!selector) {
     return null;
   }
-
-  if (selector.startsWith("#")) {
-    return document.getElementById(selector.slice(1));
-  }
-
-  if (SIMPLE_IDENTIFIER_PATTERN.test(selector)) {
-    const byId = document.getElementById(selector);
-    if (byId) {
-      return byId;
-    }
-    const byName = document.querySelector(`[name="${selector}"]`);
-    if (byName) {
-      return byName;
-    }
-  }
-
   try {
     return document.querySelector(selector);
   } catch (error) {
