@@ -30,9 +30,28 @@ const SORT_OPTIONS = [
   { key: "rank_desc", label: "ضعیف‌ترین رتبه" },
 ];
 
+const SORT_QUERY_PARAM_MAP = {
+  date_desc: "-created_at",
+  date_asc: "created_at",
+  score_desc: "-score",
+  score_asc: "score",
+  rank_asc: "rank",
+  rank_desc: "-rank",
+};
+
+const HISTORY_REQUEST_PAGE_SIZE = 100;
+
 let sortIndex = 0;
 
 const numberFormatter = new Intl.NumberFormat("fa-IR");
+
+let totalMatchesCount = 0;
+let availableFilterMatches = [];
+let currentUserId = null;
+let serverFilteringEnabled = false;
+let historyFetchDebounce = null;
+let activeHistoryRequest = null;
+let isHistoryLoading = false;
 
 const domRefs = {
   panel: null,
@@ -168,6 +187,64 @@ function getMatchTeamName(match = {}) {
   return "";
 }
 
+function getFilterSourceMatches() {
+  return availableFilterMatches.length ? availableFilterMatches : matchesState;
+}
+
+function updateAvailableFilterMatches(matches, { replace = false } = {}) {
+  if (!Array.isArray(matches)) {
+    return;
+  }
+
+  if (replace || !availableFilterMatches.length) {
+    availableFilterMatches = matches.slice();
+    return;
+  }
+
+  if (!matches.length) {
+    return;
+  }
+
+  availableFilterMatches = availableFilterMatches.concat(matches);
+}
+
+function getNormalizedSelectValue(select, fallback) {
+  if (!select) {
+    return normalizeText(fallback);
+  }
+  const option = select.selectedOptions?.[0];
+  if (option) {
+    return (
+      option.dataset.normalized ||
+      normalizeText(option.value || option.textContent || fallback)
+    );
+  }
+  return normalizeText(fallback);
+}
+
+function getNormalizedFilterValue(key) {
+  ensureDomRefs();
+  switch (key) {
+    case "game":
+      return getNormalizedSelectValue(domRefs.gameSelect, filterState.game);
+    case "team":
+      return getNormalizedSelectValue(domRefs.teamSelect, filterState.team);
+    case "search":
+      return normalizeText(filterState.search);
+    default:
+      return normalizeText(filterState[key]);
+  }
+}
+
+function setHistoryLoading(isLoading) {
+  isHistoryLoading = Boolean(isLoading);
+  if (isLoading) {
+    renderMatchesTable(applyFilters(matchesState));
+    const totalForHint = totalMatchesCount || matchesState.length;
+    updateHint(matchesState.length, totalForHint);
+  }
+}
+
 function hasMoreInPayload(payload, itemsLength) {
   if (!payload || typeof payload !== "object") {
     return false;
@@ -195,6 +272,34 @@ function hasMoreInPayload(payload, itemsLength) {
   }
 
   return false;
+}
+
+function extractTotalCount(payload, fallback = null) {
+  if (!payload) {
+    return typeof fallback === "number" ? fallback : null;
+  }
+
+  if (Array.isArray(payload)) {
+    return payload.length;
+  }
+
+  if (typeof payload === "object") {
+    const totalCandidates = [
+      payload.total,
+      payload.count,
+      payload.total_count,
+      payload.total_results,
+      payload.total_items,
+    ];
+
+    for (const total of totalCandidates) {
+      if (typeof total === "number") {
+        return total;
+      }
+    }
+  }
+
+  return typeof fallback === "number" ? fallback : null;
 }
 
 function shouldRefreshTournamentHistoryData(payload) {
@@ -298,7 +403,9 @@ function parseDateInput(value) {
 }
 
 function applyFilters(matches) {
-  const normalizedSearch = normalizeText(filterState.search);
+  const normalizedSearch = getNormalizedFilterValue("search");
+  const normalizedGame = getNormalizedFilterValue("game");
+  const normalizedTeam = getNormalizedFilterValue("team");
   const fromDate = parseDateInput(filterState.from);
   const toDate = parseDateInput(filterState.to);
   const fromTime = fromDate ? fromDate.getTime() : null;
@@ -318,14 +425,14 @@ function applyFilters(matches) {
       }
     }
 
-    if (filterState.game) {
-      if (normalizeText(gameName) !== filterState.game) {
+    if (normalizedGame) {
+      if (normalizeText(gameName) !== normalizedGame) {
         return false;
       }
     }
 
-    if (filterState.team) {
-      if (normalizeText(teamName) !== filterState.team) {
+    if (normalizedTeam) {
+      if (normalizeText(teamName) !== normalizedTeam) {
         return false;
       }
     }
@@ -354,6 +461,15 @@ function renderMatchesTable(matches) {
 
   tbody.innerHTML = "";
 
+  if (isHistoryLoading) {
+    const row = tbody.insertRow();
+    const cell = row.insertCell();
+    cell.colSpan = 6;
+    cell.textContent = "در حال بارگذاری...";
+    cell.className = "tournaments_history_loading";
+    return;
+  }
+
   if (!matches.length) {
     const row = tbody.insertRow();
     const cell = row.insertCell();
@@ -377,6 +493,11 @@ function updateHint(filteredCount, totalCount) {
   ensureDomRefs();
   if (!domRefs.hint) return;
 
+  if (isHistoryLoading) {
+    domRefs.hint.textContent = "در حال بارگذاری...";
+    return;
+  }
+
   if (!totalCount) {
     domRefs.hint.textContent = "تاریخچه‌ای برای نمایش وجود ندارد.";
     return;
@@ -396,7 +517,8 @@ function applyFiltersAndRender() {
   const filtered = applyFilters(matchesState);
   const sorted = sortMatches(filtered);
   renderMatchesTable(sorted);
-  updateHint(filtered.length, matchesState.length);
+  const totalForHint = totalMatchesCount || matchesState.length;
+  updateHint(filtered.length, totalForHint);
 }
 
 function buildOptionMap(values) {
@@ -423,27 +545,46 @@ function setSelectOptions(select, map, currentValue, fallbackLabel) {
 
   map.forEach((label, key) => {
     const option = document.createElement("option");
-    option.value = key;
+    option.value = label;
     option.textContent = label;
+    option.dataset.normalized = key;
     frag.appendChild(option);
   });
 
   select.innerHTML = "";
   select.appendChild(frag);
 
-  if (currentValue && !map.has(currentValue)) {
-    currentValue = "";
-  }
+  if (currentValue) {
+    const normalizedCurrent = normalizeText(currentValue);
+    const options = Array.from(select.options);
+    const hasOption = options.some((option) => {
+      const normalized =
+        option.dataset.normalized || normalizeText(option.value || option.textContent);
+      return normalized === normalizedCurrent;
+    });
 
-  select.value = currentValue;
+    if (!hasOption) {
+      const preservedOption = document.createElement("option");
+      preservedOption.value = currentValue;
+      preservedOption.textContent = currentValue;
+      preservedOption.dataset.normalized = normalizedCurrent;
+      preservedOption.hidden = true;
+      select.appendChild(preservedOption);
+    }
+
+    select.value = currentValue;
+  } else {
+    select.value = "";
+  }
 }
 
 function populateFilterOptions() {
   ensureDomRefs();
   if (!domRefs.gameSelect && !domRefs.teamSelect) return;
 
-  const games = buildOptionMap(matchesState.map((match) => getMatchGameName(match)));
-  const teams = buildOptionMap(matchesState.map((match) => getMatchTeamName(match)));
+  const sourceMatches = getFilterSourceMatches();
+  const games = buildOptionMap(sourceMatches.map((match) => getMatchGameName(match)));
+  const teams = buildOptionMap(sourceMatches.map((match) => getMatchTeamName(match)));
 
   if (domRefs.gameSelect) {
     setSelectOptions(domRefs.gameSelect, games, filterState.game, "همه بازی‌ها");
@@ -515,7 +656,7 @@ function cycleSortOption() {
   sortIndex = (sortIndex + 1) % SORT_OPTIONS.length;
   filterState.sort = SORT_OPTIONS[sortIndex].key;
   updateSortButtonLabel();
-  applyFiltersAndRender();
+  scheduleHistoryFetch({ immediate: true });
 }
 
 function clearFilters() {
@@ -524,21 +665,23 @@ function clearFilters() {
   updateFilterFieldsFromState();
   populateFilterOptions();
   updateSortButtonLabel();
-  applyFiltersAndRender();
+  scheduleHistoryFetch({ immediate: true });
 }
 
 function handleFilterInput(event) {
   const { id, value } = event.target;
+  let debounce = false;
 
   switch (id) {
     case "tournaments_search_input":
       filterState.search = value;
+      debounce = true;
       break;
     case "tournaments_filter_game":
-      filterState.game = normalizeText(value);
+      filterState.game = value;
       break;
     case "tournaments_filter_team":
-      filterState.team = normalizeText(value);
+      filterState.team = value;
       break;
     case "tournaments_filter_from":
       filterState.from = value;
@@ -550,7 +693,7 @@ function handleFilterInput(event) {
       break;
   }
 
-  applyFiltersAndRender();
+  scheduleHistoryFetch({ immediate: !debounce });
 }
 
 function attachFilterListeners() {
@@ -589,8 +732,170 @@ function attachFilterListeners() {
   }
 }
 
+function isServerFilteringActive() {
+  const fetchFn = helpers.fetchWithAuth;
+  const hasValidFetch =
+    typeof fetchFn === "function" && fetchFn !== helperDefaults.fetchWithAuth;
+  return serverFilteringEnabled && Boolean(currentUserId) && hasValidFetch;
+}
+
+function updateServerFilteringState() {
+  const fetchFn = helpers.fetchWithAuth;
+  const hasValidFetch =
+    typeof fetchFn === "function" && fetchFn !== helperDefaults.fetchWithAuth;
+  serverFilteringEnabled = Boolean(
+    serverFilteringEnabled || (currentUserId && hasValidFetch)
+  );
+}
+
+function buildHistoryQueryParams() {
+  const params = new URLSearchParams();
+
+  const searchValue = filterState.search?.trim();
+  if (searchValue) {
+    params.set("search", searchValue);
+  }
+
+  const gameValue = filterState.game?.trim();
+  if (gameValue) {
+    params.set("game", gameValue);
+  }
+
+  const teamValue = filterState.team?.trim();
+  if (teamValue) {
+    params.set("team", teamValue);
+  }
+
+  if (filterState.from) {
+    params.set("start_date__gte", filterState.from);
+  }
+
+  if (filterState.to) {
+    params.set("start_date__lte", filterState.to);
+  }
+
+  const ordering = SORT_QUERY_PARAM_MAP[filterState.sort];
+  if (ordering) {
+    params.set("ordering", ordering);
+  }
+
+  if (!params.has("page_size")) {
+    params.set("page_size", String(HISTORY_REQUEST_PAGE_SIZE));
+  }
+
+  return params;
+}
+
+function scheduleHistoryFetch({ immediate = false } = {}) {
+  if (!isServerFilteringActive()) {
+    applyFiltersAndRender();
+    return;
+  }
+
+  if (historyFetchDebounce) {
+    clearTimeout(historyFetchDebounce);
+    historyFetchDebounce = null;
+  }
+
+  if (immediate) {
+    fetchHistoryFromServer();
+    return;
+  }
+
+  historyFetchDebounce = setTimeout(() => {
+    historyFetchDebounce = null;
+    fetchHistoryFromServer();
+  }, 400);
+}
+
+async function fetchHistoryFromServer() {
+  if (!isServerFilteringActive()) {
+    applyFiltersAndRender();
+    return;
+  }
+
+  if (activeHistoryRequest) {
+    activeHistoryRequest.abort();
+  }
+
+  const controller = new AbortController();
+  activeHistoryRequest = controller;
+
+  try {
+    setHistoryLoading(true);
+
+    const { items, totalCount } = await fetchUserTournamentHistory(currentUserId, {
+      query: buildHistoryQueryParams(),
+      signal: controller.signal,
+    });
+
+    const resolvedTotal =
+      typeof totalCount === "number" ? totalCount : items.length;
+    const replaceFilters = !availableFilterMatches.length;
+
+    setHistoryLoading(false);
+    displayTournamentHistory(items, {
+      totalCount: resolvedTotal,
+      replaceFilterSource: replaceFilters,
+    });
+  } catch (error) {
+    if (!controller.signal.aborted) {
+      setHistoryLoading(false);
+      console.error("خطا در دریافت تاریخچه تورنومنت‌ها:", error);
+      helpers.showError(
+        error.message || "خطا در دریافت تاریخچه تورنومنت‌ها. لطفاً دوباره تلاش کنید."
+      );
+      applyFiltersAndRender();
+    }
+  } finally {
+    if (activeHistoryRequest === controller) {
+      activeHistoryRequest = null;
+    }
+    if (isHistoryLoading) {
+      setHistoryLoading(false);
+      applyFiltersAndRender();
+    }
+  }
+}
+
 export function configureTournamentHistoryModule(config = {}) {
   helpers = { ...helperDefaults, ...config };
+
+  if (typeof config.enableServerFiltering === "boolean") {
+    serverFilteringEnabled = config.enableServerFiltering;
+  }
+
+  if (typeof config.userId !== "undefined") {
+    setTournamentHistoryUserContext(config.userId);
+  } else {
+    updateServerFilteringState();
+  }
+}
+
+export function setTournamentHistoryUserContext(value) {
+  if (typeof value === "undefined") {
+    return;
+  }
+
+  if (value && typeof value === "object") {
+    const candidates = [
+      value.id,
+      value.user_id,
+      value.pk,
+      value.uuid,
+      value.slug,
+    ];
+    const resolved = candidates.find(
+      (candidate) => candidate !== undefined && candidate !== null
+    );
+    currentUserId = resolved !== undefined ? String(resolved) : null;
+  } else if (value === null) {
+    currentUserId = null;
+  } else {
+    currentUserId = String(value);
+  }
+
+  updateServerFilteringState();
 }
 
 export function normalizeTournamentHistory(data) {
@@ -614,21 +919,31 @@ export function getTournamentMatchesCount(data) {
   return normalizeTournamentHistory(data).length;
 }
 
-export async function fetchUserTournamentHistory(userId) {
+export async function fetchUserTournamentHistory(
+  userId,
+  { query, signal } = {}
+) {
   if (!userId) {
     console.warn("شناسه کاربر برای دریافت تاریخچه تورنومنت موجود نیست.");
-    return [];
+    return { items: [], totalCount: 0 };
   }
 
   try {
     console.log("دریافت تاریخچه تورنومنت‌های کاربر از API...");
 
-    const response = await helpers.fetchWithAuth(
-      API_ENDPOINTS.users.userMatchHistory(userId),
-      {
-        method: "GET",
-      }
-    );
+    const endpoint = API_ENDPOINTS.users.userMatchHistory(userId);
+    const queryString =
+      query instanceof URLSearchParams
+        ? query.toString()
+        : query && typeof query === "object"
+        ? new URLSearchParams(query).toString()
+        : "";
+    const url = queryString ? `${endpoint}?${queryString}` : endpoint;
+
+    const response = await helpers.fetchWithAuth(url, {
+      method: "GET",
+      signal,
+    });
 
     console.log("Tournament history status:", response.status);
 
@@ -640,13 +955,18 @@ export async function fetchUserTournamentHistory(userId) {
     const raw = await response.text();
     if (!raw) {
       console.warn("Tournament history API returned an empty response.");
-      return [];
+      return { items: [], totalCount: 0 };
     }
 
     try {
       const data = JSON.parse(raw);
       console.log("داده‌های تاریخچه تورنومنت:", data);
-      return normalizeTournamentHistory(data);
+      const items = normalizeTournamentHistory(data);
+      return {
+        items,
+        totalCount: extractTotalCount(data, items.length),
+        raw: data,
+      };
     } catch (parseError) {
       console.error("خطا در parse تاریخچه تورنومنت:", parseError);
       throw new Error("داده‌های نامعتبر از سرور دریافت شد.");
@@ -661,6 +981,10 @@ export async function initializeDashboardTournamentHistorySection({
   dashboardData = {},
   userId = null,
 } = {}) {
+  if (userId) {
+    setTournamentHistoryUserContext(userId);
+  }
+
   const historyPayload =
     dashboardData?.tournament_history ??
     dashboardData?.matches ??
@@ -668,10 +992,14 @@ export async function initializeDashboardTournamentHistorySection({
     null;
 
   let matches = normalizeTournamentHistory(historyPayload);
+  let totalCount = extractTotalCount(historyPayload, matches.length) ?? matches.length;
   const hasTable = Boolean(document.getElementById("tournaments_history_body"));
 
   if (hasTable) {
-    displayTournamentHistory(matches);
+    displayTournamentHistory(matches, {
+      totalCount,
+      replaceFilterSource: !availableFilterMatches.length,
+    });
   }
 
   if (shouldRefreshTournamentHistoryData(historyPayload)) {
@@ -679,10 +1007,22 @@ export async function initializeDashboardTournamentHistorySection({
       console.warn("شناسه کاربر برای بروزرسانی تاریخچه تورنومنت در دسترس نیست.");
     } else {
       try {
-        const refreshed = await fetchUserTournamentHistory(userId);
-        matches = normalizeTournamentHistory(refreshed);
+        const result = await fetchUserTournamentHistory(userId, {
+          query: buildHistoryQueryParams(),
+        });
+        const fetchedItems = Array.isArray(result.items)
+          ? result.items
+          : normalizeTournamentHistory(result.raw ?? result.items);
+        matches = fetchedItems;
+        totalCount =
+          typeof result.totalCount === "number"
+            ? result.totalCount
+            : matches.length;
         if (hasTable) {
-          displayTournamentHistory(matches);
+          displayTournamentHistory(matches, {
+            totalCount,
+            replaceFilterSource: !availableFilterMatches.length,
+          });
         }
       } catch (error) {
         console.error("خطا در دریافت تاریخچه تورنومنت‌ها:", error);
@@ -694,11 +1034,23 @@ export async function initializeDashboardTournamentHistorySection({
   return {
     matches,
     count: matches.length,
+    totalCount,
   };
 }
 
-export function displayTournamentHistory(matchesInput) {
+export function displayTournamentHistory(
+  matchesInput,
+  { totalCount, replaceFilterSource = false } = {}
+) {
   matchesState = Array.isArray(matchesInput) ? matchesInput.slice() : [];
+
+  if (typeof totalCount === "number") {
+    totalMatchesCount = totalCount;
+  } else if (!totalMatchesCount) {
+    totalMatchesCount = matchesState.length;
+  }
+
+  updateAvailableFilterMatches(matchesState, { replace: replaceFilterSource });
   populateFilterOptions();
   updateFilterFieldsFromState();
   updateSortButtonLabel();
