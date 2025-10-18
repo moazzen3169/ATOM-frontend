@@ -22,37 +22,6 @@ let selectedConversationId = null;
 let currentUser = null;
 let isSearchingUsers = false;
 
-function findConversationWithUser(userId) {
-    if (!userId) {
-        return null;
-    }
-
-    return (
-        conversations.find((conv) => {
-            if (!Array.isArray(conv?.participants)) {
-                return false;
-            }
-
-            const participantIds = conv.participants
-                .map((participant) => participant?.id)
-                .filter((id) => typeof id === 'number' || typeof id === 'string');
-
-            if (!participantIds.length) {
-                return false;
-            }
-
-            const targetId = String(userId);
-            const currentId = currentUser?.id != null ? String(currentUser.id) : null;
-
-            if (!currentId) {
-                return false;
-            }
-
-            return participantIds.includes(targetId) && participantIds.includes(currentId);
-        }) || null
-    );
-}
-
 // --- HELPERS ---
 
 function showNewConversationModal() {
@@ -160,94 +129,25 @@ async function handleCreateConversation(user) {
 
     try {
         setModalError('');
-        const existingConversation = findConversationWithUser(user.id);
-
-        if (existingConversation) {
-            hideNewConversationModal();
-            openChat(existingConversation.id);
-            return;
-        }
-
         setModalLoading(true);
+        const response = await api.createConversation([user.id]);
+        hideNewConversationModal();
 
-        const participantIds = Array.from(
-            new Set([
-                currentUser?.id,
-                user.id,
-            ]
-                .filter((id) => id !== undefined && id !== null))
-        );
-
-        if (participantIds.length < 2) {
-            setModalError('اطلاعات کاربران برای ایجاد گفتگو کافی نیست.');
-            return;
-        }
-
-        const response = await api.createConversation(participantIds);
+        const newConversationId = response?.id || null;
         const updatedConversations = await loadConversations();
 
-        const conversationToOpen = (() => {
-            if (response?.id) {
-                const matchById = updatedConversations?.find((conv) => conv.id === response.id);
-                if (matchById) {
-                    return matchById;
-                }
-            }
-            return (
-                updatedConversations?.find((conv) => {
-                    if (!Array.isArray(conv?.participants)) {
-                        return false;
-                    }
-                    const participantIdsInConv = conv.participants
-                        .map((participant) => participant?.id)
-                        .filter((id) => id !== undefined && id !== null)
-                        .map((id) => String(id));
-
-                    const requiredIds = participantIds.map((id) => String(id));
-                    return requiredIds.every((id) => participantIdsInConv.includes(id));
-                }) || null
-            );
-        })();
-
-        if (conversationToOpen) {
-            hideNewConversationModal();
-            openChat(conversationToOpen.id);
+        if (newConversationId) {
+            openChat(newConversationId);
             return;
         }
 
-        if (response?.id) {
-            hideNewConversationModal();
-            openChat(response.id);
-            return;
+        const createdConv = updatedConversations?.find((conv) => conv.participants?.some((p) => p.id === user.id));
+        if (createdConv) {
+            openChat(createdConv.id);
         }
-
-        setModalError('گفتگو ایجاد شد اما امکان نمایش آن وجود ندارد. لطفا صفحه را دوباره بارگذاری کنید.');
     } catch (error) {
         console.error('Could not create conversation:', error);
-        let fallbackConversation = null;
-
-        if (error?.status === 400 || error?.status === 409) {
-            await loadConversations();
-            fallbackConversation = findConversationWithUser(user.id);
-        }
-
-        if (fallbackConversation) {
-            hideNewConversationModal();
-            openChat(fallbackConversation.id);
-            return;
-        }
-
-        let errorMessage = 'ایجاد گفتگو با خطا مواجه شد. دوباره تلاش کنید.';
-
-        if (typeof error?.detail === 'string') {
-            errorMessage = error.detail;
-        } else if (Array.isArray(error?.detail)) {
-            errorMessage = error.detail.join(' | ');
-        } else if (typeof error?.message === 'string' && error.message.trim()) {
-            errorMessage = error.message;
-        }
-
-        setModalError(errorMessage);
+        setModalError('ایجاد گفتگو با خطا مواجه شد. دوباره تلاش کنید.');
     } finally {
         setModalLoading(false);
     }
