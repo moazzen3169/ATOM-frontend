@@ -1,28 +1,41 @@
-// This module will handle all API requests to the server.
-export const API_BASE_URL = '/api/chat';
-export const AUTH_TOKEN = localStorage.getItem('jwt_token');
+// This module handles all API requests to the server for the chat feature.
+import { createAuthApiClient, API_ENDPOINTS } from '../services/api-client.js';
+
+const CHAT_API_ENDPOINTS = {
+    conversations: '/api/chat/conversations/',
+    messages: (conversationId) => `/api/chat/conversations/${encodeURIComponent(String(conversationId))}/messages/`,
+    attachments: (conversationId, messageId) => `/api/chat/conversations/${encodeURIComponent(String(conversationId))}/messages/${encodeURIComponent(String(messageId))}/attachments/`,
+};
+
+const apiClient = createAuthApiClient();
+
+export function getAuthToken() {
+    return apiClient.getAccessToken?.() || null;
+}
 
 /**
  * Fetches all conversations for the current user.
  */
 export async function getConversations() {
-    const url = `${API_BASE_URL}/conversations/`;
-    const response = await fetch(url, {
-        headers: {
-            'Authorization': `Bearer ${AUTH_TOKEN}`,
-            'Content-Type': 'application/json'
-        }
+    const response = await apiClient.fetchJson(CHAT_API_ENDPOINTS.conversations, {
+        method: 'GET',
     });
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+
+    if (Array.isArray(response)) {
+        return response;
     }
-    return await response.json();
+
+    if (response && Array.isArray(response.results)) {
+        return response.results;
+    }
+
+    return [];
 }
 
-// Placeholder for fetching current user info
 export async function getCurrentUser() {
-    // In a real app, this would fetch from '/api/users/me/' or similar
-    return { id: 1, username: 'currentUser' };
+    return await apiClient.fetchJson(API_ENDPOINTS.users.me, {
+        method: 'GET',
+    });
 }
 
 /**
@@ -30,19 +43,10 @@ export async function getCurrentUser() {
  * @param {number[]} participantIds Array of participant user IDs.
  */
 export async function createConversation(participantIds) {
-    const url = `${API_BASE_URL}/conversations/`;
-    const response = await fetch(url, {
+    return await apiClient.fetchJson(CHAT_API_ENDPOINTS.conversations, {
         method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${AUTH_TOKEN}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ participants: participantIds })
+        body: { participants: participantIds },
     });
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return await response.json();
 }
 
 /**
@@ -50,13 +54,10 @@ export async function createConversation(participantIds) {
  * @param {number} conversationId The ID of the conversation to delete.
  */
 export async function deleteConversation(conversationId) {
-    const url = `${API_BASE_URL}/conversations/${conversationId}/`;
-    const response = await fetch(url, {
+    const response = await apiClient.fetch(`${CHAT_API_ENDPOINTS.conversations}${encodeURIComponent(String(conversationId))}/`, {
         method: 'DELETE',
-        headers: {
-            'Authorization': `Bearer ${AUTH_TOKEN}`
-        }
     });
+
     if (response.status !== 204 && !response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
@@ -67,17 +68,19 @@ export async function deleteConversation(conversationId) {
  * @param {number} conversationId The ID of the conversation.
  */
 export async function getMessages(conversationId) {
-    const url = `${API_BASE_URL}/conversations/${conversationId}/messages/`;
-    const response = await fetch(url, {
-        headers: {
-            'Authorization': `Bearer ${AUTH_TOKEN}`,
-            'Content-Type': 'application/json'
-        }
+    const response = await apiClient.fetchJson(CHAT_API_ENDPOINTS.messages(conversationId), {
+        method: 'GET',
     });
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
+
+    if (Array.isArray(response)) {
+        return response;
     }
-    return await response.json();
+
+    if (response && Array.isArray(response.results)) {
+        return response.results;
+    }
+
+    return [];
 }
 
 /**
@@ -86,19 +89,10 @@ export async function getMessages(conversationId) {
  * @param {string} content The message content.
  */
 export async function sendMessage(conversationId, content) {
-    const url = `${API_BASE_URL}/conversations/${conversationId}/messages/`;
-    const response = await fetch(url, {
+    return await apiClient.fetchJson(CHAT_API_ENDPOINTS.messages(conversationId), {
         method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${AUTH_TOKEN}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ content })
+        body: { content },
     });
-    if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-    }
-    return await response.json();
 }
 
 /**
@@ -108,16 +102,49 @@ export async function sendMessage(conversationId, content) {
  * @param {FormData} formData
  */
 export async function uploadAttachment(conversationId, messageId, formData) {
-    const url = `${API_BASE_URL}/conversations/${conversationId}/messages/${messageId}/attachments/`;
-    const response = await fetch(url, {
+    const response = await apiClient.fetch(CHAT_API_ENDPOINTS.attachments(conversationId, messageId), {
         method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${AUTH_TOKEN}`,
-        },
         body: formData,
     });
+
     if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
     }
-    return await response.json();
+
+    const text = await response.text();
+    if (!text) {
+        return null;
+    }
+
+    try {
+        return JSON.parse(text);
+    } catch (_error) {
+        return text;
+    }
+}
+
+export async function searchUsers(query) {
+    const trimmedQuery = query?.trim();
+    if (!trimmedQuery) {
+        return [];
+    }
+
+    const response = await apiClient.fetchJson(API_ENDPOINTS.users.search, {
+        method: 'GET',
+        query: { search: trimmedQuery, limit: 10 },
+    });
+
+    if (!response) {
+        return [];
+    }
+
+    if (Array.isArray(response)) {
+        return response;
+    }
+
+    if (Array.isArray(response.results)) {
+        return response.results;
+    }
+
+    return [];
 }
