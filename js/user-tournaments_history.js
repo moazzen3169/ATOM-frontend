@@ -5,6 +5,7 @@ const helperDefaults = {
     throw new Error("fetchWithAuth helper is not configured.");
   },
   extractErrorMessage: async () => "خطای ناشناخته رخ داد.",
+  showError: (message) => console.error(message),
 };
 
 let helpers = { ...helperDefaults };
@@ -165,6 +166,54 @@ function getMatchTeamName(match = {}) {
       .join("، ");
   }
   return "";
+}
+
+function hasMoreInPayload(payload, itemsLength) {
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  const totalCandidates = [
+    payload.total,
+    payload.count,
+    payload.total_count,
+    payload.total_results,
+    payload.total_items,
+  ];
+
+  for (const total of totalCandidates) {
+    if (typeof total === "number" && total > itemsLength) {
+      return true;
+    }
+  }
+
+  if (typeof payload.total_pages === "number") {
+    const currentPage = Number(payload.current_page ?? payload.page ?? 1);
+    if (Number.isFinite(currentPage) && currentPage < payload.total_pages) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function shouldRefreshTournamentHistoryData(payload) {
+  if (!payload) {
+    return true;
+  }
+
+  if (Array.isArray(payload)) {
+    return false;
+  }
+
+  const candidates = [payload.results, payload.matches, payload.tournament_history];
+  const items = candidates.find((value) => Array.isArray(value));
+
+  if (!Array.isArray(items)) {
+    return true;
+  }
+
+  return hasMoreInPayload(payload, items.length);
 }
 
 function formatMatchDate(value) {
@@ -606,6 +655,46 @@ export async function fetchUserTournamentHistory(userId) {
     console.error("خطا در دریافت تاریخچه تورنومنت‌های کاربر:", error);
     throw error;
   }
+}
+
+export async function initializeDashboardTournamentHistorySection({
+  dashboardData = {},
+  userId = null,
+} = {}) {
+  const historyPayload =
+    dashboardData?.tournament_history ??
+    dashboardData?.matches ??
+    dashboardData?.results ??
+    null;
+
+  let matches = normalizeTournamentHistory(historyPayload);
+  const hasTable = Boolean(document.getElementById("tournaments_history_body"));
+
+  if (hasTable) {
+    displayTournamentHistory(matches);
+  }
+
+  if (shouldRefreshTournamentHistoryData(historyPayload)) {
+    if (!userId) {
+      console.warn("شناسه کاربر برای بروزرسانی تاریخچه تورنومنت در دسترس نیست.");
+    } else {
+      try {
+        const refreshed = await fetchUserTournamentHistory(userId);
+        matches = normalizeTournamentHistory(refreshed);
+        if (hasTable) {
+          displayTournamentHistory(matches);
+        }
+      } catch (error) {
+        console.error("خطا در دریافت تاریخچه تورنومنت‌ها:", error);
+        helpers.showError("خطا در دریافت تاریخچه تورنومنت‌ها. لطفاً دوباره تلاش کنید.");
+      }
+    }
+  }
+
+  return {
+    matches,
+    count: matches.length,
+  };
 }
 
 export function displayTournamentHistory(matchesInput) {

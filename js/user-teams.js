@@ -168,6 +168,67 @@ function extractListFromObject(source, keys) {
     return undefined;
 }
 
+function hasMoreInPayload(payload, itemsLength) {
+    if (!payload || typeof payload !== 'object') {
+        return false;
+    }
+
+    const totalCandidates = [
+        payload.total,
+        payload.count,
+        payload.total_count,
+        payload.total_results,
+        payload.total_items
+    ];
+
+    for (const total of totalCandidates) {
+        if (typeof total === 'number' && total > itemsLength) {
+            return true;
+        }
+    }
+
+    if (typeof payload.total_pages === 'number') {
+        const currentPage = Number(payload.current_page ?? payload.page ?? 1);
+        if (Number.isFinite(currentPage) && currentPage < payload.total_pages) {
+            return true;
+        }
+    }
+
+    return false;
+}
+
+function shouldRefreshTeamsData(payload) {
+    if (!payload) {
+        return true;
+    }
+
+    if (Array.isArray(payload)) {
+        return false;
+    }
+
+    const candidates = [payload.results, payload.teams];
+    const items = candidates.find((value) => Array.isArray(value));
+
+    if (!Array.isArray(items)) {
+        return true;
+    }
+
+    return hasMoreInPayload(payload, items.length);
+}
+
+function getDashboardIncomingInvitations(data) {
+    if (!data || typeof data !== 'object') return undefined;
+
+    const invitations = extractListFromObject(data, [
+        'team_invitations',
+        'incoming_invitations',
+        'invitations',
+        'received_invitations'
+    ]);
+
+    return Array.isArray(invitations) ? invitations : undefined;
+}
+
 function toUserArray(payload) {
     if (!payload) return [];
     if (Array.isArray(payload)) return payload;
@@ -1086,12 +1147,43 @@ function getStatusLabel(status) {
     }
 }
 
+export async function initializeDashboardTeamsSection({ dashboardData = {}, fallbackInvitations = null } = {}) {
+    const teamsPayload = dashboardData?.teams;
+    let teams = toTeamArray(teamsPayload);
+
+    displayUserTeams(teams);
+    applyDashboardTeamData(dashboardData);
+
+    const invitationsFallback = Array.isArray(fallbackInvitations)
+        ? fallbackInvitations
+        : getDashboardIncomingInvitations(dashboardData);
+
+    await ensureIncomingInvitationsLoaded({ fallbackData: invitationsFallback });
+
+    if (shouldRefreshTeamsData(teamsPayload)) {
+        try {
+            const refreshedTeams = await fetchUserTeams();
+            teams = toTeamArray(refreshedTeams);
+            displayUserTeams(teams);
+        } catch (error) {
+            console.error('خطا در دریافت تیم‌ها:', error);
+            helpers.showError('خطا در دریافت اطلاعات تیم‌ها. لطفاً دوباره تلاش کنید.');
+        }
+    }
+
+    return {
+        teams,
+        count: teams.length
+    };
+}
+
 export function displayUserTeams(teamsInput) {
+    const teams = toTeamArray(teamsInput);
+    teamsState = teams;
+
     const container = document.getElementById('teams_container');
     if (!container) return;
 
-    const teams = toTeamArray(teamsInput);
-    teamsState = teams;
     renderTeamsList();
 }
 

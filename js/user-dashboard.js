@@ -2,20 +2,14 @@ import { API_ENDPOINTS, createAuthApiClient, extractApiError } from "./services/
 import {
   configureTeamModule,
   setTeamUserContext,
-  toTeamArray,
-  displayUserTeams,
-  applyDashboardTeamData,
   ensureIncomingInvitationsLoaded,
-  fetchUserTeams,
+  initializeDashboardTeamsSection,
   setupTeamsPageInteractions,
 } from "./user-teams.js";
 import {
   configureTournamentHistoryModule,
   initializeTournamentHistoryUI,
-  normalizeTournamentHistory,
-  fetchUserTournamentHistory,
-  displayTournamentHistory,
-  getTournamentMatchesCount,
+  initializeDashboardTournamentHistorySection,
 } from "./user-tournaments_history.js";
 
 const apiClient = createAuthApiClient();
@@ -718,8 +712,6 @@ async function loadDashboardData() {
     setPageTitle();
 
     const dashboardData = await fetchDashboardData();
-    const hasTeamsContainer = Boolean(document.getElementById("teams_container"));
-    const hasTournamentTable = Boolean(document.getElementById("tournaments_history_body"));
 
     const teamsPayload = dashboardData?.teams;
     const tournamentPayload = dashboardData?.tournament_history;
@@ -1007,6 +999,7 @@ configureTeamModule({
 configureTournamentHistoryModule({
   fetchWithAuth,
   extractErrorMessage: resolveErrorMessage,
+  showError,
 });
 
 document.addEventListener("DOMContentLoaded", () => {
