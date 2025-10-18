@@ -14,64 +14,84 @@
             <div class="sidebar_logo">
                 <a href="../index.html"><img src="../img/logo.png" alt="logo"></a>
             </div>
-            <div class="sidebar_links">
-                <a href="index.html" class="sidebar_link">
-                    <i class="ti ti-home"></i>
-                    <p>داشبورد</p>
-                </a>
+            <nav class="sidebar_navigation" aria-label="منوی کاربری">
+                <ul class="sidebar_links">
+                    <li class="sidebar_item">
+                        <a href="index.html" class="sidebar_link">
+                            <i class="ti ti-home" aria-hidden="true"></i>
+                            <p>داشبورد</p>
+                        </a>
+                    </li>
 
-                <a href="teams.html" class="sidebar_link">
-                    <i class="ti ti-users"></i>
-                    <p>تیم ها</p>
-                </a>
+                    <li class="sidebar_item">
+                        <a href="teams.html" class="sidebar_link">
+                            <i class="ti ti-users" aria-hidden="true"></i>
+                            <p>تیم ها</p>
+                        </a>
+                    </li>
 
-                <a href="tournaments.html" class="sidebar_link">
-                    <i class="ti ti-trophy"></i>
-                    <p>تورنومنت ها</p>
-                </a>
+                    <li class="sidebar_item">
+                        <a href="tournaments.html" class="sidebar_link">
+                            <i class="ti ti-trophy" aria-hidden="true"></i>
+                            <p>تورنومنت ها</p>
+                        </a>
+                    </li>
 
-                <a href="wallet.html" class="sidebar_link">
-                    <i class="ti ti-wallet"></i>
-                    <p>کیف پول</p>
-                </a>
+                    <li class="sidebar_item">
+                        <a href="wallet.html" class="sidebar_link">
+                            <i class="ti ti-wallet" aria-hidden="true"></i>
+                            <p>کیف پول</p>
+                        </a>
+                    </li>
 
-                <a href="tickets.html" class="sidebar_link">
-                    <i class="ti ti-ticket"></i>
-                    <p>تیکت</p>
-                </a>
+                    <li class="sidebar_item">
+                        <a href="tickets.html" class="sidebar_link">
+                            <i class="ti ti-ticket" aria-hidden="true"></i>
+                            <p>تیکت</p>
+                        </a>
+                    </li>
 
-                <a href="verification.html" class="sidebar_link">
-                    <i class="ti ti-ticket"></i>
-                    <p>احراز هویت</p>
-                </a>
+                    <li class="sidebar_item">
+                        <a href="verification.html" class="sidebar_link">
+                            <i class="ti ti-ticket" aria-hidden="true"></i>
+                            <p>احراز هویت</p>
+                        </a>
+                    </li>
 
-                <a href="chat.html" class="sidebar_link">
-                    <i class="ti ti-message-circle"></i>
-                    <p>گفتگو</p>
-                </a>
+                    <li class="sidebar_item">
+                        <a href="chat.html" class="sidebar_link">
+                            <i class="ti ti-message-circle" aria-hidden="true"></i>
+                            <p>گفتگو</p>
+                        </a>
+                    </li>
 
-                <a href="#" class="sidebar_link exit">
-                    <i class="ti ti-logout"></i>
-                    <p>خروج از حساب</p>
-                </a>
-            </div>
+                    <li class="sidebar_item sidebar_item--logout">
+                        <button type="button" class="sidebar_link exit" data-action="logout">
+                            <i class="ti ti-logout" aria-hidden="true"></i>
+                            <p>خروج از حساب</p>
+                        </button>
+                    </li>
+                </ul>
+            </nav>
         </div>
     </div>
 
     <script>
-        // اضافه کردن event listener برای خروج از حساب
-        const exitLink = document.querySelector('.sidebar_link.exit');
-        if (exitLink) {
-            exitLink.addEventListener('click', (e) => {
-                e.preventDefault();
-                // پاک کردن توکن‌ها از localStorage
+        // این اسکریپت فقط در صورتی اجرا می‌شود که فایل مستقیماً باز شود.
+        (function() {
+            const logoutTrigger = document.querySelector('[data-action="logout"]');
+            if (!logoutTrigger) {
+                return;
+            }
+
+            logoutTrigger.addEventListener('click', (event) => {
+                event.preventDefault();
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
                 localStorage.removeItem('user_data');
-                // ریدایرکت به صفحه لاگین
-                window.location.href = '/register/login.html';
+                window.location.href = '../register/login.html';
             });
-        }
+        })();
     </script>
 </body>
 </html>
