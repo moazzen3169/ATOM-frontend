@@ -1413,7 +1413,7 @@ async function fetchIncomingTeamInvitations() {
 }
 
 export async function ensureIncomingInvitationsLoaded({ force = false, fallbackData = null } = {}) {
-    const hasFallback = Array.isArray(fallbackData) && fallbackData.length > 0;
+    const hasFallback = Array.isArray(fallbackData);
 
     if (hasFallback && !force && !incomingInvitationsLoadedFromApi) {
         incomingInvitationsState = fallbackData;
