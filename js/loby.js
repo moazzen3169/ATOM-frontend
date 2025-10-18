@@ -313,11 +313,7 @@ function updateTeamCache(teams) {
 function mergeTeamRecord(teamId, updates) {
   const key = String(teamId);
   const existing = state.teamsById.get(key) || { identifier: key };
-  const merged = normaliseTeamRecord({
-    identifier: existing.identifier || key,
-    ...existing,
-    ...updates,
-  });
+  const merged = normaliseTeamRecord({ ...existing, ...updates });
   if (merged) {
     state.teamsById.set(key, merged);
   }
@@ -1589,36 +1585,9 @@ async function joinTeamTournament() {
       return;
     }
 
-    const selectedIdentifier = hasTeamSelectionValue(state.selectedTeamId)
-      ? state.selectedTeamId
-      : null;
-    const hydratedIdentifier = hasTeamSelectionValue(hydratedTeam?.identifier)
-      ? hydratedTeam.identifier
-      : null;
-    const fallbackIdentifier =
-      hydratedIdentifier !== null
-        ? resolveTeamJoinPayloadIdentifier(hydratedIdentifier)
-        : null;
-
-    let payloadIdentifier = resolveTeamJoinPayloadIdentifier(selectedIdentifier);
-
-    if (payloadIdentifier === null && fallbackIdentifier !== null) {
-      payloadIdentifier = fallbackIdentifier;
-    }
-
-    if (
-      payloadIdentifier !== null &&
-      selectedIdentifier !== null &&
-      fallbackIdentifier !== null &&
-      payloadIdentifier !== fallbackIdentifier
-    ) {
-      console.warn(
-        "Resolved team identifier differs from hydrated data",
-        selectedIdentifier,
-        hydratedIdentifier,
-        fallbackIdentifier,
-      );
-    }
+    const payloadIdentifier = resolveTeamJoinPayloadIdentifier(
+      hydratedTeam?.identifier || state.selectedTeamId,
+    );
 
     if (payloadIdentifier === null) {
       const error = new Error(
