@@ -1,4 +1,5 @@
 import { API_BASE_URL } from "/js/config.js";
+import { API_ENDPOINTS, buildApiUrl } from "/js/services/api-client.js";
 
 const STORAGE_KEYS = {
   inGameIds: "atom_in_game_ids",
@@ -6,13 +7,540 @@ const STORAGE_KEYS = {
 
 const MAX_SAVED_INGAME_IDS = 10;
 
+const TEAM_SEARCH_DEBOUNCE_MS = 400;
+const TEAM_VALIDATION_NOTIFICATION_KEYS = {
+  TEAM_NOT_FOUND: "teamNotFound",
+  NOT_CAPTAIN: "teamJoinUnauthorized",
+  ALREADY_REGISTERED: "teamAlreadyRegistered",
+  MEMBERS_MISSING: "teamMembersMissing",
+  TEAM_TOO_SMALL: "teamTooSmall",
+  TEAM_TOO_LARGE: "teamTooLarge",
+  TEAM_SIZE_UNKNOWN: "teamSizeUnknown",
+};
+
 const state = {
   tournamentId: null,
   tournament: null,
   selectedTeamId: null,
   teamRequestInFlight: false,
   lastUsedInGameId: "",
+  userId: null,
+  userIdPromise: null,
+  teamsById: new Map(),
+  teamDetailPromises: new Map(),
+  tournamentTeamIds: new Set(),
+  teamAbortController: null,
 };
+
+function normaliseId(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "object") {
+    const candidates = [value.id, value.user_id, value.pk, value.uuid, value.slug];
+    for (const candidate of candidates) {
+      const resolved = normaliseId(candidate);
+      if (resolved) {
+        return resolved;
+      }
+    }
+    return null;
+  }
+
+  const stringValue = String(value).trim();
+  return stringValue.length ? stringValue : null;
+}
+
+function decodeJwtPayload(token) {
+  if (!token || typeof token !== "string") {
+    return null;
+  }
+
+  const segments = token.split(".");
+  if (segments.length < 2) {
+    return null;
+  }
+
+  const base64 = segments[1].replace(/-/g, "+").replace(/_/g, "/");
+  const padded = base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), "=");
+
+  try {
+    const decoded = atob(padded);
+    return JSON.parse(decoded);
+  } catch (error) {
+    console.warn("Failed to decode JWT payload", error);
+    return null;
+  }
+}
+
+function extractUserIdFromPayload(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const candidates = [
+    payload.user_id,
+    payload.userId,
+    payload.sub,
+    payload.id,
+    payload.pk,
+    payload.uuid,
+  ];
+
+  for (const candidate of candidates) {
+    const resolved = normaliseId(candidate);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  return null;
+}
+
+async function resolveUserIdFromProfile() {
+  try {
+    const url = buildApiUrl(API_ENDPOINTS.users.me);
+    const profile = await apiFetch(url.toString());
+    const identifier =
+      normaliseId(profile?.id) ||
+      normaliseId(profile?.user_id) ||
+      normaliseId(profile?.pk) ||
+      null;
+
+    if (!identifier) {
+      throw new Error("شناسه کاربر در حساب کاربری یافت نشد.");
+    }
+
+    return identifier;
+  } catch (error) {
+    console.error("Failed to load user profile", error);
+    throw error;
+  }
+}
+
+async function ensureUserId() {
+  if (state.userId) {
+    return state.userId;
+  }
+
+  if (state.userIdPromise) {
+    return state.userIdPromise;
+  }
+
+  const token = getAuthToken();
+  const payload = decodeJwtPayload(token);
+  const decodedId = extractUserIdFromPayload(payload);
+
+  if (decodedId) {
+    state.userId = decodedId;
+    return decodedId;
+  }
+
+  state.userIdPromise = resolveUserIdFromProfile()
+    .then((identifier) => {
+      state.userId = identifier;
+      return identifier;
+    })
+    .finally(() => {
+      state.userIdPromise = null;
+    });
+
+  return state.userIdPromise;
+}
+
+function debounce(fn, delay = 300) {
+  let timeoutId;
+  return (...args) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      fn(...args);
+    }, delay);
+  };
+}
+
+function getTeamMembersList(team) {
+  if (!team || typeof team !== "object") {
+    return [];
+  }
+
+  const candidates = [team.members, team.players, team.users, team.members_list];
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate)) {
+      return candidate;
+    }
+  }
+
+  return [];
+}
+
+function getTeamMemberCount(team) {
+  if (!team || typeof team !== "object") {
+    return null;
+  }
+
+  const numericCandidates = [
+    team.member_count,
+    team.members_count,
+    team.memberCount,
+    team.count,
+  ];
+
+  for (const candidate of numericCandidates) {
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+      return candidate;
+    }
+    if (typeof candidate === "string" && candidate.trim().length) {
+      const parsed = Number.parseInt(candidate, 10);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  const members = getTeamMembersList(team);
+  return members.length || null;
+}
+
+function markTournamentTeamsCache(tournament) {
+  state.tournamentTeamIds = new Set();
+
+  if (!tournament) {
+    return;
+  }
+
+  const teams = Array.isArray(tournament.teams) ? tournament.teams : [];
+  teams.forEach((team) => {
+    const identifier = resolveTeamId(team);
+    if (identifier) {
+      state.tournamentTeamIds.add(String(identifier));
+    }
+  });
+
+  state.teamsById.forEach((team, key) => {
+    state.teamsById.set(String(key), {
+      ...team,
+      alreadyRegistered: isTeamAlreadyRegistered(key),
+    });
+  });
+
+  updateTeamOptionElements();
+}
+
+function isTeamAlreadyRegistered(teamId) {
+  if (!teamId) {
+    return false;
+  }
+  return state.tournamentTeamIds.has(String(teamId));
+}
+
+function normaliseTeamRecord(team) {
+  const identifier = resolveTeamId(team);
+  if (!identifier) {
+    return null;
+  }
+
+  const memberList = getTeamMembersList(team);
+  const memberCount = getTeamMemberCount({ ...team, members: memberList });
+
+  const captainId = normaliseId(team?.captain);
+  const isCaptain = (() => {
+    const currentUserId = normaliseId(state.userId);
+    if (!currentUserId) {
+      return Boolean(team?.is_captain);
+    }
+
+    const directCaptain = normaliseId(team?.captain);
+    if (directCaptain) {
+      return directCaptain === currentUserId;
+    }
+
+    if (team?.captain && typeof team.captain === "object") {
+      const nestedCandidates = [
+        team.captain.id,
+        team.captain.user_id,
+        team.captain.pk,
+      ];
+      for (const candidate of nestedCandidates) {
+        const resolved = normaliseId(candidate);
+        if (resolved) {
+          return resolved === currentUserId;
+        }
+      }
+    }
+
+    if (Array.isArray(memberList)) {
+      return memberList.some((member) => {
+        if (!member || typeof member !== "object") {
+          return false;
+        }
+        const roles = [member.role, member.position];
+        if (roles.some((role) => typeof role === "string" && role.toLowerCase() === "captain")) {
+          const memberId = normaliseId(member.id || member.user_id || member.pk);
+          return memberId === currentUserId;
+        }
+        return false;
+      });
+    }
+
+    return Boolean(team?.is_captain);
+  })();
+
+  return {
+    ...team,
+    identifier: String(identifier),
+    memberList,
+    memberCount,
+    captainId,
+    isCaptain,
+    alreadyRegistered: isTeamAlreadyRegistered(identifier),
+    _hydrated:
+      (Array.isArray(memberList) && memberList.length > 0) ||
+      typeof memberCount === "number",
+  };
+}
+
+function updateTeamCache(teams) {
+  state.teamsById.clear();
+  teams.forEach((team) => {
+    const normalised = normaliseTeamRecord(team);
+    if (normalised) {
+      state.teamsById.set(normalised.identifier, normalised);
+    }
+  });
+}
+
+function mergeTeamRecord(teamId, updates) {
+  const key = String(teamId);
+  const existing = state.teamsById.get(key) || { identifier: key };
+  const merged = normaliseTeamRecord({
+    identifier: existing.identifier || key,
+    ...existing,
+    ...updates,
+  });
+  if (merged) {
+    state.teamsById.set(key, merged);
+  }
+  return merged;
+}
+
+function getCachedTeam(teamId) {
+  if (!teamId) {
+    return null;
+  }
+  return state.teamsById.get(String(teamId)) || null;
+}
+
+function hasTeamMemberData(team) {
+  return Array.isArray(team?.memberList) && team.memberList.length > 0;
+}
+
+function getRequiredTeamSize() {
+  const size = Number(state.tournament?.team_size);
+  if (Number.isFinite(size) && size > 0) {
+    return size;
+  }
+  return null;
+}
+
+function createTeamSizeValidation(team) {
+  const requiredSize = getRequiredTeamSize();
+  if (!requiredSize) {
+    return { valid: true };
+  }
+
+  const actualCount = typeof team?.memberCount === "number" ? team.memberCount : null;
+  if (actualCount === null) {
+    return {
+      valid: false,
+      code: "TEAM_SIZE_UNKNOWN",
+      message: "تعداد اعضای تیم مشخص نیست. لطفاً اعضای تیم را بررسی کنید.",
+    };
+  }
+
+  if (actualCount < requiredSize) {
+    return {
+      valid: false,
+      code: "TEAM_TOO_SMALL",
+      message: `این تورنومنت به تیمی با ${requiredSize} عضو نیاز دارد؛ تیم شما ${actualCount} عضو دارد.`,
+    };
+  }
+
+  if (actualCount > requiredSize) {
+    return {
+      valid: false,
+      code: "TEAM_TOO_LARGE",
+      message: `حداکثر تعداد مجاز اعضای تیم در این تورنومنت ${requiredSize} نفر است؛ تیم شما ${actualCount} عضو دارد.`,
+    };
+  }
+
+  return { valid: true };
+}
+
+function validateTeamEligibility(team, { includeRegistrationCheck = true } = {}) {
+  if (!team) {
+    return {
+      valid: false,
+      code: "TEAM_NOT_FOUND",
+      message: "اطلاعات تیم انتخاب‌شده یافت نشد.",
+    };
+  }
+
+  if (!team.isCaptain) {
+    return {
+      valid: false,
+      code: "NOT_CAPTAIN",
+      message: "برای ثبت‌نام تیم باید کاپیتان آن باشید.",
+    };
+  }
+
+  if (includeRegistrationCheck && team.alreadyRegistered) {
+    return {
+      valid: false,
+      code: "ALREADY_REGISTERED",
+      message: "این تیم قبلاً در تورنومنت ثبت شده است.",
+    };
+  }
+
+  const resolvedMemberCount =
+    typeof team.memberCount === "number"
+      ? team.memberCount
+      : Array.isArray(team.memberList)
+      ? team.memberList.length
+      : null;
+
+  if (resolvedMemberCount === null) {
+    return {
+      valid: false,
+      code: "TEAM_SIZE_UNKNOWN",
+      message: "تعداد اعضای تیم مشخص نیست. لطفاً اطلاعات تیم را به‌روزرسانی کنید.",
+    };
+  }
+
+  if (resolvedMemberCount <= 0) {
+    return {
+      valid: false,
+      code: "MEMBERS_MISSING",
+      message: "تیمی بدون عضو قابل ثبت‌نام نیست. لطفاً ابتدا اعضای تیم را اضافه کنید.",
+    };
+  }
+
+  const sizeValidation = createTeamSizeValidation({
+    ...team,
+    memberCount: resolvedMemberCount,
+  });
+  if (!sizeValidation.valid) {
+    return sizeValidation;
+  }
+
+  return { valid: true };
+}
+
+function describeTeamMeta(team) {
+  if (!team) {
+    return "";
+  }
+
+  const fragments = [];
+
+  if (typeof team.memberCount === "number") {
+    fragments.push(`${team.memberCount} عضو`);
+  }
+
+  if (team.alreadyRegistered) {
+    fragments.push("ثبت شده در تورنومنت");
+  }
+
+  if (!team.isCaptain) {
+    fragments.push("کاپیتان تیم نیستید");
+  }
+
+  const sizeValidation = createTeamSizeValidation(team);
+  if (!sizeValidation.valid) {
+    if (sizeValidation.code === "TEAM_TOO_SMALL") {
+      fragments.push("کمتر از حد مجاز");
+    } else if (sizeValidation.code === "TEAM_TOO_LARGE") {
+      fragments.push("بیشتر از حد مجاز");
+    }
+  }
+
+  return fragments.join(" • ");
+}
+
+function teamRequiresHydration(team) {
+  if (!team) {
+    return false;
+  }
+
+  if (typeof team.memberCount === "number") {
+    return false;
+  }
+
+  if (team._hydrated) {
+    return false;
+  }
+
+  return !hasTeamMemberData(team);
+}
+
+function notifyTeamValidationError(result) {
+  if (!result || result.valid) {
+    return;
+  }
+
+  const key =
+    (result.code && TEAM_VALIDATION_NOTIFICATION_KEYS[result.code]) ||
+    "teamJoinValidationFailed";
+  notify(key, result.message, "error");
+}
+
+async function hydrateTeamIfNeeded(teamId) {
+  const key = normaliseId(teamId);
+  if (!key) {
+    return null;
+  }
+
+  const existing = getCachedTeam(key);
+  if (existing && !teamRequiresHydration(existing)) {
+    return existing;
+  }
+
+  if (state.teamDetailPromises.has(key)) {
+    try {
+      return await state.teamDetailPromises.get(key);
+    } catch (error) {
+      return existing || null;
+    }
+  }
+
+  const controllerUrl = buildApiUrl(API_ENDPOINTS.users.team(key));
+
+  const detailPromise = apiFetch(controllerUrl.toString())
+    .then((details) => {
+      const merged = mergeTeamRecord(key, details);
+      updateTeamOptionElements();
+      return merged;
+    })
+    .catch((error) => {
+      console.error("Failed to hydrate team details", error);
+      const message =
+        error?.message || "امکان دریافت اطلاعات کامل تیم وجود ندارد.";
+      notify("teamDetailsFetchFailed", message, "error");
+      showModalError("teamJoinError", message);
+      throw error;
+    })
+    .finally(() => {
+      state.teamDetailPromises.delete(key);
+    });
+
+  state.teamDetailPromises.set(key, detailPromise);
+
+  try {
+    return await detailPromise;
+  } catch (error) {
+    return existing || null;
+  }
+}
 
 function getAuthToken() {
   return (
@@ -48,7 +576,17 @@ async function apiFetch(url, options = {}) {
     },
   };
 
-  const response = await fetch(url, config);
+  let response;
+  try {
+    response = await fetch(url, config);
+  } catch (error) {
+    if (error?.name === "AbortError") {
+      throw error;
+    }
+    const networkError = new Error("برقراری ارتباط با سرور ممکن نشد. لطفاً اتصال اینترنت خود را بررسی کنید.");
+    networkError.cause = error;
+    throw networkError;
+  }
 
   if (response.status === 204) {
     return null;
@@ -63,7 +601,11 @@ async function apiFetch(url, options = {}) {
       payload?.message ||
       (typeof payload === "string" && payload) ||
       "درخواست با خطا روبه‌رو شد.";
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    error.payload = payload;
+    error.response = response;
+    throw error;
   }
 
   return payload;
@@ -447,6 +989,7 @@ async function loadTournament() {
     const tournament = await apiFetch(url);
 
     state.tournament = tournament;
+    markTournamentTeamsCache(tournament);
     renderTournamentSummary(tournament);
     renderAdminInfo(tournament);
     renderParticipants(tournament);
@@ -478,6 +1021,35 @@ function resetTeamSelection() {
       btn.setAttribute("aria-pressed", "false");
     });
   }
+
+  clearModalError("teamJoinError");
+}
+
+function applyTeamValidationResult(result) {
+  const confirmBtn = document.getElementById("teamJoinConfirmButton");
+  if (result?.valid) {
+    if (confirmBtn) confirmBtn.disabled = false;
+    clearModalError("teamJoinError");
+    return;
+  }
+
+  if (confirmBtn) confirmBtn.disabled = true;
+  if (result?.message) {
+    showModalError("teamJoinError", result.message);
+  }
+}
+
+function markSelectedTeamButton(teamId) {
+  const list = document.getElementById("teamModalList");
+  if (!list) {
+    return;
+  }
+
+  list.querySelectorAll(".team-option").forEach((btn) => {
+    const isSelected = String(btn.dataset.teamId) === String(teamId);
+    btn.classList.toggle("selected", isSelected);
+    btn.setAttribute("aria-pressed", isSelected ? "true" : "false");
+  });
 }
 
 function selectTeam(teamId) {
@@ -486,28 +1058,64 @@ function selectTeam(teamId) {
     : null;
 
   state.selectedTeamId = normalisedValue;
-
-  const confirmBtn = document.getElementById("teamJoinConfirmButton");
-  if (confirmBtn) confirmBtn.disabled = !hasTeamSelectionValue(normalisedValue);
-
-  const list = document.getElementById("teamModalList");
-  if (!list) return;
-
-  list.querySelectorAll(".team-option").forEach((btn) => {
-    const isSelected = String(btn.dataset.teamId) === String(normalisedValue);
-    btn.classList.toggle("selected", isSelected);
-    btn.setAttribute("aria-pressed", isSelected ? "true" : "false");
-  });
+  markSelectedTeamButton(normalisedValue);
 
   const selectEl = document.getElementById("teamSelect");
-  if (selectEl) selectEl.value = hasTeamSelectionValue(normalisedValue) ? normalisedValue : "";
+  if (selectEl) {
+    selectEl.value = hasTeamSelectionValue(normalisedValue) ? normalisedValue : "";
+  }
+
+  if (!hasTeamSelectionValue(normalisedValue)) {
+    applyTeamValidationResult({ valid: false, message: "لطفاً یک تیم انتخاب کنید." });
+    return;
+  }
+
+  const cachedTeam = getCachedTeam(normalisedValue);
+  if (!cachedTeam) {
+    applyTeamValidationResult({
+      valid: false,
+      message: "اطلاعات تیم انتخاب‌شده یافت نشد.",
+    });
+    return;
+  }
+
+  if (teamRequiresHydration(cachedTeam)) {
+    applyTeamValidationResult({
+      valid: false,
+      message: "در حال بررسی شرایط تیم...",
+    });
+
+    hydrateTeamIfNeeded(normalisedValue)
+      .then((updatedTeam) => {
+        if (state.selectedTeamId !== normalisedValue) {
+          return;
+        }
+        const validation = validateTeamEligibility(updatedTeam);
+        applyTeamValidationResult(validation);
+      })
+      .catch(() => {
+        if (state.selectedTeamId === normalisedValue) {
+          applyTeamValidationResult({
+            valid: false,
+            message: "امکان بررسی شرایط تیم وجود ندارد.",
+          });
+        }
+      });
+
+    return;
+  }
+
+  const validation = validateTeamEligibility(cachedTeam);
+  applyTeamValidationResult(validation);
 }
 
 function resolveTeamId(team) {
   if (!team || typeof team !== "object") return null;
 
   const candidates = [
+    team.identifier,
     team.id,
+    team.pk,
     team.team_id,
     team.teamId,
     team.team,
@@ -516,17 +1124,31 @@ function resolveTeamId(team) {
   ];
 
   for (const value of candidates) {
-    if (value === undefined || value === null) {
-      continue;
-    }
-
-    const stringValue = String(value).trim();
-    if (stringValue) {
-      return stringValue;
+    const resolved = normaliseId(value);
+    if (resolved) {
+      return resolved;
     }
   }
 
   return null;
+}
+
+function resolveTeamJoinPayloadIdentifier(teamId) {
+  if (!hasTeamSelectionValue(teamId)) {
+    return null;
+  }
+
+  const stringValue = String(teamId).trim();
+  if (!stringValue) {
+    return null;
+  }
+
+  if (/^\d+$/.test(stringValue)) {
+    const numeric = Number.parseInt(stringValue, 10);
+    return Number.isNaN(numeric) ? null : numeric;
+  }
+
+  return stringValue;
 }
 
 function renderTeamOptions(teams, meta = {}) {
@@ -539,7 +1161,18 @@ function renderTeamOptions(teams, meta = {}) {
   if (list) list.innerHTML = "";
   if (selectEl) selectEl.innerHTML = '<option value="">انتخاب تیم</option>';
 
-  if (!teams.length) {
+  if (selectEl && !selectEl.dataset.listenerAttached) {
+    selectEl.addEventListener("change", (event) => {
+      const { value } = event.target;
+      selectTeam(value);
+    });
+    selectEl.dataset.listenerAttached = "true";
+  }
+
+  updateTeamCache(Array.isArray(teams) ? teams : []);
+  const processedTeams = Array.from(state.teamsById.values());
+
+  if (!processedTeams.length) {
     if (emptyState) emptyState.classList.remove("is-hidden");
     if (emptyTitle) {
       emptyTitle.textContent =
@@ -556,46 +1189,113 @@ function renderTeamOptions(teams, meta = {}) {
 
   if (emptyState) emptyState.classList.add("is-hidden");
 
-  teams.forEach((team) => {
-    const identifier = resolveTeamId(team);
-    if (!identifier) {
-      return;
-    }
+  const fragment = document.createDocumentFragment();
 
-    const metaText =
-      team.meta ??
-      team.members_count ??
-      team.member_count ??
-      (Array.isArray(team.members) ? `${team.members.length} عضو` : "");
-
+  processedTeams.forEach((team) => {
     const button = document.createElement("button");
     button.type = "button";
     button.className = "team-option";
-    button.dataset.teamId = identifier;
-    button.innerHTML = `
-      <div class="team-option__info">
-        <span class="team-option__name">${team.name}</span>
-        <span class="team-option__meta">${metaText || ""}</span>
-      </div>
-    `;
-    button.addEventListener("click", () => selectTeam(identifier));
-    list?.appendChild(button);
+    button.dataset.teamId = team.identifier;
+
+    const infoWrapper = document.createElement("div");
+    infoWrapper.className = "team-option__info";
+
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "team-option__name";
+    nameSpan.textContent = team.name || "تیم";
+
+    const metaSpan = document.createElement("span");
+    metaSpan.className = "team-option__meta";
+    metaSpan.textContent = describeTeamMeta(team);
+
+    infoWrapper.appendChild(nameSpan);
+    infoWrapper.appendChild(metaSpan);
+    button.appendChild(infoWrapper);
+
+    const tooltipParts = [team.name || "تیم"];
+    if (metaSpan.textContent) {
+      tooltipParts.push(metaSpan.textContent);
+    }
+    button.title = tooltipParts.filter(Boolean).join(" - ");
+
+    const previewValidation = validateTeamEligibility(team, {
+      includeRegistrationCheck: false,
+    });
+    if (!previewValidation.valid || team.alreadyRegistered) {
+      button.classList.add("team-option--warning");
+      button.title = previewValidation.message || "";
+    }
+
+    button.addEventListener("click", () => selectTeam(team.identifier));
+    fragment.appendChild(button);
 
     if (selectEl) {
       const option = document.createElement("option");
-      option.value = identifier;
-      option.textContent = team.name;
+      option.value = team.identifier;
+      option.textContent = team.name || "تیم";
       selectEl.appendChild(option);
     }
   });
 
-  resetTeamSelection();
+  list?.appendChild(fragment);
+
+  const previousSelection = state.selectedTeamId;
+  if (previousSelection && state.teamsById.has(String(previousSelection))) {
+    selectTeam(previousSelection);
+  } else {
+    resetTeamSelection();
+  }
 }
 
-// 
+//
+
+function updateTeamOptionElements() {
+  const list = document.getElementById("teamModalList");
+  if (!list) {
+    return;
+  }
+
+  list.querySelectorAll(".team-option").forEach((button) => {
+    const teamId = button.dataset.teamId;
+    const team = getCachedTeam(teamId);
+    if (!team) {
+      return;
+    }
+
+    const metaSpan = button.querySelector(".team-option__meta");
+    if (metaSpan) {
+      metaSpan.textContent = describeTeamMeta(team);
+    }
+
+    const tooltipParts = [team.name || "تیم"];
+    if (metaSpan?.textContent) {
+      tooltipParts.push(metaSpan.textContent);
+    }
+    button.title = tooltipParts.filter(Boolean).join(" - ");
+
+    const previewValidation = validateTeamEligibility(team, {
+      includeRegistrationCheck: false,
+    });
+
+    if (!previewValidation.valid || team.alreadyRegistered) {
+      button.classList.add("team-option--warning");
+    } else {
+      button.classList.remove("team-option--warning");
+    }
+  });
+}
+
+//
 
 async function fetchTeamOptions(searchTerm = "") {
-  if (state.teamRequestInFlight) return;
+  const trimmedSearch = searchTerm?.toString().trim() || "";
+
+  if (state.teamRequestInFlight && state.teamAbortController) {
+    state.teamAbortController.abort();
+  }
+
+  const controller = new AbortController();
+  state.teamAbortController = controller;
   state.teamRequestInFlight = true;
 
   const loading = document.getElementById("teamModalLoading");
@@ -603,34 +1303,28 @@ async function fetchTeamOptions(searchTerm = "") {
   clearModalError("teamJoinError");
 
   try {
-    // ✅ استخراج شناسه کاربر از توکن JWT
-    const token = getAuthToken();
-    let userId = null;
-    if (token) {
-      try {
-        const payload = JSON.parse(atob(token.split(".")[1]));
-        userId = payload.user_id || payload.id || payload.sub || null;
-      } catch (e) {
-        console.warn("توکن معتبر نیست یا ساختار JWT ندارد");
-      }
-    }
-
+    const userId = await ensureUserId();
     if (!userId) {
       const message = "شناسه کاربر یافت نشد. لطفاً دوباره وارد شوید.";
-      notify("loginRequired", message);
+      notify("loginRequired", message, "error");
       showModalError("teamJoinError", message);
+      renderTeamOptions([], {});
       return;
     }
 
-    // ✅ ساخت URL با فیلتر رسمی API
-    const url = new URL(`${API_BASE_URL}/api/users/teams/`);
-    url.searchParams.set("for_registration", state.tournamentId);
-    url.searchParams.set("captain", userId); // 👈 فیلتر فقط برای تیم‌های کاپیتان‌شده توسط کاربر
-    if (searchTerm) {
-      url.searchParams.set("search", searchTerm);
+    const url = buildApiUrl(API_ENDPOINTS.users.teams);
+    if (state.tournamentId) {
+      url.searchParams.set("for_registration", state.tournamentId);
+    }
+    url.searchParams.set("captain", userId);
+    if (trimmedSearch) {
+      url.searchParams.set("name", trimmedSearch);
+      url.searchParams.set("search", trimmedSearch);
     }
 
-    const result = await apiFetch(url.toString());
+    const result = await apiFetch(url.toString(), {
+      signal: controller.signal,
+    });
 
     const metaEl = document.getElementById("teamModalMeta");
     const hintEl = document.getElementById("teamModalHint");
@@ -645,7 +1339,6 @@ async function fetchTeamOptions(searchTerm = "") {
       hintEl.textContent = result?.meta?.hint || "";
     }
 
-    // ✅ واکشی تیم‌ها از پاسخ
     const teams = Array.isArray(result?.results)
       ? result.results
       : Array.isArray(result)
@@ -654,13 +1347,20 @@ async function fetchTeamOptions(searchTerm = "") {
 
     renderTeamOptions(teams, result?.meta || {});
   } catch (error) {
+    if (error?.name === "AbortError") {
+      return;
+    }
     console.error("Failed to load teams", error);
     const message =
-      error.message || "امکان دریافت تیم‌ها وجود ندارد. لطفاً بعداً دوباره تلاش کنید.";
+      error?.message || "امکان دریافت تیم‌ها وجود ندارد. لطفاً بعداً دوباره تلاش کنید.";
     notify("tournamentFetchFailed", message, "error");
     showModalError("teamJoinError", message);
+    renderTeamOptions([], {});
   } finally {
     state.teamRequestInFlight = false;
+    if (state.teamAbortController === controller) {
+      state.teamAbortController = null;
+    }
     if (loading) loading.classList.add("is-hidden");
   }
 }
@@ -771,6 +1471,102 @@ async function joinIndividualTournament(event) {
   if (submitBtn) submitBtn.disabled = false;
 }
 
+function interpretTeamJoinError(error) {
+  const defaultMessage = "امکان ثبت‌نام تیم وجود ندارد. لطفاً دوباره تلاش کنید.";
+
+  if (!error) {
+    return { message: defaultMessage, key: "tournamentJoinFailed" };
+  }
+
+  const textSources = [];
+  if (error.message) textSources.push(error.message);
+
+  if (error.payload) {
+    if (typeof error.payload === "string") {
+      textSources.push(error.payload);
+    } else if (typeof error.payload === "object") {
+      const detailCandidates = [
+        error.payload.detail,
+        error.payload.message,
+        error.payload.error,
+        error.payload.non_field_errors,
+      ];
+      detailCandidates.forEach((candidate) => {
+        if (!candidate) return;
+        if (Array.isArray(candidate)) {
+          candidate.forEach((item) => {
+            if (item) {
+              textSources.push(String(item));
+            }
+          });
+        } else {
+          textSources.push(String(candidate));
+        }
+      });
+    }
+  }
+
+  const combined = textSources
+    .map((text) => String(text).toLowerCase())
+    .join(" ");
+
+  if (
+    error.status === 403 ||
+    combined.includes("permission") ||
+    combined.includes("forbidden") ||
+    combined.includes("not allowed") ||
+    combined.includes("captain") ||
+    combined.includes("کاپیتان")
+  ) {
+    return {
+      message: "برای ثبت‌نام این تیم دسترسی ندارید. تنها کاپیتان تیم می‌تواند اقدام کند.",
+      key: "teamJoinUnauthorized",
+    };
+  }
+
+  if (
+    error.status === 409 ||
+    combined.includes("already") ||
+    combined.includes("exists") ||
+    combined.includes("duplicat") ||
+    combined.includes("قبلا") ||
+    combined.includes("ثبت شده")
+  ) {
+    return {
+      message: "این تیم قبلاً در تورنومنت ثبت شده است.",
+      key: "teamAlreadyRegistered",
+    };
+  }
+
+  if (
+    combined.includes("member") ||
+    combined.includes("size") ||
+    combined.includes("capacity") ||
+    combined.includes("حداکثر") ||
+    combined.includes("حداقل") ||
+    combined.includes("full") ||
+    combined.includes("limit")
+  ) {
+    return {
+      message: "تعداد اعضای تیم با شرایط تورنومنت مطابقت ندارد.",
+      key: "teamTooLarge",
+    };
+  }
+
+  if (error.status === 404 || combined.includes("not found")) {
+    return {
+      message: "تیم انتخاب‌شده روی سرور پیدا نشد. لطفاً دوباره تلاش کنید.",
+      key: "tournamentJoinFailed",
+    };
+  }
+
+  const fallbackMessage = textSources.length ? textSources[0] : defaultMessage;
+  return {
+    message: fallbackMessage,
+    key: "tournamentJoinFailed",
+  };
+}
+
 async function joinTeamTournament() {
   if (!state.tournamentId) return;
   if (!hasTeamSelectionValue(state.selectedTeamId)) {
@@ -780,31 +1576,61 @@ async function joinTeamTournament() {
     return;
   }
 
-  clearModalError("teamJoinError");
-
   const confirmBtn = document.getElementById("teamJoinConfirmButton");
   if (confirmBtn) confirmBtn.disabled = true;
 
   try {
-    const normalisedTeamId = (() => {
-      const raw = state.selectedTeamId;
-      if (raw === null || raw === undefined) return null;
+    const hydratedTeam = await hydrateTeamIfNeeded(state.selectedTeamId);
+    const validation = validateTeamEligibility(hydratedTeam);
 
-      const stringValue = String(raw).trim();
-      if (!stringValue) return null;
-
-      if (/^\d+$/.test(stringValue)) {
-        return Number.parseInt(stringValue, 10);
-      }
-
-      return stringValue;
-    })();
-
-    if (normalisedTeamId === null || Number.isNaN(normalisedTeamId)) {
-      throw new Error("شناسه تیم انتخاب شده نامعتبر است. لطفاً دوباره تلاش کنید.");
+    if (!validation.valid) {
+      notifyTeamValidationError(validation);
+      applyTeamValidationResult(validation);
+      return;
     }
 
-    const payload = { team: normalisedTeamId };
+    const selectedIdentifier = hasTeamSelectionValue(state.selectedTeamId)
+      ? state.selectedTeamId
+      : null;
+    const hydratedIdentifier = hasTeamSelectionValue(hydratedTeam?.identifier)
+      ? hydratedTeam.identifier
+      : null;
+    const fallbackIdentifier =
+      hydratedIdentifier !== null
+        ? resolveTeamJoinPayloadIdentifier(hydratedIdentifier)
+        : null;
+
+    let payloadIdentifier = resolveTeamJoinPayloadIdentifier(selectedIdentifier);
+
+    if (payloadIdentifier === null && fallbackIdentifier !== null) {
+      payloadIdentifier = fallbackIdentifier;
+    }
+
+    if (
+      payloadIdentifier !== null &&
+      selectedIdentifier !== null &&
+      fallbackIdentifier !== null &&
+      payloadIdentifier !== fallbackIdentifier
+    ) {
+      console.warn(
+        "Resolved team identifier differs from hydrated data",
+        selectedIdentifier,
+        hydratedIdentifier,
+        fallbackIdentifier,
+      );
+    }
+
+    if (payloadIdentifier === null) {
+      const error = new Error(
+        "شناسه تیم انتخاب‌شده نامعتبر است. لطفاً دوباره تلاش کنید.",
+      );
+      error.code = "INVALID_TEAM_ID";
+      throw error;
+    }
+
+    clearModalError("teamJoinError");
+
+    const payload = { team: payloadIdentifier };
     const url = `${API_BASE_URL}/api/tournaments/tournaments/${state.tournamentId}/join/`;
 
     await apiFetch(url, {
@@ -819,32 +1645,13 @@ async function joinTeamTournament() {
   } catch (error) {
     console.error("Failed to join team tournament:", error);
 
-    const msg = (error.message || "").toLowerCase();
-    let errorMessage = "امکان ثبت‌نام تیم وجود ندارد. لطفاً دوباره تلاش کنید.";
-
-    // 🎯 فیلتر انواع خطاهای محتمل از سمت سرور
-    if (
-      msg.includes("member") ||
-      msg.includes("limit") ||
-      msg.includes("full") ||
-      msg.includes("capacity") ||
-      msg.includes("maximum") ||
-      msg.includes("بیش از حد") ||
-      msg.includes("max")
-    ) {
-      errorMessage = "تعداد اعضای تیم بیشتر از حد مجاز برای این تورنومنت است.";
-      notify("teamTooLarge", errorMessage, "error");
-    } else if (msg.includes("already") || msg.includes("exists")) {
-      errorMessage = "این تیم قبلاً در تورنومنت ثبت‌نام کرده است.";
-      notify("teamAlreadyRegistered", errorMessage);
-    } else if (msg.includes("permission") || msg.includes("not allowed")) {
-      errorMessage = "شما مجاز به ثبت‌نام این تیم در تورنومنت نیستید.";
-      notify("teamJoinUnauthorized", errorMessage, "error");
-    } else {
-      notify("tournamentJoinFailed", errorMessage, "error");
+    if (error?.name === "AbortError") {
+      return;
     }
 
-    showModalError("teamJoinError", errorMessage);
+    const { message, key } = interpretTeamJoinError(error);
+    notify(key || "tournamentJoinFailed", message, "error");
+    showModalError("teamJoinError", message);
   } finally {
     if (confirmBtn) confirmBtn.disabled = false;
   }
@@ -884,9 +1691,13 @@ function setupTeamSearch() {
   const searchInput = document.getElementById("teamModalSearch");
   if (!searchInput) return;
 
+  const debouncedSearch = debounce((value) => {
+    fetchTeamOptions(value);
+  }, TEAM_SEARCH_DEBOUNCE_MS);
+
   searchInput.addEventListener("input", (event) => {
     const value = event.target.value?.trim() || "";
-    fetchTeamOptions(value);
+    debouncedSearch(value);
   });
 }
 
