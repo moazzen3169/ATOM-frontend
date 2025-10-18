@@ -1,93 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fa">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>chat page</title>
-        <link rel="stylesheet" href="/css/colors.css">
-        <link rel="stylesheet" href="/fonts/fonts.css">
-        <link rel="stylesheet" href="/css/chat.css">
+    <link rel="stylesheet" href="/css/colors.css">
+    <link rel="stylesheet" href="/fonts/fonts.css">
+    <link rel="stylesheet" href="/css/chat.css">
 </head>
-
-
-
 <body>
-
-
-
-  <div class="chat_container">
-
-    <!-- ساید بار برای نمایش لیست کاربران -->
-    <div class="chat_contacts_list">
-
-
-
-        <div class="chat_header">
-            <div class="user_info">
-                <div class="user_profile">
-                    <img src="/img/profile.jpg" alt="profile">
+    <div class="chat_container">
+        <!-- ساید بار برای نمایش لیست کاربران -->
+        <div class="chat_contacts_list">
+            <div class="chat_header">
+                <div class="user_info">
+                    <div class="user_profile">
+                        <img src="/img/profile.jpg" alt="profile">
+                    </div>
+                    <span>شما</span>
                 </div>
-                <span>You</span>
-            </div>
-            <div class="chat_menu">
-                <button class="menu_btn" id="new-conversation-btn">
-                    <img src="/img/icons/plus.svg" alt="New Conversation">
-                </button>
-            </div>
-        </div>
-        <div class="contact_list">
-            <!-- Dynamic contacts will be rendered here -->
-        </div>
-
-
-
-
-    </div>
-
-    <!-- برای نمایش چت کاربر انتخاب شده -->
-    <div class="chat_contact_messages">
-        <div class="contact_messages_header">
-            <div class="logo">
-                <img src="/img/logo.png" alt="logo">
-            </div>
-            <div class="selected_contact">
-                <div class="contact_content">
-                    <span>contact name</span>
+                <div class="chat_menu">
+                    <button class="menu_btn" id="new-conversation-btn" aria-label="ایجاد گفتگو جدید">
+                        <img src="/img/icons/plus.svg" alt="New Conversation">
+                    </button>
                 </div>
-                <div class="contact_profile">
-                    <img src="/img/icons/user-icon.svg" alt="profile">
-                </div>
-                <button class="back"><img src="/img/icons/back.svg" alt="back"></button>
+            </div>
+            <div class="contact_list">
+                <!-- Dynamic contacts will be rendered here -->
             </div>
         </div>
 
-        <div class="messages_container"></div>
+        <!-- برای نمایش چت کاربر انتخاب شده -->
+        <div class="chat_contact_messages">
+            <div class="contact_messages_header">
+                <div class="logo">
+                    <img src="/img/logo.png" alt="logo">
+                </div>
+                <div class="selected_contact">
+                    <div class="contact_content">
+                        <span>contact name</span>
+                    </div>
+                    <div class="contact_profile">
+                        <img src="/img/icons/user-icon.svg" alt="profile">
+                    </div>
+                    <button class="back" type="button" aria-label="بازگشت">
+                        <img src="/img/icons/back.svg" alt="back">
+                    </button>
+                </div>
+            </div>
 
-        <div class="data_sending_section" >
+            <div class="messages_container"></div>
 
+            <div class="data_sending_section">
                 <form id="data_sender_form" class="data_sender_form" method="post">
                     <label class="files" for="file_input"><img src="/img/icons/file-input.svg" alt="file"></label>
                     <input type="file" name="file" id="file_input" style="display: none;">
-                    
-                    <input class="chat_input" type="text" name="chat-input" id="chat-input" placeholder="متن خودرا وارد کنید..">
-                    <button type="submit" class="sender">
+                    <input class="chat_input" type="text" name="chat-input" id="chat-input" placeholder="متن خود را وارد کنید..">
+                    <button type="submit" class="sender" aria-label="ارسال پیام">
                         <img src="/img/icons/send.svg" alt="send">
                     </button>
                 </form>
+            </div>
         </div>
-
-
-
     </div>
 
-  </div>
-
-
-
+    <div id="new-conversation-modal" class="chat-modal" role="dialog" aria-modal="true" aria-labelledby="chat-modal-title">
+        <div class="chat-modal__content">
+            <button type="button" class="chat-modal__close" data-close-modal aria-label="بستن">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="chat-modal-title">شروع گفتگو جدید</h2>
+            <p class="chat-modal__description">نام کاربری فرد مورد نظر را وارد کرده و از نتایج نمایش داده شده انتخاب کنید.</p>
+            <form id="chat-new-conversation-form" class="chat-modal__form">
+                <label for="chat-user-search-input">نام کاربری</label>
+                <div class="chat-modal__field">
+                    <input type="text" id="chat-user-search-input" name="username" placeholder="مثال: atom_player" autocomplete="off" required>
+                    <button type="submit" id="chat-modal-submit">جستجو</button>
+                </div>
+            </form>
+            <p id="chat-modal-error" class="chat-modal__error hidden" role="alert"></p>
+            <div id="chat-user-search-results" class="chat-modal__results"></div>
+        </div>
+    </div>
 
     <script src="/js/chat/api.js" type="module"></script>
     <script src="/js/chat/chat.js" type="module"></script>
-    <script src="/js/chat//ui.js" type="module"></script>
-    <script src="/js/chat/websocket.js" type="module"></script>
 </body>
 </html>
