@@ -242,7 +242,7 @@
     flex-direction: column;
     gap: 20px;
     min-height: 100%;
-    max-height: 590px;
+    max-height: none;
   }
 
   .team_title {
@@ -286,12 +286,12 @@
   }
 
   .teams_container--list {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 16px;
     padding: 0;
     height: auto;
-    max-height: 437px;
+    max-height: none;
   }
 
   .teams_container--list:empty::after {
@@ -389,6 +389,124 @@
     min-height: 220px;
     box-shadow: 0 18px 40px var(--shadow-soft);
     transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+  }
+
+  .user_teams_section .teams_container--list {
+    align-items: stretch;
+  }
+
+  .user_teams_section .team_card {
+    background: var(--surface-tint-03);
+    border: 1px solid var(--surface-tint-06);
+    box-shadow: 0 18px 32px var(--shadow-soft);
+    padding: 20px;
+    align-items: center;
+    gap: 18px;
+    min-height: 0;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .user_teams_section .team_card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 22px 44px var(--shadow-strong);
+  }
+
+  .user_teams_section .team_card__header {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    border: none;
+    padding-bottom: 0;
+    text-align: center;
+  }
+
+  .user_teams_section .team_avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 999px;
+    border: 2px solid var(--surface-tint-08);
+    background: var(--surface-tint-04);
+    box-shadow: none;
+  }
+
+  .user_teams_section .team_card__title h3 {
+    font-size: 18px;
+  }
+
+  .user_teams_section .team_card__title p {
+    color: var(--gray-color);
+    font-weight: 500;
+  }
+
+  .user_teams_section .team_badge {
+    margin-right: 0;
+    background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+    color: var(--color-primary);
+    border-radius: 999px;
+    padding: 6px 14px;
+  }
+
+  .user_teams_section .team_card__body {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  .user_teams_section .team_card__summary {
+    width: 100%;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    background: var(--surface-tint-02);
+    border: 1px solid var(--surface-tint-06);
+    box-shadow: none;
+    padding: 14px;
+  }
+
+  .user_teams_section .team_card__summary .team_stat {
+    background: transparent;
+    border: none;
+    padding: 0;
+    text-align: center;
+  }
+
+  .user_teams_section .team_stat__value {
+    font-size: 15px;
+  }
+
+  .user_teams_section .team_members_preview {
+    justify-content: center;
+    gap: 8px 12px;
+    max-height: 140px;
+  }
+
+  .user_teams_section .team_member_avatar {
+    width: 44px;
+    height: 44px;
+    border-width: 1px;
+  }
+
+  .user_teams_section .team_member_name {
+    font-size: 11px;
+  }
+
+  .user_teams_section .team_description {
+    background: transparent;
+    border: none;
+    padding: 0;
+    text-align: center;
+    color: var(--gray-color);
+  }
+
+  .user_teams_section .team_card__footer {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .user_teams_section .team_card__actions {
+    justify-content: center;
   }
 
   .team_card:hover {
@@ -755,7 +873,14 @@
     text-align: center;
     min-width: 600px;
   }
-  
+
+  .user_tournaments_history_table .tournaments_history_loading {
+    text-align: center;
+    padding: 24px 0;
+    color: var(--gray-color);
+    font-size: 14px;
+  }
+
   .user_tournaments_history_table th,
   .user_tournaments_history_table td {
     padding: 10px;

@@ -1,4 +1,19 @@
-import { API_ENDPOINTS, createAuthApiClient, extractApiError } from "./services/api-client.js";
+import {
+  API_ENDPOINTS,
+  createAuthApiClient,
+  extractApiError,
+} from "./services/api-client.js";
+import {
+  configureTeamModule,
+  initializeDashboardTeamsSection,
+  setTeamUserContext,
+} from "./user-teams.js";
+import {
+  configureTournamentHistoryModule,
+  initializeDashboardTournamentHistorySection,
+  initializeTournamentHistoryUI,
+  setTournamentHistoryUserContext,
+} from "./user-tournaments_history.js";
 
 const apiClient = createAuthApiClient();
 const showError = window.showError ?? ((msg) => alert(msg));
@@ -6,9 +21,8 @@ const showSuccess = window.showSuccess ?? (() => {});
 const LOGIN_REDIRECT = "../register/login.html";
 
 let dashboardSnapshot = null;
-let activeModal = null;
-
-/* ------------------------- ابزار عمومی ------------------------- */
+let modulesConfigured = false;
+let dashboardUserId = null;
 
 function ensureAuthToken() {
   let token = apiClient.getAccessToken();
@@ -51,6 +65,211 @@ function applyHtmlContent(map = {}) {
   });
 }
 
+function formatDateForDisplay(value) {
+  if (!value) {
+    return value ?? "";
+  }
+  try {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      return date.toLocaleDateString("fa-IR");
+    }
+    return value;
+  } catch (error) {
+    return value;
+  }
+}
+
+function toggleButtonLoadingState(button, isLoading, loadingLabel = "در حال انجام...") {
+  if (!button) {
+    return;
+  }
+
+  if (isLoading) {
+    if (!button.dataset.originalLabel) {
+      button.dataset.originalLabel = button.textContent || "";
+    }
+    if (loadingLabel) {
+      button.textContent = loadingLabel;
+    }
+    button.disabled = true;
+    button.classList.add("is-loading");
+    return;
+  }
+
+  if (button.dataset.originalLabel) {
+    button.textContent = button.dataset.originalLabel;
+    delete button.dataset.originalLabel;
+  }
+  button.disabled = false;
+  button.classList.remove("is-loading");
+}
+
+function resolveUserIdValue(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  if (typeof value === "object") {
+    const candidates = [
+      value.id,
+      value.user_id,
+      value.pk,
+      value.uuid,
+      value.slug,
+    ];
+    for (const candidate of candidates) {
+      const resolved = resolveUserIdValue(candidate);
+      if (resolved) {
+        return resolved;
+      }
+    }
+    return null;
+  }
+  const stringValue = String(value).trim();
+  return stringValue ? stringValue : null;
+}
+
+function resolveUserUsername(user = {}) {
+  if (!user || typeof user !== "object") {
+    return "";
+  }
+  return (
+    user.username ||
+    user.user_name ||
+    user.name ||
+    user.full_name ||
+    ""
+  );
+}
+
+function resolveUserEmail(user = {}) {
+  if (!user || typeof user !== "object") {
+    return "";
+  }
+  return user.email || user.user_email || "";
+}
+
+function extractDashboardData(snapshot = {}) {
+  const candidates = [
+    snapshot.dashboardData,
+    snapshot.dashboard,
+    snapshot.data,
+    snapshot.payload,
+    snapshot.context,
+  ];
+  for (const candidate of candidates) {
+    if (candidate && typeof candidate === "object") {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+function extractDashboardUser(snapshot, dashboardData) {
+  const data = dashboardData || extractDashboardData(snapshot);
+  if (data && typeof data === "object") {
+    const candidates = [
+      data.user,
+      data.profile,
+      data.account,
+      data.owner,
+      data.current_user,
+      data.player,
+    ];
+    for (const candidate of candidates) {
+      if (candidate && typeof candidate === "object") {
+        return candidate;
+      }
+    }
+  }
+
+  const snapshotCandidates = [snapshot.user, snapshot.profile, snapshot.account];
+  for (const candidate of snapshotCandidates) {
+    if (candidate && typeof candidate === "object") {
+      return candidate;
+    }
+  }
+
+  return null;
+}
+
+function configureDashboardModules() {
+  if (modulesConfigured) {
+    return;
+  }
+
+  const authFetch = apiClient.fetch.bind(apiClient);
+
+  configureTeamModule({
+    fetchWithAuth: authFetch,
+    extractErrorMessage: extractApiError,
+    toggleButtonLoading: toggleButtonLoadingState,
+    showError,
+    showSuccess,
+    openModal: openModalById,
+    closeModal: (id) => toggleModal(document.getElementById(id), false),
+    formatDate: formatDateForDisplay,
+    onTeamsUpdated: async () => {
+      await loadDashboard();
+    },
+  });
+
+  modulesConfigured = true;
+}
+
+function handleDashboardDataSnapshot(snapshot) {
+  const dashboardData = extractDashboardData(snapshot);
+  if (!dashboardData) {
+    return;
+  }
+
+  const dashboardUser = extractDashboardUser(snapshot, dashboardData);
+  const resolvedUserId =
+    resolveUserIdValue(dashboardUser) ||
+    resolveUserIdValue(dashboardData.user_id) ||
+    resolveUserIdValue(dashboardData.owner_id);
+
+  if (resolvedUserId) {
+    dashboardUserId = resolvedUserId;
+  }
+
+  configureDashboardModules();
+
+  const authFetch = apiClient.fetch.bind(apiClient);
+
+  if (dashboardUserId) {
+    setTeamUserContext({
+      id: dashboardUserId,
+      username: resolveUserUsername(dashboardUser),
+      email: resolveUserEmail(dashboardUser),
+    });
+    setTournamentHistoryUserContext(dashboardUserId);
+  }
+
+  configureTournamentHistoryModule({
+    fetchWithAuth: authFetch,
+    extractErrorMessage: extractApiError,
+    showError,
+    enableServerFiltering: true,
+    userId: dashboardUserId,
+  });
+
+  initializeDashboardTeamsSection({ dashboardData }).catch((error) => {
+    console.error("خطا در راه‌اندازی بخش تیم‌ها:", error);
+  });
+
+  initializeDashboardTournamentHistorySection({
+    dashboardData,
+    userId: dashboardUserId,
+  })
+    .then(() => {
+      initializeTournamentHistoryUI();
+    })
+    .catch((error) => {
+      console.error("خطا در راه‌اندازی تاریخچه تورنومنت‌ها:", error);
+    });
+}
+
 function applySnapshot(snapshot = {}) {
   dashboardSnapshot = snapshot;
 
@@ -59,8 +278,14 @@ function applySnapshot(snapshot = {}) {
   applyHtmlContent(snapshot.html);
 
   const flash = snapshot.flash || {};
-  if (flash.error) showError(flash.error);
-  if (flash.success) showSuccess(flash.success);
+  if (flash.error) {
+    showError(flash.error);
+  }
+  if (flash.success) {
+    showSuccess(flash.success);
+  }
+
+  handleDashboardDataSnapshot(snapshot);
 }
 
 /* ------------------------- دریافت داده داشبورد ------------------------- */
