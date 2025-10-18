@@ -3,27 +3,295 @@ import * as ws from './websocket.js';
 import * as ui from './ui.js';
 
 // --- DOM ELEMENTS ---
-const chatInput = document.querySelector(".chat_input");
-const dataSenderForm = document.getElementById("data_sender_form");
-const fileInput = document.getElementById("file_input");
-const newConversationBtn = document.getElementById("new-conversation-btn");
-const backBtn = document.querySelector(".back");
+const chatInput = document.querySelector('.chat_input');
+const dataSenderForm = document.getElementById('data_sender_form');
+const fileInput = document.getElementById('file_input');
+const newConversationBtn = document.getElementById('new-conversation-btn');
+const backBtn = document.querySelector('.back');
+const modalElement = document.getElementById('new-conversation-modal');
+const modalForm = document.getElementById('chat-new-conversation-form');
+const modalCloseButtons = document.querySelectorAll('[data-close-modal]');
+const modalSearchInput = document.getElementById('chat-user-search-input');
+const modalResultsContainer = document.getElementById('chat-user-search-results');
+const modalErrorEl = document.getElementById('chat-modal-error');
+const modalSubmitBtn = document.getElementById('chat-modal-submit');
 
 // --- STATE ---
 let conversations = [];
 let selectedConversationId = null;
 let currentUser = null;
+let isSearchingUsers = false;
+
+function findConversationWithUser(userId) {
+    if (!userId) {
+        return null;
+    }
+
+    return (
+        conversations.find((conv) => {
+            if (!Array.isArray(conv?.participants)) {
+                return false;
+            }
+
+            const participantIds = conv.participants
+                .map((participant) => participant?.id)
+                .filter((id) => typeof id === 'number' || typeof id === 'string');
+
+            if (!participantIds.length) {
+                return false;
+            }
+
+            const targetId = String(userId);
+            const currentId = currentUser?.id != null ? String(currentUser.id) : null;
+
+            if (!currentId) {
+                return false;
+            }
+
+            return participantIds.includes(targetId) && participantIds.includes(currentId);
+        }) || null
+    );
+}
+
+// --- HELPERS ---
+
+function showNewConversationModal() {
+    if (!modalElement) {
+        return;
+    }
+    resetNewConversationModal();
+    modalElement.classList.add('open');
+    modalSearchInput?.focus();
+}
+
+function hideNewConversationModal() {
+    if (!modalElement) {
+        return;
+    }
+    modalElement.classList.remove('open');
+    setModalLoading(false);
+    resetNewConversationModal();
+}
+
+function resetNewConversationModal() {
+    if (modalSearchInput) {
+        modalSearchInput.value = '';
+    }
+    if (modalResultsContainer) {
+        modalResultsContainer.innerHTML = '';
+    }
+    if (modalErrorEl) {
+        modalErrorEl.textContent = '';
+        modalErrorEl.classList.add('hidden');
+    }
+}
+
+function setModalError(message) {
+    if (!modalErrorEl) {
+        return;
+    }
+    modalErrorEl.textContent = message || '';
+    modalErrorEl.classList.toggle('hidden', !message);
+}
+
+function setModalLoading(isLoading) {
+    isSearchingUsers = isLoading;
+    if (modalSubmitBtn) {
+        modalSubmitBtn.disabled = isLoading;
+    }
+    if (modalElement) {
+        modalElement.classList.toggle('loading', isLoading);
+    }
+}
+
+function renderUserSearchResults(users) {
+    if (!modalResultsContainer) {
+        return;
+    }
+
+    modalResultsContainer.innerHTML = '';
+
+    if (!users || users.length === 0) {
+        modalResultsContainer.innerHTML = '<p class="chat-modal-empty">کاربری یافت نشد.</p>';
+        return;
+    }
+
+    const list = document.createElement('ul');
+    list.classList.add('chat-modal-results');
+
+    users.forEach((user) => {
+        if (!user || user.id === currentUser?.id) {
+            return;
+        }
+        const item = document.createElement('li');
+        item.classList.add('chat-modal-result-item');
+        item.innerHTML = `
+            <button type="button" class="chat-modal-result" data-user-id="${user.id}">
+                <div class="chat-modal-result-avatar">
+                    <img src="${user.profile_picture || '/img/icons/profile.svg'}" alt="${user.username}">
+                </div>
+                <div class="chat-modal-result-body">
+                    <span class="chat-modal-result-name">${user.username}</span>
+                    ${user.full_name ? `<span class="chat-modal-result-meta">${user.full_name}</span>` : ''}
+                </div>
+            </button>
+        `;
+
+        item.querySelector('button').addEventListener('click', () => {
+            handleCreateConversation(user);
+        });
+
+        list.appendChild(item);
+    });
+
+    if (!list.children.length) {
+        modalResultsContainer.innerHTML = '<p class="chat-modal-empty">کاربری یافت نشد.</p>';
+        return;
+    }
+
+    modalResultsContainer.appendChild(list);
+}
+
+async function handleCreateConversation(user) {
+    if (!user || user.id === currentUser?.id) {
+        setModalError('امکان ایجاد گفتگو با حساب کاربری خودتان وجود ندارد.');
+        return;
+    }
+
+    try {
+        setModalError('');
+        const existingConversation = findConversationWithUser(user.id);
+
+        if (existingConversation) {
+            hideNewConversationModal();
+            openChat(existingConversation.id);
+            return;
+        }
+
+        setModalLoading(true);
+
+        const participantIds = Array.from(
+            new Set([
+                currentUser?.id,
+                user.id,
+            ]
+                .filter((id) => id !== undefined && id !== null))
+        );
+
+        if (participantIds.length < 2) {
+            setModalError('اطلاعات کاربران برای ایجاد گفتگو کافی نیست.');
+            return;
+        }
+
+        const response = await api.createConversation(participantIds);
+        const updatedConversations = await loadConversations();
+
+        const conversationToOpen = (() => {
+            if (response?.id) {
+                const matchById = updatedConversations?.find((conv) => conv.id === response.id);
+                if (matchById) {
+                    return matchById;
+                }
+            }
+            return (
+                updatedConversations?.find((conv) => {
+                    if (!Array.isArray(conv?.participants)) {
+                        return false;
+                    }
+                    const participantIdsInConv = conv.participants
+                        .map((participant) => participant?.id)
+                        .filter((id) => id !== undefined && id !== null)
+                        .map((id) => String(id));
+
+                    const requiredIds = participantIds.map((id) => String(id));
+                    return requiredIds.every((id) => participantIdsInConv.includes(id));
+                }) || null
+            );
+        })();
+
+        if (conversationToOpen) {
+            hideNewConversationModal();
+            openChat(conversationToOpen.id);
+            return;
+        }
+
+        if (response?.id) {
+            hideNewConversationModal();
+            openChat(response.id);
+            return;
+        }
+
+        setModalError('گفتگو ایجاد شد اما امکان نمایش آن وجود ندارد. لطفا صفحه را دوباره بارگذاری کنید.');
+    } catch (error) {
+        console.error('Could not create conversation:', error);
+        let fallbackConversation = null;
+
+        if (error?.status === 400 || error?.status === 409) {
+            await loadConversations();
+            fallbackConversation = findConversationWithUser(user.id);
+        }
+
+        if (fallbackConversation) {
+            hideNewConversationModal();
+            openChat(fallbackConversation.id);
+            return;
+        }
+
+        let errorMessage = 'ایجاد گفتگو با خطا مواجه شد. دوباره تلاش کنید.';
+
+        if (typeof error?.detail === 'string') {
+            errorMessage = error.detail;
+        } else if (Array.isArray(error?.detail)) {
+            errorMessage = error.detail.join(' | ');
+        } else if (typeof error?.message === 'string' && error.message.trim()) {
+            errorMessage = error.message;
+        }
+
+        setModalError(errorMessage);
+    } finally {
+        setModalLoading(false);
+    }
+}
+
+async function handleUserSearch(event) {
+    event.preventDefault();
+    if (isSearchingUsers) {
+        return;
+    }
+
+    const query = modalSearchInput?.value?.trim();
+    if (!query) {
+        setModalError('لطفا نام کاربری مورد نظر را وارد کنید.');
+        return;
+    }
+
+    try {
+        setModalError('');
+        setModalLoading(true);
+        const users = await api.searchUsers(query);
+        renderUserSearchResults(users);
+    } catch (error) {
+        console.error('Failed to search users:', error);
+        setModalError('جستجوی کاربر با خطا مواجه شد.');
+    } finally {
+        setModalLoading(false);
+    }
+}
 
 // --- HANDLERS ---
 
 export async function openChat(conversationId) {
+    if (!conversationId) {
+        return;
+    }
+
     selectedConversationId = conversationId;
 
-    document.querySelectorAll(".contact").forEach(el => {
-        el.classList.toggle("open", el.dataset.id == conversationId);
+    document.querySelectorAll('.contact').forEach((el) => {
+        el.classList.toggle('open', el.dataset.id == conversationId);
     });
 
-    const conversation = conversations.find(c => c.id === conversationId);
+    const conversation = conversations.find((c) => c.id === conversationId);
     if (conversation) {
         ui.updateSelectedContact(conversation, currentUser);
     }
@@ -40,64 +308,61 @@ export async function openChat(conversationId) {
 
 async function handleFormSubmit(e) {
     e.preventDefault();
-    const content = chatInput.value.trim();
-    const file = fileInput.files[0];
+
+    if (!selectedConversationId) {
+        alert('ابتدا یک گفتگو را انتخاب کنید.');
+        return;
+    }
+
+    const content = chatInput?.value?.trim() || '';
+    const file = fileInput?.files?.[0];
 
     if (!content && !file) {
-        return; // Nothing to send
+        return;
     }
 
-    if (content && !file) { // Text message only
-        try {
-            ws.sendWebSocketMessage({ type: 'chat_message', message: content });
-            chatInput.value = '';
-        } catch (error) {
-            console.error("Error sending text message via WebSocket:", error);
-        }
-    } else { // File and/or text message
-        try {
-            // 1. Send a text message first to get a message object
-            const messageText = content || `File: ${file.name}`;
-            const newMessage = await api.sendMessage(selectedConversationId, messageText);
-
-            // 2. If a file is attached, upload it
-            if (file) {
-                const formData = new FormData();
-                formData.append('file', file);
-                await api.uploadAttachment(selectedConversationId, newMessage.id, formData);
+    if (content && !file) {
+        const payload = { type: 'chat_message', message: content };
+        const sent = ws.sendWebSocketMessage(payload);
+        if (!sent) {
+            try {
+                await api.sendMessage(selectedConversationId, content);
+                await openChat(selectedConversationId);
+            } catch (error) {
+                console.error('Error sending text message via REST API:', error);
             }
-
-            // The websocket should ideally send a message update with the attachment.
-            // For now, we'll just clear the inputs.
-            chatInput.value = '';
-            fileInput.value = ''; // Reset file input
-
-            // Manually refresh messages to see the attachment link (temporary)
-            openChat(selectedConversationId);
-
-        } catch (error) {
-            console.error("Could not send message with attachment:", error);
         }
-    }
-}
-
-async function createConversationHandler() {
-    const participantId = prompt("Enter the user ID of the person you want to chat with:");
-    if (!participantId || isNaN(participantId)) {
-        alert("Invalid User ID.");
+        if (chatInput) {
+            chatInput.value = '';
+        }
         return;
     }
 
     try {
-        await api.createConversation([parseInt(participantId)]);
-        loadConversations(); // Refresh the list
+        const messageText = content || (file ? `File: ${file.name}` : '');
+        const newMessage = await api.sendMessage(selectedConversationId, messageText);
+
+        if (file) {
+            const formData = new FormData();
+            formData.append('file', file);
+            await api.uploadAttachment(selectedConversationId, newMessage.id, formData);
+        }
+
+        if (chatInput) {
+            chatInput.value = '';
+        }
+        if (fileInput) {
+            fileInput.value = '';
+        }
+
+        openChat(selectedConversationId);
     } catch (error) {
-        console.error("Could not create conversation:", error);
+        console.error('Could not send message with attachment:', error);
     }
 }
 
 export async function deleteConversationHandler(conversationId) {
-    if (!confirm("Are you sure you want to delete this conversation?")) {
+    if (!confirm('آیا از حذف این گفتگو مطمئن هستید؟')) {
         return;
     }
 
@@ -107,28 +372,28 @@ export async function deleteConversationHandler(conversationId) {
             ui.clearChatWindow();
             selectedConversationId = null;
         }
-        loadConversations(); // Refresh the list
+        await loadConversations();
     } catch (error) {
         console.error(`Could not delete conversation ${conversationId}:`, error);
     }
 }
 
 function editMessageHandler(messageId) {
-    const newContent = prompt("Enter the new message content:");
+    const newContent = prompt('متن جدید پیام را وارد کنید:');
     if (newContent) {
         ws.sendWebSocketMessage({
             type: 'edit_message',
             message_id: messageId,
-            content: newContent
+            content: newContent,
         });
     }
 }
 
 function deleteMessageHandler(messageId) {
-    if (confirm("Are you sure you want to delete this message?")) {
+    if (confirm('آیا از حذف این پیام مطمئن هستید؟')) {
         ws.sendWebSocketMessage({
             type: 'delete_message',
-            message_id: messageId
+            message_id: messageId,
         });
     }
 }
@@ -137,74 +402,98 @@ async function loadConversations() {
     try {
         conversations = await api.getConversations();
         ui.renderConversations(conversations, currentUser);
+        return conversations;
     } catch (error) {
-        console.error("Could not load conversations:", error);
+        console.error('Could not load conversations:', error);
+        return [];
     }
 }
-
 
 // --- INITIALIZATION ---
 
 async function initialize() {
-    if (!api.AUTH_TOKEN) {
-        console.error("Authentication token not found. Please log in.");
-        // Optionally, redirect to login page
-        // window.location.href = '/login.html';
+    const token = api.getAuthToken();
+    if (!token) {
+        console.error('Authentication token not found. Please log in.');
         return;
     }
 
     try {
         currentUser = await api.getCurrentUser();
+        ui.setCurrentUser(currentUser);
         ui.registerMessageHandlers(editMessageHandler, deleteMessageHandler);
-        loadConversations();
+        await loadConversations();
     } catch (error) {
-        console.error("Failed to initialize chat application:", error);
+        console.error('Failed to initialize chat application:', error);
+        return;
     }
 
-    // Event Listeners
     if (newConversationBtn) {
-        newConversationBtn.addEventListener("click", createConversationHandler);
+        newConversationBtn.addEventListener('click', showNewConversationModal);
     }
 
-    dataSenderForm.addEventListener("submit", handleFormSubmit);
-
-    let typingTimeout;
-    chatInput.addEventListener("input", () => {
-        // Clear the previous timeout
-        clearTimeout(typingTimeout);
-
-        // Send is_typing: true
-        ws.sendWebSocketMessage({
-            type: 'typing',
-            is_typing: true
-        });
-
-        // Set a timeout to send is_typing: false after 1 second of inactivity
-        typingTimeout = setTimeout(() => {
-            ws.sendWebSocketMessage({
-                type: 'typing',
-                is_typing: false
-            });
-        }, 1000);
+    modalCloseButtons.forEach((btn) => {
+        btn.addEventListener('click', hideNewConversationModal);
     });
 
-    chatInput.addEventListener("keypress", (e) => {
-        if (e.key === "Enter" && !e.shiftKey) { // Send on Enter, but not Shift+Enter
-            e.preventDefault();
-            dataSenderForm.dispatchEvent(new Event('submit', {cancelable: true}));
-            clearTimeout(typingTimeout); // also clear timeout on send
-             ws.sendWebSocketMessage({
-                type: 'typing',
-                is_typing: false
-            });
+    if (modalElement) {
+        modalElement.addEventListener('click', (event) => {
+            if (event.target === modalElement) {
+                hideNewConversationModal();
+            }
+        });
+    }
+
+    if (modalForm) {
+        modalForm.addEventListener('submit', handleUserSearch);
+    }
+
+    document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && modalElement?.classList.contains('open')) {
+            hideNewConversationModal();
         }
     });
 
+    if (dataSenderForm) {
+        dataSenderForm.addEventListener('submit', handleFormSubmit);
+    }
+
+    let typingTimeout;
+    if (chatInput) {
+        chatInput.addEventListener('input', () => {
+            clearTimeout(typingTimeout);
+
+            ws.sendWebSocketMessage({
+                type: 'typing',
+                is_typing: true,
+            });
+
+            typingTimeout = setTimeout(() => {
+                ws.sendWebSocketMessage({
+                    type: 'typing',
+                    is_typing: false,
+                });
+            }, 1000);
+        });
+
+        chatInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                dataSenderForm?.dispatchEvent(new Event('submit', { cancelable: true }));
+                clearTimeout(typingTimeout);
+                ws.sendWebSocketMessage({
+                    type: 'typing',
+                    is_typing: false,
+                });
+            }
+        });
+    }
+
     if (backBtn) {
-        backBtn.addEventListener("click", () => {
+        backBtn.addEventListener('click', () => {
             ui.toggleMobileChatView(false);
         });
     }
 }
 
-document.addEventListener("DOMContentLoaded", initialize);
+document.addEventListener('DOMContentLoaded', initialize);
