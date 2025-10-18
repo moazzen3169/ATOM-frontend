@@ -7,6 +7,34 @@ import {
 const DEFAULT_AVATAR_SRC = "../img/profile.jpg";
 const DEFAULT_TEAM_AVATAR = "../img/logo.png";
 
+const MEMBERSHIP_PENDING_KEYWORDS = [
+  "pending",
+  "invite",
+  "invited",
+  "request",
+  "requested",
+  "waiting",
+  "awaiting",
+  "approv",
+  "declin",
+  "reject",
+  "cancel",
+];
+
+const MEMBERSHIP_ACCEPTED_KEYWORDS = [
+  "accept",
+  "approved",
+  "active",
+  "confirm",
+  "member",
+  "joined",
+  "captain",
+  "owner",
+  "leader",
+];
+
+const TEAM_LIST_LIMIT = 6;
+
 const helperDefaults = {
   fetchWithAuth: async () => {
     throw new Error("fetchWithAuth helper is not configured.");
@@ -54,12 +82,13 @@ export function setTeamUserContext({ id, username, email } = {}) {
 export async function initializeDashboardTeamsSection({
   dashboardData = {},
 } = {}) {
-  const initialTeams = extractTeamArray(dashboardData.teams);
+  const initialTeams = filterUserTeams(extractTeamArray(dashboardData.teams));
   if (initialTeams.length) {
+    teamsState = initialTeams.slice();
     renderTeams(initialTeams);
   }
 
-  await refreshTeamsData({ includeInvitations: true });
+  await refreshTeamsData();
 
   return {
     teams: teamsState.slice(),
@@ -71,7 +100,7 @@ export function setupTeamsPageInteractions() {
   attachTeamEventHandlers();
 }
 
-async function refreshTeamsData({ includeInvitations = false } = {}) {
+async function refreshTeamsData({ includeInvitations } = {}) {
   showTeamsLoadingState();
 
   if (activeTeamsRequest) {
@@ -81,9 +110,14 @@ async function refreshTeamsData({ includeInvitations = false } = {}) {
   const controller = new AbortController();
   activeTeamsRequest = controller;
 
+  const shouldIncludeInvitations =
+    typeof includeInvitations === "boolean"
+      ? includeInvitations
+      : shouldFetchInvitations();
+
   try {
     const fetchPromises = [requestTeams({ signal: controller.signal })];
-    if (includeInvitations) {
+    if (shouldIncludeInvitations) {
       fetchPromises.push(requestInvitations({ signal: controller.signal }));
     }
 
@@ -92,7 +126,7 @@ async function refreshTeamsData({ includeInvitations = false } = {}) {
     );
 
     if (teamsResult.status === "fulfilled") {
-      teamsState = teamsResult.value.items;
+      teamsState = filterUserTeams(teamsResult.value.items);
       renderTeams(teamsState);
     } else if (teamsResult.status === "rejected") {
       console.error("Failed to load teams:", teamsResult.reason);
@@ -100,7 +134,7 @@ async function refreshTeamsData({ includeInvitations = false } = {}) {
       renderTeams([]);
     }
 
-    if (includeInvitations && invitationsResult) {
+    if (shouldIncludeInvitations && invitationsResult) {
       if (invitationsResult.status === "fulfilled") {
         invitationsState = invitationsResult.value;
         renderInvitations(invitationsState);
@@ -176,19 +210,34 @@ function renderTeams(teams) {
     container.innerHTML =
       '<div class="empty_state">هیچ تیمی برای نمایش وجود ندارد.</div>';
     updateTeamsCounter(0);
+    updateTeamsOverflowHint(0, 0);
     return;
   }
 
-  const cards = teams.map(createTeamCardMarkup).join("");
-  container.innerHTML = cards;
+  const isListLayout = container.classList.contains("teams_container--list");
+  const visibleTeams =
+    isListLayout && teams.length > TEAM_LIST_LIMIT
+      ? teams.slice(0, TEAM_LIST_LIMIT)
+      : teams;
+
+  const markup = isListLayout
+    ? visibleTeams.map(createTeamListItemMarkup).join("")
+    : visibleTeams.map(createTeamCardMarkup).join("");
+
+  container.innerHTML = markup;
   updateTeamsCounter(teams.length);
+  if (isListLayout) {
+    updateTeamsOverflowHint(teams.length, visibleTeams.length);
+  } else {
+    updateTeamsOverflowHint(0, 0);
+  }
 }
 
 function createTeamCardMarkup(team = {}) {
   const teamId = team.id ?? team.team_id ?? team.slug ?? "";
   const name = team.name ?? team.title ?? "بدون نام";
   const captain = extractCaptainName(team);
-  const members = Array.isArray(team.members) ? team.members : [];
+  const members = getConfirmedTeamMembers(team);
   const memberCount = team.members_count ?? team.member_count ?? members.length;
   const joinedAt = team.created_at ?? team.joined_at ?? "";
   const teamPicture = resolveImageUrl(
@@ -245,12 +294,12 @@ function createMembersPreviewMarkup(members) {
   return members
     .slice(0, 6)
     .map((member) => {
-      const username = member.username ?? member.name ?? "کاربر";
+      const username = resolveMemberUsername(member) || "کاربر";
       const avatar = resolveImageUrl(
         member.profile_picture ?? member.avatar,
         DEFAULT_AVATAR_SRC,
       );
-      const isCaptain = Boolean(member.is_captain || member.role === "captain");
+      const isCaptain = isMemberCaptain(member);
       return `
         <div class="team_member${isCaptain ? " team_member--captain" : ""}">
           <div class="team_member_avatar">
@@ -263,6 +312,75 @@ function createMembersPreviewMarkup(members) {
     .join("");
 }
 
+function createTeamListItemMarkup(team = {}) {
+  const teamId = team.id ?? team.team_id ?? team.slug ?? "";
+  const name = team.name ?? team.title ?? "بدون نام";
+  const teamPicture = resolveImageUrl(
+    team.team_picture ?? team.picture ?? team.logo,
+    DEFAULT_TEAM_AVATAR,
+  );
+  const members = getConfirmedTeamMembers(team);
+  const memberCount = team.members_count ?? team.member_count ?? members.length;
+  const rosterMarkup = createTeamRosterMarkup(members, team);
+
+  return `
+    <article class="team_list_item" data-team-id="${escapeHtml(teamId)}">
+      <div class="team_list_item__overview">
+        <div class="team_list_item__identity">
+          <div class="team_list_item__logo">
+            <img src="${escapeHtml(teamPicture)}" alt="${escapeHtml(name)}" loading="lazy">
+          </div>
+          <div class="team_list_item__info">
+            <h3 class="team_list_item__name">${escapeHtml(name)}</h3>
+            <span class="team_list_item__members_count">${escapeHtml(
+              memberCount ?? "0",
+            )} عضو</span>
+          </div>
+        </div>
+      </div>
+      <div class="team_roster" role="list">
+        ${rosterMarkup}
+      </div>
+    </article>
+  `;
+}
+
+function createTeamRosterMarkup(members, team) {
+  if (!Array.isArray(members) || members.length === 0) {
+    return '<p class="team_roster_empty">عضوی برای نمایش وجود ندارد.</p>';
+  }
+
+  return members
+    .map((member) => ({
+      member,
+      isCaptain: isMemberCaptain(member) || isMemberTeamCaptain(member, team),
+    }))
+    .sort((a, b) => Number(b.isCaptain) - Number(a.isCaptain))
+    .map(({ member, isCaptain }) => createTeamRosterMemberMarkup(member, isCaptain))
+    .join("");
+}
+
+function createTeamRosterMemberMarkup(member, isCaptain) {
+  const username = resolveMemberUsername(member) || "کاربر";
+  const avatar = resolveImageUrl(
+    member.profile_picture ?? member.avatar,
+    DEFAULT_AVATAR_SRC,
+  );
+  const roleLabel = isCaptain ? "کاپیتان" : "عضو تیم";
+
+  return `
+    <div class="team_roster_member${isCaptain ? " team_roster_member--captain" : ""}" role="listitem">
+      <div class="team_roster_member_avatar">
+        <img src="${escapeHtml(avatar)}" alt="${escapeHtml(username)}" loading="lazy">
+      </div>
+      <div class="team_roster_member_info">
+        <span class="team_roster_member_name">${escapeHtml(username)}</span>
+        <span class="team_roster_member_role">${escapeHtml(roleLabel)}</span>
+      </div>
+    </div>
+  `;
+}
+
 function extractCaptainName(team) {
   if (team.captain && typeof team.captain === "object") {
     return (
@@ -273,9 +391,7 @@ function extractCaptainName(team) {
     );
   }
   if (Array.isArray(team.members)) {
-    const captain = team.members.find(
-      (member) => member.is_captain || member.role === "captain",
-    );
+    const captain = team.members.find((member) => isMemberCaptain(member));
     if (captain) {
       return (
         captain.username || captain.name || captain.full_name || "نامشخص"
@@ -292,11 +408,24 @@ function updateTeamsCounter(count) {
   counter.textContent = label;
 }
 
+function updateTeamsOverflowHint(totalCount, displayedCount) {
+  const hint = document.getElementById("teams_overflow_hint");
+  if (!hint) return;
+
+  if (totalCount > displayedCount && displayedCount > 0) {
+    const remaining = totalCount - displayedCount;
+    hint.innerHTML = `برای مشاهده ${escapeHtml(remaining)} تیم دیگر به <a href="teams.html">صفحه مدیریت تیم‌ها</a> مراجعه کنید.`;
+  } else {
+    hint.textContent = "";
+  }
+}
+
 function showTeamsLoadingState() {
   const container = document.getElementById("teams_container");
   if (!container) return;
   container.innerHTML =
     '<div class="empty_state">در حال بارگذاری اطلاعات تیم...</div>';
+  updateTeamsOverflowHint(0, 0);
 }
 
 async function requestTeams({ signal } = {}) {
@@ -367,6 +496,514 @@ function extractArrayCandidate(source, keys) {
   }
 
   return [];
+}
+
+function filterUserTeams(teams = []) {
+  if (!Array.isArray(teams)) {
+    return [];
+  }
+
+  const identity = buildUserIdentity();
+  return teams.filter((team) => isTeamRelevantForUser(team, identity));
+}
+
+function buildUserIdentity() {
+  const normalizedId =
+    userContext.id !== null && userContext.id !== undefined
+      ? String(userContext.id)
+      : null;
+  const normalizedUsername =
+    typeof userContext.username === "string"
+      ? userContext.username.trim().toLowerCase()
+      : null;
+  const normalizedEmail =
+    typeof userContext.email === "string"
+      ? userContext.email.trim().toLowerCase()
+      : null;
+
+  return {
+    id: normalizedId && normalizedId.length ? normalizedId : null,
+    username:
+      normalizedUsername && normalizedUsername.length ? normalizedUsername : null,
+    email: normalizedEmail && normalizedEmail.length ? normalizedEmail : null,
+  };
+}
+
+function isTeamRelevantForUser(team, identity) {
+  if (!team || typeof team !== "object") {
+    return false;
+  }
+
+  if (isUserTeamCaptain(team, identity)) {
+    return true;
+  }
+
+  if (isUserTeamConfirmedMember(team, identity)) {
+    return true;
+  }
+
+  return false;
+}
+
+function isUserTeamCaptain(team, identity) {
+  if (!team || typeof team !== "object") return false;
+
+  if (hasTruthyFlag(team, ["is_captain", "is_owner", "is_leader"])) {
+    return true;
+  }
+
+  if (stringIndicatesCaptain(team.role) || stringIndicatesCaptain(team.user_role)) {
+    return true;
+  }
+
+  const idMatches = (value) =>
+    identity.id && value !== undefined && String(value) === identity.id;
+
+  if (idMatches(team.captain_id) || idMatches(team.owner_id)) {
+    return true;
+  }
+
+  if (
+    (team.captain && matchesUserRecord(team.captain, identity)) ||
+    (team.owner && matchesUserRecord(team.owner, identity)) ||
+    (team.created_by && matchesUserRecord(team.created_by, identity))
+  ) {
+    return true;
+  }
+
+  const members = getConfirmedTeamMembers(team);
+  return members.some(
+    (member) => matchesUserRecord(member, identity) && isMemberCaptain(member),
+  );
+}
+
+function isUserTeamConfirmedMember(team, identity) {
+  if (!team || typeof team !== "object") return false;
+
+  const membershipStatus = resolveMembershipStatus(team);
+  if (membershipStatus && isPendingStatus(membershipStatus)) {
+    return false;
+  }
+
+  if (
+    hasTruthyFlag(team, [
+      "is_member",
+      "has_joined",
+      "joined",
+      "approved",
+      "accepted",
+      "confirmed",
+      "is_confirmed",
+      "active",
+      "is_active",
+    ])
+  ) {
+    return true;
+  }
+
+  const memberships = collectMembershipCandidates(team);
+  for (const membership of memberships) {
+    if (matchesUserRecord(membership, identity)) {
+      if (isMembershipEntryConfirmed(membership)) {
+        return true;
+      }
+      return false;
+    }
+    if (membership.user && matchesUserRecord(membership.user, identity)) {
+      return isMembershipEntryConfirmed(membership);
+    }
+    if (membership.member && matchesUserRecord(membership.member, identity)) {
+      return isMembershipEntryConfirmed(membership);
+    }
+  }
+
+  const members = getConfirmedTeamMembers(team);
+  return members.some((member) => matchesUserRecord(member, identity));
+}
+
+function collectMembershipCandidates(team) {
+  const candidates = [];
+
+  const directCandidates = [
+    team.membership,
+    team.user_membership,
+    team.current_membership,
+    team.my_membership,
+    team.member,
+  ];
+  for (const candidate of directCandidates) {
+    if (candidate && typeof candidate === "object") {
+      candidates.push(candidate);
+    }
+  }
+
+  if (Array.isArray(team.memberships)) {
+    candidates.push(...team.memberships.filter((item) => item && typeof item === "object"));
+  }
+
+  if (Array.isArray(team.members)) {
+    candidates.push(...team.members.filter((item) => item && typeof item === "object"));
+  }
+
+  return candidates;
+}
+
+function matchesUserRecord(record, identity) {
+  if (!record || typeof record !== "object") {
+    return false;
+  }
+
+  if (identity.id) {
+    const idKeys = [
+      "id",
+      "user_id",
+      "member_id",
+      "membership_id",
+      "profile_id",
+      "account_id",
+      "owner_id",
+    ];
+    for (const key of idKeys) {
+      const value = record[key];
+      if (value !== undefined && String(value) === identity.id) {
+        return true;
+      }
+    }
+  }
+
+  if (
+    (record.user && matchesUserRecord(record.user, identity)) ||
+    (record.member && matchesUserRecord(record.member, identity)) ||
+    (record.profile && matchesUserRecord(record.profile, identity)) ||
+    (record.account && matchesUserRecord(record.account, identity))
+  ) {
+    return true;
+  }
+
+  const username = resolveMemberUsername(record);
+  if (identity.username && username && username === identity.username) {
+    return true;
+  }
+
+  const email = resolveMemberEmail(record);
+  if (identity.email && email && email === identity.email) {
+    return true;
+  }
+
+  return false;
+}
+
+function resolveMembershipStatus(source) {
+  const status = extractStatusCandidate(source);
+  return typeof status === "string" ? status : "";
+}
+
+function extractStatusCandidate(candidate) {
+  if (!candidate) {
+    return "";
+  }
+
+  if (typeof candidate === "string") {
+    return candidate;
+  }
+
+  if (typeof candidate !== "object") {
+    return "";
+  }
+
+  const statusKeys = [
+    "membership_status",
+    "status",
+    "state",
+    "join_status",
+    "request_status",
+    "approval_status",
+    "invitation_status",
+    "member_status",
+    "participation_status",
+  ];
+
+  for (const key of statusKeys) {
+    const value = candidate[key];
+    if (typeof value === "string" && value) {
+      return value;
+    }
+  }
+
+  const nestedKeys = [
+    "membership",
+    "user_membership",
+    "invite",
+    "invitation",
+    "request",
+  ];
+
+  for (const nestedKey of nestedKeys) {
+    const nested = candidate[nestedKey];
+    const nestedStatus = extractStatusCandidate(nested);
+    if (nestedStatus) {
+      return nestedStatus;
+    }
+  }
+
+  return "";
+}
+
+function isPendingStatus(status) {
+  if (!status) return false;
+  const normalized = status.toString().toLowerCase();
+  return MEMBERSHIP_PENDING_KEYWORDS.some((keyword) =>
+    normalized.includes(keyword),
+  );
+}
+
+function isAcceptedStatus(status) {
+  if (!status) return false;
+  const normalized = status.toString().toLowerCase();
+  return MEMBERSHIP_ACCEPTED_KEYWORDS.some((keyword) =>
+    normalized.includes(keyword),
+  );
+}
+
+function isMembershipEntryConfirmed(entry) {
+  if (!entry || typeof entry !== "object") {
+    return false;
+  }
+
+  if (
+    hasTruthyFlag(entry, [
+      "is_confirmed",
+      "confirmed",
+      "approved",
+      "accepted",
+      "active",
+      "is_active",
+      "has_joined",
+      "joined",
+    ])
+  ) {
+    return true;
+  }
+
+  const status = resolveMembershipStatus(entry);
+  if (!status) {
+    return true;
+  }
+
+  if (isPendingStatus(status)) {
+    return false;
+  }
+
+  if (isAcceptedStatus(status)) {
+    return true;
+  }
+
+  return !isPendingStatus(status);
+}
+
+function hasTruthyFlag(source, keys) {
+  return keys.some((key) => {
+    const value = source?.[key];
+    if (typeof value === "string") {
+      const normalized = value.trim().toLowerCase();
+      if (!normalized) return false;
+      return ["true", "1", "yes", "active", "accepted", "approved"].includes(
+        normalized,
+      );
+    }
+    return value === true || value === 1;
+  });
+}
+
+function stringIndicatesCaptain(value) {
+  if (!value) return false;
+  const normalized = value.toString().toLowerCase();
+  return (
+    normalized.includes("captain") ||
+    normalized.includes("owner") ||
+    normalized.includes("leader")
+  );
+}
+
+function getConfirmedTeamMembers(team) {
+  const members = [];
+  if (Array.isArray(team.members)) {
+    members.push(...team.members.filter((item) => item && typeof item === "object"));
+  }
+  if (team.captain && typeof team.captain === "object") {
+    members.push(team.captain);
+  }
+
+  const uniqueMembers = dedupeMembers(members);
+  return uniqueMembers.filter((member) => isMembershipEntryConfirmed(member));
+}
+
+function dedupeMembers(members) {
+  const results = [];
+  const seenKeys = new Set();
+  const seenRefs = new Set();
+
+  for (const member of members) {
+    if (!member || typeof member !== "object") continue;
+
+    const key = getMemberKey(member);
+    if (key) {
+      if (seenKeys.has(key)) {
+        continue;
+      }
+      seenKeys.add(key);
+    } else if (seenRefs.has(member)) {
+      continue;
+    } else {
+      seenRefs.add(member);
+    }
+
+    results.push(member);
+  }
+
+  return results;
+}
+
+function getMemberKey(member) {
+  const id = resolveMemberId(member);
+  if (id) {
+    return `id:${id}`;
+  }
+  const username = resolveMemberUsername(member);
+  if (username) {
+    return `username:${username}`;
+  }
+  const email = resolveMemberEmail(member);
+  if (email) {
+    return `email:${email}`;
+  }
+  return null;
+}
+
+function resolveMemberId(member) {
+  const idKeys = [
+    "id",
+    "user_id",
+    "member_id",
+    "membership_id",
+    "profile_id",
+    "account_id",
+  ];
+
+  for (const key of idKeys) {
+    const value = member?.[key];
+    if (value !== undefined && value !== null) {
+      const normalized = String(value).trim();
+      if (normalized) {
+        return normalized;
+      }
+    }
+  }
+
+  if (member?.user) {
+    return resolveMemberId(member.user);
+  }
+
+  if (member?.member) {
+    return resolveMemberId(member.member);
+  }
+
+  if (member?.profile) {
+    return resolveMemberId(member.profile);
+  }
+
+  return null;
+}
+
+function resolveMemberUsername(member) {
+  const usernameKeys = [
+    "username",
+    "user_name",
+    "name",
+    "nickname",
+    "nick",
+  ];
+
+  for (const key of usernameKeys) {
+    const value = member?.[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim().toLowerCase();
+    }
+  }
+
+  if (member?.user) {
+    return resolveMemberUsername(member.user);
+  }
+
+  if (member?.member) {
+    return resolveMemberUsername(member.member);
+  }
+
+  if (member?.profile) {
+    return resolveMemberUsername(member.profile);
+  }
+
+  return null;
+}
+
+function resolveMemberEmail(member) {
+  const emailKeys = ["email", "user_email"];
+  for (const key of emailKeys) {
+    const value = member?.[key];
+    if (typeof value === "string" && value.trim()) {
+      return value.trim().toLowerCase();
+    }
+  }
+
+  if (member?.user) {
+    return resolveMemberEmail(member.user);
+  }
+
+  if (member?.member) {
+    return resolveMemberEmail(member.member);
+  }
+
+  if (member?.profile) {
+    return resolveMemberEmail(member.profile);
+  }
+
+  return null;
+}
+
+function isMemberCaptain(member) {
+  if (!member || typeof member !== "object") return false;
+
+  if (hasTruthyFlag(member, ["is_captain", "is_owner", "captain", "leader"])) {
+    return true;
+  }
+
+  return stringIndicatesCaptain(member.role || member.position || member.title);
+}
+
+function isMemberTeamCaptain(member, team) {
+  if (!team || typeof team !== "object") return false;
+
+  if (team.captain && matchesUserRecord(member, buildIdentityFromMember(team.captain))) {
+    return true;
+  }
+
+  return false;
+}
+
+function buildIdentityFromMember(member) {
+  return {
+    id: resolveMemberId(member),
+    username: resolveMemberUsername(member),
+    email: resolveMemberEmail(member),
+  };
+}
+
+function shouldFetchInvitations() {
+  return Boolean(
+    document.getElementById("incoming_invitations_container") ||
+      document.getElementById("team_join_requests_container") ||
+      document.getElementById("outgoing_invitations_container"),
+  );
 }
 
 function renderInvitations({ incoming = [], outgoing = [], requests = [] }) {
