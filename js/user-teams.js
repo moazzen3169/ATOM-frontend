@@ -1113,6 +1113,12 @@ function renderTeamsList() {
     const isTeamsPage = window.location.pathname.includes('teams');
     const displayLimit = isTeamsPage ? relevantTeams.length : 3;
 
+    if (isTeamsPage) {
+        container.classList.remove('teams_container--list');
+    } else {
+        container.classList.add('teams_container--list');
+    }
+
     container.innerHTML = '';
     updateTeamsCounter(relevantTeams.length);
 
@@ -1130,8 +1136,9 @@ function renderTeamsList() {
 
     const fragment = document.createDocumentFragment();
     const teamsToDisplay = isTeamsPage ? relevantTeams : relevantTeams.slice(0, displayLimit);
+    const createItem = isTeamsPage ? createTeamCard : createDashboardTeamItem;
     teamsToDisplay.forEach(team => {
-        fragment.appendChild(createTeamCard(team));
+        fragment.appendChild(createItem(team));
     });
 
     container.appendChild(fragment);
@@ -1139,6 +1146,62 @@ function renderTeamsList() {
     if (!isTeamsPage && overflowHint && relevantTeams.length > displayLimit) {
         overflowHint.innerHTML = 'برای مشاهده تمام تیم‌ها به <a href="teams.html">صفحه تیم‌ها</a> بروید.';
     }
+}
+
+function createDashboardTeamItem(team) {
+    const item = document.createElement('article');
+    item.className = 'team_list_item';
+
+    if (team && typeof team.id !== 'undefined') {
+        item.dataset.teamId = team.id;
+    }
+
+    const numberFormatter = new Intl.NumberFormat('fa-IR');
+    const membersMeta = getTeamMembersMeta(team || {});
+    const totalMembers = typeof membersMeta.count === 'number' ? membersMeta.count : 0;
+    const memberLabels = (membersMeta.members || [])
+        .map((member) => member && member.label ? escapeHTML(member.label) : '')
+        .filter(Boolean);
+
+    const estimatedTotalMembers = totalMembers > 0 ? totalMembers : memberLabels.length;
+    const MAX_PREVIEW_NAMES = 4;
+    const previewNames = memberLabels.slice(0, MAX_PREVIEW_NAMES);
+    const remainingMembers = Math.max(estimatedTotalMembers - previewNames.length, 0);
+
+    const membersTextParts = [];
+    if (previewNames.length) {
+        membersTextParts.push(previewNames.join('، '));
+    }
+    if (remainingMembers > 0) {
+        membersTextParts.push(`و ${numberFormatter.format(remainingMembers)} عضو دیگر`);
+    }
+
+    const membersText = membersTextParts.join(' ');
+    const captainName = escapeHTML(getCaptainName(team || {}) || '-');
+    const teamName = escapeHTML(team?.name || 'بدون نام');
+    const memberCountLabel = estimatedTotalMembers > 0
+        ? `${numberFormatter.format(estimatedTotalMembers)} عضو`
+        : 'بدون عضو';
+
+    item.innerHTML = `
+        <div class="team_list_item__header">
+            <span class="team_list_item__name">${teamName}</span>
+            <span class="team_list_item__members_count">${memberCountLabel}</span>
+        </div>
+        <div class="team_list_item__body">
+            <div class="team_list_item__row">
+                <span class="team_list_item__label">کاپیتان:</span>
+                <span class="team_list_item__value">${captainName}</span>
+            </div>
+            ${membersText ? `
+            <div class="team_list_item__row">
+                <span class="team_list_item__label">اعضا:</span>
+                <span class="team_list_item__value">${membersText}</span>
+            </div>` : ''}
+        </div>
+    `;
+
+    return item;
 }
 
 function createTeamCard(team) {
