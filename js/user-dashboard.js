@@ -164,6 +164,123 @@ const modalState = {
   activeModal: null,
 };
 
+function extractArrayFromDashboard(source, keys = []) {
+  if (!source || typeof source !== "object") {
+    return undefined;
+  }
+
+  for (const key of keys) {
+    if (!Object.prototype.hasOwnProperty.call(source, key)) {
+      continue;
+    }
+    const value = source[key];
+    if (Array.isArray(value)) {
+      return value;
+    }
+    if (value && typeof value === "object") {
+      const nestedKeys = ["results", "data", "items", "entries", "list", "received"];
+      for (const nestedKey of nestedKeys) {
+        const nestedValue = value[nestedKey];
+        if (Array.isArray(nestedValue)) {
+          return nestedValue;
+        }
+      }
+    }
+  }
+
+  return undefined;
+}
+
+function hasMoreInPayload(payload, itemsLength) {
+  if (!payload || typeof payload !== "object") {
+    return false;
+  }
+
+  if (typeof payload.next === "string" && payload.next.trim()) {
+    return true;
+  }
+
+  const pagination = payload.pagination;
+  if (pagination && typeof pagination === "object") {
+    if (pagination.has_next === true) {
+      return true;
+    }
+    if (typeof pagination.next === "string" && pagination.next.trim()) {
+      return true;
+    }
+    if (typeof pagination.total_pages === "number") {
+      const current = Number(pagination.current_page ?? pagination.page ?? 1);
+      if (Number.isFinite(current) && current < pagination.total_pages) {
+        return true;
+      }
+    }
+  }
+
+  const totalCandidates = [payload.count, payload.total, payload.total_count];
+  for (const total of totalCandidates) {
+    if (typeof total === "number" && total > itemsLength) {
+      return true;
+    }
+  }
+
+  if (typeof payload.total_pages === "number") {
+    const currentPage = Number(payload.current_page ?? payload.page ?? 1);
+    if (Number.isFinite(currentPage) && currentPage < payload.total_pages) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+function shouldRefreshTeamsData(payload) {
+  if (!payload) {
+    return true;
+  }
+
+  if (Array.isArray(payload)) {
+    return false;
+  }
+
+  const candidates = [payload.results, payload.teams];
+  const items = candidates.find((value) => Array.isArray(value));
+
+  if (!Array.isArray(items)) {
+    return true;
+  }
+
+  return hasMoreInPayload(payload, items.length);
+}
+
+function shouldRefreshTournamentHistoryData(payload) {
+  if (!payload) {
+    return true;
+  }
+
+  if (Array.isArray(payload)) {
+    return false;
+  }
+
+  const candidates = [payload.results, payload.matches, payload.tournament_history];
+  const items = candidates.find((value) => Array.isArray(value));
+
+  if (!Array.isArray(items)) {
+    return true;
+  }
+
+  return hasMoreInPayload(payload, items.length);
+}
+
+function getDashboardIncomingInvitations(data) {
+  const invitations = extractArrayFromDashboard(data, [
+    "team_invitations",
+    "incoming_invitations",
+    "invitations",
+    "received_invitations",
+  ]);
+  return Array.isArray(invitations) ? invitations : undefined;
+}
+
 function resolveModalElement(idOrElement) {
   if (!idOrElement) return null;
   if (typeof idOrElement === "string") {
@@ -604,64 +721,22 @@ async function loadDashboardData() {
     const hasTeamsContainer = Boolean(document.getElementById("teams_container"));
     const hasTournamentTable = Boolean(document.getElementById("tournaments_history_body"));
 
-    const initialTeams = toTeamArray(dashboardData?.teams);
-    const initialTournamentHistory = normalizeTournamentHistory(
-      dashboardData?.tournament_history
-    );
+    const teamsPayload = dashboardData?.teams;
+    const tournamentPayload = dashboardData?.tournament_history;
 
-    const initialTournamentsCount = getTournamentMatchesCount(initialTournamentHistory);
+    const initialTeams = toTeamArray(teamsPayload);
+    let teamsData = initialTeams;
+
+    const initialTournamentHistory = normalizeTournamentHistory(tournamentPayload);
+    let tournamentsData = initialTournamentHistory;
+    let tournamentsCount = getTournamentMatchesCount(tournamentsData);
 
     if (dashboardData?.user_profile) {
       displayUserProfile(
         dashboardData.user_profile,
-        initialTeams.length,
-        initialTournamentsCount
+        teamsData.length,
+        tournamentsCount
       );
-    }
-
-    if (hasTeamsContainer) {
-      displayUserTeams(initialTeams);
-    }
-
-    if (hasTournamentTable) {
-      displayTournamentHistory(initialTournamentHistory);
-    }
-
-    applyDashboardTeamData(dashboardData);
-    await ensureIncomingInvitationsLoaded();
-
-    const userId = dashboardData?.user_profile?.id ?? state.currentUserId;
-    const teamsPromise = fetchUserTeams();
-    const tournamentsPromise = userId
-      ? fetchUserTournamentHistory(userId)
-      : Promise.resolve(initialTournamentHistory);
-
-    const [teamsResult, tournamentsResult] = await Promise.allSettled([
-      teamsPromise,
-      tournamentsPromise,
-    ]);
-
-    let teamsData = initialTeams;
-    if (teamsResult.status === "fulfilled") {
-      teamsData = toTeamArray(teamsResult.value);
-    } else {
-      console.error("خطا در دریافت تیم‌ها:", teamsResult.reason);
-      showError("خطا در دریافت اطلاعات تیم‌ها. لطفاً دوباره تلاش کنید.");
-    }
-
-    let tournamentsData = initialTournamentHistory;
-    if (tournamentsResult.status === "fulfilled") {
-      tournamentsData = normalizeTournamentHistory(tournamentsResult.value);
-    } else if (userId) {
-      console.error("خطا در دریافت تاریخچه تورنومنت‌ها:", tournamentsResult.reason);
-      showError("خطا در دریافت تاریخچه تورنومنت‌ها. لطفاً دوباره تلاش کنید.");
-    }
-
-    const teamsCount = teamsData.length;
-    const tournamentsCount = getTournamentMatchesCount(tournamentsData);
-
-    if (dashboardData?.user_profile) {
-      displayUserProfile(dashboardData.user_profile, teamsCount, tournamentsCount);
     }
 
     if (hasTeamsContainer) {
@@ -670,6 +745,70 @@ async function loadDashboardData() {
 
     if (hasTournamentTable) {
       displayTournamentHistory(tournamentsData);
+    }
+
+    applyDashboardTeamData(dashboardData);
+    const invitationsFallback = getDashboardIncomingInvitations(dashboardData);
+    await ensureIncomingInvitationsLoaded({ fallbackData: invitationsFallback });
+
+    const userId = dashboardData?.user_profile?.id ?? state.currentUserId;
+    const needsTeamsRefresh = shouldRefreshTeamsData(teamsPayload);
+    const needsTournamentRefresh = shouldRefreshTournamentHistoryData(
+      tournamentPayload
+    );
+
+    if (!needsTeamsRefresh && !needsTournamentRefresh) {
+      return;
+    }
+
+    const teamsPromise = needsTeamsRefresh
+      ? fetchUserTeams()
+      : Promise.resolve(teamsData);
+
+    const tournamentsPromise =
+      needsTournamentRefresh && userId
+        ? fetchUserTournamentHistory(userId)
+        : Promise.resolve(tournamentsData);
+
+    const [teamsResult, tournamentsResult] = await Promise.allSettled([
+      teamsPromise,
+      tournamentsPromise,
+    ]);
+
+    if (needsTeamsRefresh) {
+      if (teamsResult.status === "fulfilled") {
+        teamsData = toTeamArray(teamsResult.value);
+        if (hasTeamsContainer) {
+          displayUserTeams(teamsData);
+        }
+      } else {
+        console.error("خطا در دریافت تیم‌ها:", teamsResult.reason);
+        showError("خطا در دریافت اطلاعات تیم‌ها. لطفاً دوباره تلاش کنید.");
+      }
+    }
+
+    if (needsTournamentRefresh && userId) {
+      if (tournamentsResult.status === "fulfilled") {
+        tournamentsData = normalizeTournamentHistory(tournamentsResult.value);
+        if (hasTournamentTable) {
+          displayTournamentHistory(tournamentsData);
+        }
+      } else {
+        console.error(
+          "خطا در دریافت تاریخچه تورنومنت‌ها:",
+          tournamentsResult.reason
+        );
+        showError("خطا در دریافت تاریخچه تورنومنت‌ها. لطفاً دوباره تلاش کنید.");
+      }
+    } else if (needsTournamentRefresh && !userId) {
+      console.warn("شناسه کاربر برای بروزرسانی تاریخچه تورنومنت در دسترس نیست.");
+    }
+
+    const teamsCount = teamsData.length;
+    tournamentsCount = getTournamentMatchesCount(tournamentsData);
+
+    if (dashboardData?.user_profile) {
+      displayUserProfile(dashboardData.user_profile, teamsCount, tournamentsCount);
     }
   } catch (error) {
     console.error("خطا در لود کردن اطلاعات داشبورد:", error);
