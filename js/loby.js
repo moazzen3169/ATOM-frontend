@@ -1109,7 +1109,9 @@ function resolveTeamId(team) {
   if (!team || typeof team !== "object") return null;
 
   const candidates = [
+    team.identifier,
     team.id,
+    team.pk,
     team.team_id,
     team.teamId,
     team.team,
@@ -1118,13 +1120,9 @@ function resolveTeamId(team) {
   ];
 
   for (const value of candidates) {
-    if (value === undefined || value === null) {
-      continue;
-    }
-
-    const stringValue = String(value).trim();
-    if (stringValue) {
-      return stringValue;
+    const resolved = normaliseId(value);
+    if (resolved) {
+      return resolved;
     }
   }
 
