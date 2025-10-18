@@ -1,18 +1,18 @@
 import { API_ENDPOINTS, createAuthApiClient, extractApiError } from "./services/api-client.js";
 
 const apiClient = createAuthApiClient();
-const showError = window.showError ?? ((message) => alert(message));
+const showError = window.showError ?? ((msg) => alert(msg));
 const showSuccess = window.showSuccess ?? (() => {});
 const LOGIN_REDIRECT = "../register/login.html";
 
-let activeModal = null;
 let dashboardSnapshot = null;
+let activeModal = null;
+
+/* ------------------------- ابزار عمومی ------------------------- */
 
 function ensureAuthToken() {
   let token = apiClient.getAccessToken();
-  if (token) {
-    return token;
-  }
+  if (token) return token;
 
   if (typeof localStorage !== "undefined") {
     const stored = localStorage.getItem("token") || localStorage.getItem("access_token");
@@ -28,153 +28,245 @@ function ensureAuthToken() {
 }
 
 function selectElement(selector) {
-  if (!selector) {
-    return null;
-  }
+  if (!selector) return null;
   try {
     return document.querySelector(selector);
-  } catch (error) {
-    console.warn("Invalid selector provided by API:", selector, error);
+  } catch (err) {
+    console.warn("Invalid selector:", selector, err);
     return null;
   }
 }
 
-function applyTextContent(textMap = {}) {
-  Object.entries(textMap).forEach(([selector, value]) => {
-    const element = selectElement(selector);
-    if (element) {
-      element.textContent = value ?? "";
-    }
+function applyTextContent(map = {}) {
+  Object.entries(map).forEach(([selector, value]) => {
+    const el = selectElement(selector);
+    if (el) el.textContent = value ?? "";
   });
 }
 
-function applyHtmlContent(htmlMap = {}) {
-  Object.entries(htmlMap).forEach(([selector, value]) => {
-    const element = selectElement(selector);
-    if (element) {
-      element.innerHTML = value ?? "";
-    }
-  });
-}
-
-function applyValues(valuesMap = {}) {
-  Object.entries(valuesMap).forEach(([selector, value]) => {
-    const element = selectElement(selector);
-    if (!element) {
-      return;
-    }
-    if ("value" in element) {
-      element.value = value ?? "";
-      return;
-    }
-    element.textContent = value ?? "";
-  });
-}
-
-function applyAttributes(definitions = []) {
-  definitions.forEach((definition) => {
-    if (!definition || !definition.selector || !definition.name) {
-      return;
-    }
-    const element = selectElement(definition.selector);
-    if (!element) {
-      return;
-    }
-    if (definition.remove) {
-      element.removeAttribute(definition.name);
-      return;
-    }
-    element.setAttribute(definition.name, definition.value ?? "");
-  });
-}
-
-function applyClassChanges(entries = []) {
-  entries.forEach((entry) => {
-    if (!entry || !entry.selector) {
-      return;
-    }
-    const element = selectElement(entry.selector);
-    if (!element) {
-      return;
-    }
-    (entry.remove || []).forEach((className) => {
-      element.classList.remove(className);
-    });
-    (entry.add || []).forEach((className) => {
-      element.classList.add(className);
-    });
-  });
-}
-
-function persistStorage(storageMap = {}) {
-  if (typeof localStorage === "undefined") {
-    return;
-  }
-  Object.entries(storageMap).forEach(([key, value]) => {
-    if (value === null || value === undefined) {
-      localStorage.removeItem(key);
-      return;
-    }
-    localStorage.setItem(key, value);
+function applyHtmlContent(map = {}) {
+  Object.entries(map).forEach(([selector, value]) => {
+    const el = selectElement(selector);
+    if (el) el.innerHTML = value ?? "";
   });
 }
 
 function applySnapshot(snapshot = {}) {
   dashboardSnapshot = snapshot;
 
-  if (snapshot.title) {
-    document.title = snapshot.title;
-  }
-
+  if (snapshot.title) document.title = snapshot.title;
   applyTextContent(snapshot.text);
   applyHtmlContent(snapshot.html);
-  applyValues(snapshot.values);
-  applyAttributes(snapshot.attributes);
-  applyClassChanges(snapshot.classes);
-  persistStorage(snapshot.storage);
-
-  if (snapshot.focus?.selector) {
-    selectElement(snapshot.focus.selector)?.focus?.();
-  }
 
   const flash = snapshot.flash || {};
-  if (flash.error) {
-    showError(flash.error);
-  }
-  if (flash.success) {
-    showSuccess(flash.success);
-  }
+  if (flash.error) showError(flash.error);
+  if (flash.success) showSuccess(flash.success);
 }
+
+/* ------------------------- دریافت داده داشبورد ------------------------- */
 
 async function requestDashboardSnapshot() {
-  const response = await apiClient.fetch(API_ENDPOINTS.users.dashboard, {
-    method: "GET",
-  });
+  const response = await apiClient.fetch(API_ENDPOINTS.users.dashboard, { method: "GET" });
 
   if (!response.ok) {
-    const message = await extractApiError(response);
-    const error = new Error(message || "خطا در دریافت اطلاعات داشبورد.");
-    error.status = response.status;
-    throw error;
+    const msg = await extractApiError(response);
+    const err = new Error(msg || "خطا در دریافت اطلاعات داشبورد.");
+    err.status = response.status;
+    throw err;
   }
 
-  const text = await response.text();
-  if (!text) {
-    return {};
+  const data = await response.json();
+
+  // فراخوانی اعضای تیم‌ها برای تکمیل داده‌ها
+  const enrichedTeams = await enrichTeamsWithMembers(data.teams || []);
+  data.teams = enrichedTeams;
+
+  return buildDashboardSnapshot(data);
+}
+
+/* ------------------------- دریافت اعضای تیم ------------------------- */
+async function enrichTeamsWithMembers(teams) {
+  const results = [];
+
+  for (const team of teams) {
+    try {
+      const res = await apiClient.fetch(API_ENDPOINTS.users.team(team.id), { method: "GET" });
+      if (res.ok) {
+        const json = await res.json();
+        team.members = json.members || [];
+      } else {
+        team.members = [];
+      }
+    } catch (e) {
+      console.warn("Failed to fetch team members:", e);
+      team.members = [];
+    }
+    results.push(team);
   }
+
+  return results;
+}
+
+/* ------------------------- ساخت Snapshot ------------------------- */
+
+function buildDashboardSnapshot(data) {
+  if (!data || typeof data !== "object") return {};
+
+  const user = data.user_profile || {};
+  const teams = data.teams || [];
+  const tournaments = data.tournament_history || [];
+
+  const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ") || "-";
+  const joinDate = user.verification?.created_at
+    ? new Date(user.verification.created_at).toLocaleDateString("fa-IR")
+    : "-";
+
+  // تاریخچه تورنومنت‌ها
+  const tournamentsHTML = tournaments
+    .map((item) => {
+      const t = item.tournament || {};
+      const game = t.game?.name || "-";
+      const date = new Date(t.start_date).toLocaleDateString("fa-IR");
+      return `
+        <tr>
+          <td>${user.score || 0}</td>
+          <td>${item.rank ?? "-"}</td>
+          <td>${date}</td>
+          <td>${item.team?.name || "-"}</td>
+          <td>${game}</td>
+          <td>${t.name}</td>
+        </tr>`;
+    })
+    .join("");
+
+  // تیم‌ها با عکس اعضا
+  const teamsHTML = teams
+    .map((team) => {
+      const members = team.members || [];
+      const membersHTML = members
+        .map((m) => {
+          const isCaptain = m.is_captain || false;
+          return `
+            <img src="${m.profile_picture || "../img/profile.jpg"}"
+                 alt="${m.username}"
+                 title="${m.username}${isCaptain ? " (کاپیتان)" : ""}"
+                 class="team_member_avatar ${isCaptain ? "team_member_avatar--captain" : ""}">
+          `;
+        })
+        .join("");
+
+      return `
+        <div class="team_card">
+          <div class="team_card_header">
+            <img src="${team.team_picture || "../img/default-team.jpg"}" 
+                 alt="${team.name}" 
+                 class="team_img">
+            <h3 class="team_name">${team.name}</h3>
+          </div>
+          <div class="team_members">
+            ${membersHTML || "<p class='no_members'>اعضایی وجود ندارد</p>"}
+          </div>
+        </div>`;
+    })
+    .join("");
+
+  return {
+    title: "داشبورد کاربری",
+    text: {
+      "#user_name": user.username || "-",
+      "#user_email_primary": user.email || "-",
+      "#user_username": user.username || "-",
+      "#user_full_name": fullName,
+      "#user_email_detail": user.email || "-",
+      "#user_phone": user.phone_number || "-",
+      "#user_rank": user.rank?.toString() || "-",
+      "#user_score": user.score?.toString() || "0",
+      "#teams_counter": `${teams.length} تیم`,
+      "#user_tournaments_played": tournaments.length.toString(),
+      "#user_add_date": joinDate,
+    },
+    html: {
+      "#user_avatar": `<img src="${user.profile_picture}" alt="avatar" class="profile_avatar">`,
+      "#teams_container": teamsHTML,
+      "#tournaments_history_body": tournamentsHTML,
+    },
+    flash: {
+      success: "اطلاعات با موفقیت بارگذاری شد.",
+    },
+    data,
+  };
+}
+
+/* ------------------------- مودال ویرایش ------------------------- */
+
+function toggleModal(element, open) {
+  if (!element) return;
+  const isOpen = Boolean(open);
+  element.classList.toggle("modal--open", isOpen);
+  element.setAttribute("aria-hidden", isOpen ? "false" : "true");
+  document.body.classList.toggle("modal_open", isOpen);
+  activeModal = isOpen ? element : null;
+}
+
+function closeActiveModal() {
+  if (activeModal) toggleModal(activeModal, false);
+}
+
+function registerModalInteractions() {
+  document.addEventListener("click", (e) => {
+    const trigger = e.target.closest("[data-close-modal]");
+    if (trigger) {
+      e.preventDefault();
+      closeActiveModal();
+    }
+    if (activeModal && e.target === activeModal) closeActiveModal();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeActiveModal();
+  });
+}
+
+function openModalById(id) {
+  const modal = document.getElementById(id);
+  toggleModal(modal, true);
+}
+
+/* ------------------------- ویرایش پروفایل ------------------------- */
+
+async function handleProfileSubmit(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const submitButton = form.querySelector('[type="submit"]');
+  if (submitButton) submitButton.disabled = true;
+
+  const endpoint = API_ENDPOINTS.auth.profile;
+  const method = "POST";
+  const formData = new FormData(form);
 
   try {
-    return JSON.parse(text);
-  } catch (error) {
-    throw new Error("پاسخ نامعتبر از سرور دریافت شد.");
+    const response = await apiClient.fetch(endpoint, { method, body: formData });
+    if (!response.ok) {
+      const msg = await extractApiError(response);
+      throw new Error(msg || "خطا در ذخیره اطلاعات.");
+    }
+
+    await loadDashboard();
+    closeActiveModal();
+    showSuccess("تغییرات با موفقیت ذخیره شدند.");
+  } catch (err) {
+    console.error("Profile update failed:", err);
+    showError(err.message || "خطا در ذخیره اطلاعات.");
+  } finally {
+    if (submitButton) submitButton.disabled = false;
   }
 }
+
+/* ------------------------- بارگذاری داشبورد ------------------------- */
 
 async function loadDashboard() {
   const token = ensureAuthToken();
-  if (!token) {
-    return;
-  }
+  if (!token) return;
 
   try {
     const snapshot = await requestDashboardSnapshot();
@@ -189,99 +281,7 @@ async function loadDashboard() {
   }
 }
 
-function toggleModal(element, open) {
-  if (!element) {
-    return;
-  }
-  const isOpen = Boolean(open);
-  element.classList.toggle("modal--open", isOpen);
-  element.setAttribute("aria-hidden", isOpen ? "false" : "true");
-  if (document.body) {
-    document.body.classList.toggle("modal_open", isOpen);
-  }
-  activeModal = isOpen ? element : null;
-}
-
-function openModalById(id) {
-  toggleModal(document.getElementById(id), true);
-}
-
-function closeActiveModal() {
-  if (activeModal) {
-    toggleModal(activeModal, false);
-  }
-}
-
-function registerModalInteractions() {
-  document.addEventListener("click", (event) => {
-    const trigger = event.target.closest("[data-close-modal]");
-    if (trigger) {
-      event.preventDefault();
-      closeActiveModal();
-      return;
-    }
-
-    if (activeModal && event.target === activeModal) {
-      closeActiveModal();
-    }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.key === "Escape") {
-      closeActiveModal();
-    }
-  });
-}
-
-async function handleProfileSubmit(event) {
-  event.preventDefault();
-  const form = event.currentTarget;
-  const submitButton = form.querySelector('[type="submit"]');
-
-  if (submitButton) {
-    submitButton.disabled = true;
-  }
-
-  const endpoint = dashboardSnapshot?.profileUpdateEndpoint || API_ENDPOINTS.auth.profile;
-  const method = dashboardSnapshot?.profileUpdateMethod || "PATCH";
-  const formData = new FormData(form);
-
-  try {
-    const response = await apiClient.fetch(endpoint, {
-      method,
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const message = await extractApiError(response);
-      throw new Error(message || "خطا در بروزرسانی پروفایل.");
-    }
-
-    const text = await response.text();
-    if (text) {
-      try {
-        const snapshot = JSON.parse(text);
-        applySnapshot(snapshot);
-      } catch (error) {
-        await loadDashboard();
-      }
-    } else {
-      await loadDashboard();
-    }
-
-    closeActiveModal();
-    if (!dashboardSnapshot?.flash?.success) {
-      showSuccess("پروفایل با موفقیت به‌روزرسانی شد.");
-    }
-  } catch (error) {
-    console.error("Profile update failed:", error);
-    showError(error.message || "خطا در بروزرسانی پروفایل.");
-  } finally {
-    if (submitButton) {
-      submitButton.disabled = false;
-    }
-  }
-}
+/* ------------------------- رویدادهای اولیه ------------------------- */
 
 document.addEventListener("DOMContentLoaded", () => {
   registerModalInteractions();
@@ -289,8 +289,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const editButton = document.querySelector('[data-action="edit-user"]');
   if (editButton) {
-    editButton.addEventListener("click", (event) => {
-      event.preventDefault();
+    editButton.addEventListener("click", (e) => {
+      e.preventDefault();
+      const user = dashboardSnapshot?.data?.user_profile || {};
+      document.getElementById("edit_user_username").value = user.username || "";
+      document.getElementById("edit_user_first_name").value = user.first_name || "";
+      document.getElementById("edit_user_last_name").value = user.last_name || "";
+      document.getElementById("edit_user_email").value = user.email || "";
+      document.getElementById("edit_user_phone").value = user.phone_number || "";
+      document.getElementById("edit_user_avatar_preview").src =
+        user.profile_picture || "../img/profile.jpg";
       openModalById("edit_user_modal");
     });
   }

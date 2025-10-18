@@ -16,12 +16,6 @@ function hidePreloader() {
   }, 50);
 }
 
-// ---------------------- گرفتن داده‌ها از API ----------------------
-async function fetchTournaments() {
-  const response = await fetch("api/tournaments");
-  if (!response.ok) throw new Error("خطا در دریافت داده‌ها");
-  return await response.json();
-}
 
 // ---------------------- صبر برای لود شدن همه تصاویر ----------------------
 function waitForImages() {
