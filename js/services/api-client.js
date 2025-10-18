@@ -54,6 +54,13 @@ export const API_ENDPOINTS = {
     teamMatchHistory: (teamId) => `/api/users/teams/${encodeURIComponent(String(teamId))}/match-history/`,
     search: "/api/users/users/",
   },
+  tournaments: {
+    list: "/api/tournaments/tournaments/",
+    detail: (tournamentId) =>
+      `/api/tournaments/tournaments/${encodeURIComponent(String(tournamentId))}/`,
+    join: (tournamentId) =>
+      `/api/tournaments/tournaments/${encodeURIComponent(String(tournamentId))}/join/`,
+  },
 };
 
 export function buildApiUrl(path = "") {
