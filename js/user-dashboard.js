@@ -2,20 +2,14 @@ import { API_ENDPOINTS, createAuthApiClient, extractApiError } from "./services/
 import {
   configureTeamModule,
   setTeamUserContext,
-  toTeamArray,
-  displayUserTeams,
-  applyDashboardTeamData,
   ensureIncomingInvitationsLoaded,
-  fetchUserTeams,
+  initializeDashboardTeamsSection,
   setupTeamsPageInteractions,
 } from "./user-teams.js";
 import {
   configureTournamentHistoryModule,
   initializeTournamentHistoryUI,
-  normalizeTournamentHistory,
-  fetchUserTournamentHistory,
-  displayTournamentHistory,
-  getTournamentMatchesCount,
+  initializeDashboardTournamentHistorySection,
 } from "./user-tournaments_history.js";
 
 const apiClient = createAuthApiClient();
@@ -601,75 +595,39 @@ async function loadDashboardData() {
     setPageTitle();
 
     const dashboardData = await fetchDashboardData();
-    const hasTeamsContainer = Boolean(document.getElementById("teams_container"));
-    const hasTournamentTable = Boolean(document.getElementById("tournaments_history_body"));
 
-    const initialTeams = toTeamArray(dashboardData?.teams);
-    const initialTournamentHistory = normalizeTournamentHistory(
-      dashboardData?.tournament_history
-    );
+    const teamsResult = await initializeDashboardTeamsSection({
+      dashboardData,
+    });
 
-    const initialTournamentsCount = getTournamentMatchesCount(initialTournamentHistory);
+    const userId = dashboardData?.user_profile?.id ?? state.currentUserId;
+    const tournamentsResult =
+      await initializeDashboardTournamentHistorySection({
+        dashboardData,
+        userId,
+      });
+
+    const teamsCount = Number.isFinite(Number(teamsResult?.count))
+      ? Number(teamsResult.count)
+      : Array.isArray(teamsResult?.teams)
+      ? teamsResult.teams.length
+      : 0;
+
+    const tournamentsCount = Number.isFinite(Number(tournamentsResult?.count))
+      ? Number(tournamentsResult.count)
+      : Array.isArray(tournamentsResult?.matches)
+      ? tournamentsResult.matches.length
+      : 0;
+
+    state.cachedTeamsCount = teamsCount;
+    state.cachedTournamentsCount = tournamentsCount;
 
     if (dashboardData?.user_profile) {
       displayUserProfile(
         dashboardData.user_profile,
-        initialTeams.length,
-        initialTournamentsCount
+        teamsCount,
+        tournamentsCount
       );
-    }
-
-    if (hasTeamsContainer) {
-      displayUserTeams(initialTeams);
-    }
-
-    if (hasTournamentTable) {
-      displayTournamentHistory(initialTournamentHistory);
-    }
-
-    applyDashboardTeamData(dashboardData);
-    await ensureIncomingInvitationsLoaded();
-
-    const userId = dashboardData?.user_profile?.id ?? state.currentUserId;
-    const teamsPromise = fetchUserTeams();
-    const tournamentsPromise = userId
-      ? fetchUserTournamentHistory(userId)
-      : Promise.resolve(initialTournamentHistory);
-
-    const [teamsResult, tournamentsResult] = await Promise.allSettled([
-      teamsPromise,
-      tournamentsPromise,
-    ]);
-
-    let teamsData = initialTeams;
-    if (teamsResult.status === "fulfilled") {
-      teamsData = toTeamArray(teamsResult.value);
-    } else {
-      console.error("خطا در دریافت تیم‌ها:", teamsResult.reason);
-      showError("خطا در دریافت اطلاعات تیم‌ها. لطفاً دوباره تلاش کنید.");
-    }
-
-    let tournamentsData = initialTournamentHistory;
-    if (tournamentsResult.status === "fulfilled") {
-      tournamentsData = normalizeTournamentHistory(tournamentsResult.value);
-    } else if (userId) {
-      console.error("خطا در دریافت تاریخچه تورنومنت‌ها:", tournamentsResult.reason);
-      showError("خطا در دریافت تاریخچه تورنومنت‌ها. لطفاً دوباره تلاش کنید.");
-    }
-
-    const teamsCount = teamsData.length;
-    const tournamentsCount = getTournamentMatchesCount(tournamentsData);
-
-    if (dashboardData?.user_profile) {
-      displayUserProfile(dashboardData.user_profile, teamsCount, tournamentsCount);
-    }
-
-    if (hasTeamsContainer) {
-      displayUserTeams(teamsData);
-    }
-
-    if (hasTournamentTable) {
-      displayTournamentHistory(tournamentsData);
     }
   } catch (error) {
     console.error("خطا در لود کردن اطلاعات داشبورد:", error);
@@ -868,6 +826,7 @@ configureTeamModule({
 configureTournamentHistoryModule({
   fetchWithAuth,
   extractErrorMessage: resolveErrorMessage,
+  showError,
 });
 
 document.addEventListener("DOMContentLoaded", () => {
