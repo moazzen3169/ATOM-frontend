@@ -1009,6 +1009,13 @@ hr{
   .alert-error   { border-right: 4px solid #e74c3c; }
   .alert-success { border-right: 4px solid #2ecc71; }
   .alert-info    { border-right: 4px solid #3498db; }
+
+  .participants_meta {
+    margin-top: 16px;
+    text-align: center;
+    font-size: 14px;
+    color: var(--gray-color);
+  }
   
   /* کلاس‌های خطا (کستوم‌سازی بیشتر در صورت نیاز) */
   /* .err-auth         {}

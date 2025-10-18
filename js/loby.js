@@ -1,4 +1,3 @@
-import { API_BASE_URL } from "/js/config.js";
 import { API_ENDPOINTS, buildApiUrl } from "/js/services/api-client.js";
 
 const STORAGE_KEYS = {
@@ -675,7 +674,13 @@ function renderTournamentSummary(tournament) {
   const pageTitle = document.getElementById("tournaments-title");
   const statusEl = document.getElementById("tournament_status");
 
-  if (signupTime) signupTime.textContent = formatDateTime(tournament.start_date);
+  if (signupTime) {
+    const recruitmentStart =
+      tournament.countdown_start_time ||
+      tournament.registration_start ||
+      tournament.start_date;
+    signupTime.textContent = formatDateTime(recruitmentStart);
+  }
   if (startTime) startTime.textContent = formatDateTime(tournament.start_date);
   if (endTime) endTime.textContent = formatDateTime(tournament.end_date);
   if (tournamentMode) {
@@ -698,20 +703,30 @@ function renderTournamentSummary(tournament) {
   if (pageTitle) pageTitle.textContent = tournament.name || "";
 
   if (statusEl) {
-    const now = new Date();
-    const start = tournament.start_date ? new Date(tournament.start_date) : null;
-    const end = tournament.end_date ? new Date(tournament.end_date) : null;
-    let status = "";
+    const serverStatus = [
+      tournament.status_label,
+      tournament.status_display,
+      tournament.status,
+    ].find((value) => typeof value === "string" && value.trim());
 
-    if (start && now < start) {
-      status = "فعال (شروع نشده)";
-    } else if (end && now <= end) {
-      status = "در حال برگزاری";
+    if (serverStatus) {
+      statusEl.textContent = serverStatus.trim();
     } else {
-      status = "تمام شده";
-    }
+      const now = new Date();
+      const start = tournament.start_date ? new Date(tournament.start_date) : null;
+      const end = tournament.end_date ? new Date(tournament.end_date) : null;
+      let status = "";
 
-    statusEl.textContent = status;
+      if (start && now < start) {
+        status = "فعال (شروع نشده)";
+      } else if (end && now <= end) {
+        status = "در حال برگزاری";
+      } else {
+        status = "تمام شده";
+      }
+
+      statusEl.textContent = status;
+    }
   }
 }
 
@@ -774,6 +789,66 @@ function createEmptyButton(label, handler) {
   return button;
 }
 
+function parseSpotsLeftValue(tournament) {
+  if (!tournament) {
+    return null;
+  }
+
+  const rawValue = tournament.spots_left;
+  if (typeof rawValue === "number" && Number.isFinite(rawValue)) {
+    return rawValue;
+  }
+
+  if (typeof rawValue === "string") {
+    const match = rawValue.match(/-?\d+/);
+    if (match) {
+      const parsed = Number.parseInt(match[0], 10);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  const maxSlots = Number(tournament.max_participants);
+  if (!Number.isFinite(maxSlots)) {
+    return null;
+  }
+
+  const currentCount =
+    tournament.type === "team"
+      ? Array.isArray(tournament.teams)
+        ? tournament.teams.length
+        : 0
+      : Array.isArray(tournament.participants)
+      ? tournament.participants.length
+      : 0;
+
+  return Math.max(maxSlots - currentCount, 0);
+}
+
+function describeSpotsLeft(tournament) {
+  if (!tournament) {
+    return "";
+  }
+
+  if (typeof tournament.spots_left === "string" && tournament.spots_left.trim()) {
+    return tournament.spots_left.trim();
+  }
+
+  const remaining = parseSpotsLeftValue(tournament);
+  if (remaining === null) {
+    return "";
+  }
+
+  if (remaining <= 0) {
+    return "ظرفیت این تورنومنت تکمیل شده است.";
+  }
+
+  return tournament.type === "team"
+    ? `${remaining} تیم ظرفیت باقی مانده است.`
+    : `${remaining} جای خالی باقی مانده است.`;
+}
+
 function renderParticipants(tournament) {
   const section = document.getElementById("participants_section");
   if (!section) return;
@@ -783,35 +858,40 @@ function renderParticipants(tournament) {
   const container = document.createElement("div");
   container.className = tournament.type === "team" ? "teams_grid" : "players_grid";
 
-  const maxSlots = Number(tournament.max_participants) || 0;
-
   if (tournament.type === "team") {
     const teams = Array.isArray(tournament.teams) ? tournament.teams : [];
-
     teams.forEach((team) => {
       container.appendChild(renderTeamSlot(team));
     });
-
-    const remaining = Math.max(maxSlots - teams.length, 0);
-    for (let i = 0; i < remaining; i += 1) {
-      container.appendChild(
-        createEmptyButton("همین الان تیمت رو اضافه کن", openTeamJoinModal),
-      );
-    }
   } else {
     const players = Array.isArray(tournament.participants) ? tournament.participants : [];
-
     players.forEach((player) => {
       container.appendChild(createPlayerSlot(player));
     });
+  }
 
-    const remaining = Math.max(maxSlots - players.length, 0);
-    for (let i = 0; i < remaining; i += 1) {
-      container.appendChild(createEmptyButton("همین الان اضافه شو!", openIndividualJoinModal));
-    }
+  const availableSpots = parseSpotsLeftValue(tournament);
+  const hasCapacity = availableSpots === null ? true : availableSpots > 0;
+
+  if (hasCapacity) {
+    const ctaLabel =
+      tournament.type === "team"
+        ? "همین الان تیمت رو اضافه کن"
+        : "همین الان اضافه شو!";
+    const handler =
+      tournament.type === "team" ? openTeamJoinModal : openIndividualJoinModal;
+    container.appendChild(createEmptyButton(ctaLabel, handler));
   }
 
   section.appendChild(container);
+
+  const spotsMessage = describeSpotsLeft(tournament);
+  if (spotsMessage) {
+    const meta = document.createElement("div");
+    meta.className = "participants_meta";
+    meta.textContent = spotsMessage;
+    section.appendChild(meta);
+  }
 }
 
 function notify(key, fallbackMessage, type = "info", overrides = {}) {
@@ -981,8 +1061,36 @@ async function loadTournament() {
   if (!state.tournamentId) return;
 
   try {
-    const url = `${API_BASE_URL}/api/tournaments/tournaments/${state.tournamentId}/`;
-    const tournament = await apiFetch(url);
+    const detailUrl = buildApiUrl(
+      API_ENDPOINTS.tournaments.detail(state.tournamentId),
+    );
+    const detailFields = [
+      "id",
+      "name",
+      "description",
+      "image",
+      "color",
+      "game",
+      "start_date",
+      "end_date",
+      "countdown_start_time",
+      "type",
+      "mode",
+      "max_participants",
+      "team_size",
+      "prize_pool",
+      "spots_left",
+      "participants",
+      "teams",
+      "creator",
+      "status",
+      "status_display",
+      "status_label",
+    ];
+    detailUrl.searchParams.set("fields", detailFields.join(","));
+    detailUrl.searchParams.set("expand", "creator,image,participants,teams");
+
+    const tournament = await apiFetch(detailUrl.toString());
 
     state.tournament = tournament;
     markTournamentTeamsCache(tournament);
@@ -1443,13 +1551,13 @@ async function joinIndividualTournament(event) {
   try {
     const payload = { in_game_id: inGameId };
 
-    await apiFetch(
-      `${API_BASE_URL}/api/tournaments/tournaments/${state.tournamentId}/join/`,
-      {
-        method: "POST",
-        body: JSON.stringify(payload),
-      },
+    const joinUrl = buildApiUrl(
+      API_ENDPOINTS.tournaments.join(state.tournamentId),
     );
+    await apiFetch(joinUrl.toString(), {
+      method: "POST",
+      body: JSON.stringify(payload),
+    });
 
     notify("tournamentJoinSuccess", null, "success");
     rememberInGameId(inGameId);
@@ -1600,9 +1708,11 @@ async function joinTeamTournament() {
     clearModalError("teamJoinError");
 
     const payload = { team: payloadIdentifier };
-    const url = `${API_BASE_URL}/api/tournaments/tournaments/${state.tournamentId}/join/`;
+    const joinUrl = buildApiUrl(
+      API_ENDPOINTS.tournaments.join(state.tournamentId),
+    );
 
-    await apiFetch(url, {
+    await apiFetch(joinUrl.toString(), {
       method: "POST",
       body: JSON.stringify(payload),
     });
