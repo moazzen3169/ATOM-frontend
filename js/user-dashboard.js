@@ -11,6 +11,7 @@ import {
 } from "./user-teams.js";
 import {
   configureTournamentHistoryModule,
+  initializeTournamentHistoryUI,
   normalizeTournamentHistory,
   fetchUserTournamentHistory,
   displayTournamentHistory,
@@ -872,6 +873,7 @@ configureTournamentHistoryModule({
 document.addEventListener("DOMContentLoaded", () => {
   setupModalEvents();
   setupTeamsPageInteractions();
+  initializeTournamentHistoryUI();
 
   const headerContainer = document.getElementById("dashboard_header");
   if (headerContainer) {
