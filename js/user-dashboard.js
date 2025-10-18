@@ -19,10 +19,12 @@ const apiClient = createAuthApiClient();
 const showError = window.showError ?? ((msg) => alert(msg));
 const showSuccess = window.showSuccess ?? (() => {});
 const LOGIN_REDIRECT = "../register/login.html";
+const DEFAULT_USER_AVATAR = "../img/profile.jpg";
 
 let dashboardSnapshot = null;
 let modulesConfigured = false;
 let dashboardUserId = null;
+let activeModal = null;
 
 function ensureAuthToken() {
   let token = apiClient.getAccessToken();
@@ -62,6 +64,58 @@ function applyHtmlContent(map = {}) {
   Object.entries(map).forEach(([selector, value]) => {
     const el = selectElement(selector);
     if (el) el.innerHTML = value ?? "";
+  });
+}
+
+function resolveImageUrl(source, fallback = DEFAULT_USER_AVATAR) {
+  if (!source) {
+    return fallback;
+  }
+
+  if (typeof source === "object") {
+    if (typeof source.fallback === "string") {
+      fallback = source.fallback;
+    }
+    if (typeof source.default === "string") {
+      fallback = source.default;
+    }
+    if (typeof source.url === "string") {
+      return resolveImageUrl(source.url, fallback);
+    }
+    if (typeof source.src === "string") {
+      return resolveImageUrl(source.src, fallback);
+    }
+    if (typeof source.href === "string") {
+      return resolveImageUrl(source.href, fallback);
+    }
+  }
+
+  if (typeof source !== "string") {
+    return fallback;
+  }
+
+  const trimmed = source.trim();
+  if (!trimmed || trimmed.toLowerCase() === "null" || trimmed.toLowerCase() === "undefined") {
+    return fallback;
+  }
+
+  return trimmed;
+}
+
+function applyImageSources(map = {}) {
+  if (!map || typeof map !== "object") {
+    return;
+  }
+
+  Object.entries(map).forEach(([selector, value]) => {
+    const el = selectElement(selector);
+    if (!el) {
+      return;
+    }
+
+    const fallback = el.dataset?.defaultSrc || DEFAULT_USER_AVATAR;
+    const resolvedSrc = resolveImageUrl(value, fallback);
+    el.setAttribute("src", resolvedSrc);
   });
 }
 
@@ -276,6 +330,7 @@ function applySnapshot(snapshot = {}) {
   if (snapshot.title) document.title = snapshot.title;
   applyTextContent(snapshot.text);
   applyHtmlContent(snapshot.html);
+  applyImageSources(snapshot.images);
 
   const flash = snapshot.flash || {};
   if (flash.error) {
@@ -318,7 +373,17 @@ async function enrichTeamsWithMembers(teams) {
       const res = await apiClient.fetch(API_ENDPOINTS.users.team(team.id), { method: "GET" });
       if (res.ok) {
         const json = await res.json();
-        team.members = json.members || [];
+        const membersPayload =
+          json.members ??
+          json.memberships ??
+          json.results ??
+          json.data ??
+          json.items ??
+          json.entries ??
+          json.players ??
+          json.team_members ??
+          [];
+        team.members = Array.isArray(membersPayload) ? membersPayload : [];
       } else {
         team.members = [];
       }
@@ -337,88 +402,62 @@ async function enrichTeamsWithMembers(teams) {
 function buildDashboardSnapshot(data) {
   if (!data || typeof data !== "object") return {};
 
-  const user = data.user_profile || {};
-  const teams = data.teams || [];
-  const tournaments = data.tournament_history || [];
+  const normalizedTeams = Array.isArray(data.teams) ? data.teams : [];
+  const normalizedTournaments = Array.isArray(data.tournament_history)
+    ? data.tournament_history
+    : Array.isArray(data.tournaments)
+    ? data.tournaments
+    : [];
 
-  const fullName = [user.first_name, user.last_name].filter(Boolean).join(" ") || "-";
-  const joinDate = user.verification?.created_at
-    ? new Date(user.verification.created_at).toLocaleDateString("fa-IR")
+  const rawUser = data.user_profile || {};
+  const normalizedUser = {
+    ...rawUser,
+    profile_picture: resolveImageUrl(rawUser.profile_picture, DEFAULT_USER_AVATAR),
+  };
+
+  const fullName = [normalizedUser.first_name, normalizedUser.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim()
+    || "-";
+
+  const joinDate = normalizedUser.verification?.created_at
+    ? new Date(normalizedUser.verification.created_at).toLocaleDateString("fa-IR")
     : "-";
 
-  // تاریخچه تورنومنت‌ها
-  const tournamentsHTML = tournaments
-    .map((item) => {
-      const t = item.tournament || {};
-      const game = t.game?.name || "-";
-      const date = new Date(t.start_date).toLocaleDateString("fa-IR");
-      return `
-        <tr>
-          <td>${user.score || 0}</td>
-          <td>${item.rank ?? "-"}</td>
-          <td>${date}</td>
-          <td>${item.team?.name || "-"}</td>
-          <td>${game}</td>
-          <td>${t.name}</td>
-        </tr>`;
-    })
-    .join("");
-
-  // تیم‌ها با عکس اعضا
-  const teamsHTML = teams
-    .map((team) => {
-      const members = team.members || [];
-      const membersHTML = members
-        .map((m) => {
-          const isCaptain = m.is_captain || false;
-          return `
-            <img src="${m.profile_picture || "../img/profile.jpg"}"
-                 alt="${m.username}"
-                 title="${m.username}${isCaptain ? " (کاپیتان)" : ""}"
-                 class="team_member_avatar ${isCaptain ? "team_member_avatar--captain" : ""}">
-          `;
-        })
-        .join("");
-
-      return `
-        <div class="team_card">
-          <div class="team_card_header">
-            <img src="${team.team_picture || "../img/default-team.jpg"}" 
-                 alt="${team.name}" 
-                 class="team_img">
-            <h3 class="team_name">${team.name}</h3>
-          </div>
-          <div class="team_members">
-            ${membersHTML || "<p class='no_members'>اعضایی وجود ندارد</p>"}
-          </div>
-        </div>`;
-    })
-    .join("");
+  const normalizedData = {
+    ...data,
+    user_profile: normalizedUser,
+    teams: normalizedTeams,
+    tournament_history: normalizedTournaments,
+  };
 
   return {
     title: "داشبورد کاربری",
     text: {
-      "#user_name": user.username || "-",
-      "#user_email_primary": user.email || "-",
-      "#user_username": user.username || "-",
+      "#user_name": normalizedUser.username || "-",
+      "#user_email_primary": normalizedUser.email || "-",
+      "#user_username": normalizedUser.username || "-",
       "#user_full_name": fullName,
-      "#user_email_detail": user.email || "-",
-      "#user_phone": user.phone_number || "-",
-      "#user_rank": user.rank?.toString() || "-",
-      "#user_score": user.score?.toString() || "0",
-      "#teams_counter": `${teams.length} تیم`,
-      "#user_tournaments_played": tournaments.length.toString(),
+      "#user_email_detail": normalizedUser.email || "-",
+      "#user_phone": normalizedUser.phone_number || "-",
+      "#user_rank": normalizedUser.rank?.toString() || "-",
+      "#user_score": normalizedUser.score?.toString() || "0",
+      "#teams_counter": `${normalizedTeams.length} تیم`,
+      "#user_tournaments_played": normalizedTournaments.length.toString(),
       "#user_add_date": joinDate,
     },
-    html: {
-      "#user_avatar": `<img src="${user.profile_picture}" alt="avatar" class="profile_avatar">`,
-      "#teams_container": teamsHTML,
-      "#tournaments_history_body": tournamentsHTML,
+    html: {},
+    images: {
+      "#user_avatar_image": {
+        src: normalizedUser.profile_picture,
+        fallback: DEFAULT_USER_AVATAR,
+      },
     },
     flash: {
       success: "اطلاعات با موفقیت بارگذاری شد.",
     },
-    data,
+    data: normalizedData,
   };
 }
 

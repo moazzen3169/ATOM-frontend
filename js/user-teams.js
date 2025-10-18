@@ -1,6 +1,7 @@
 import { API_ENDPOINTS } from "./services/api-client.js";
 
 const DEFAULT_AVATAR_SRC = "../img/profile.jpg";
+const DEFAULT_TEAM_AVATAR = "../img/logo.png";
 
 const TEAM_INVITATIONS_ENDPOINTS = [
     '/api/users/teams/invitations/received/',
@@ -1251,45 +1252,65 @@ function createDashboardTeamItem(team) {
     const numberFormatter = new Intl.NumberFormat('fa-IR');
     const membersMeta = getTeamMembersMeta(team || {});
     const totalMembers = typeof membersMeta.count === 'number' ? membersMeta.count : 0;
-    const memberLabels = (membersMeta.members || [])
-        .map((member) => member && member.label ? escapeHTML(member.label) : '')
-        .filter(Boolean);
-
-    const estimatedTotalMembers = totalMembers > 0 ? totalMembers : memberLabels.length;
-    const MAX_PREVIEW_NAMES = 4;
-    const previewNames = memberLabels.slice(0, MAX_PREVIEW_NAMES);
-    const remainingMembers = Math.max(estimatedTotalMembers - previewNames.length, 0);
-
-    const membersTextParts = [];
-    if (previewNames.length) {
-        membersTextParts.push(previewNames.join('، '));
-    }
-    if (remainingMembers > 0) {
-        membersTextParts.push(`و ${numberFormatter.format(remainingMembers)} عضو دیگر`);
-    }
-
-    const membersText = membersTextParts.join(' ');
-    const captainName = escapeHTML(getCaptainName(team || {}) || '-');
-    const teamName = escapeHTML(team?.name || 'بدون نام');
-    const memberCountLabel = estimatedTotalMembers > 0
-        ? `${numberFormatter.format(estimatedTotalMembers)} عضو`
+    const memberCountLabel = totalMembers > 0
+        ? `${numberFormatter.format(totalMembers)} عضو`
         : 'بدون عضو';
 
+    const teamName = escapeHTML(team?.name || 'بدون نام');
+    const fallbackTeamAvatar = escapeHTML(DEFAULT_TEAM_AVATAR);
+    const teamAvatarSource = (() => {
+        const candidates = [
+            team?.team_picture,
+            team?.logo,
+            team?.avatar,
+            team?.image,
+            team?.picture,
+        ];
+        for (const candidate of candidates) {
+            if (typeof candidate === 'string' && candidate.trim()) {
+                return escapeHTML(candidate.trim());
+            }
+        }
+        return fallbackTeamAvatar;
+    })();
+
+    const rosterMembers = Array.isArray(membersMeta.members) ? membersMeta.members : [];
+    const rosterMarkup = rosterMembers.length
+        ? rosterMembers
+            .map((member) => {
+                const displayName = escapeHTML(member.label || 'عضو تیم');
+                const avatarSrc = escapeHTML((member.avatar || DEFAULT_AVATAR_SRC).trim() || DEFAULT_AVATAR_SRC);
+                const isCaptain = Boolean(member.isCaptain);
+                const modifier = isCaptain ? ' team_roster_member--captain' : '';
+                const roleBadge = isCaptain ? '<span class="team_roster_member_role">کاپیتان</span>' : '';
+                return `
+                <div class="team_roster_member${modifier}" role="listitem" title="${displayName}">
+                  <div class="team_roster_member_avatar">
+                    <img src="${avatarSrc}" alt="آواتار ${displayName}" onerror="this.src='${DEFAULT_AVATAR_SRC}'; this.onerror=null;">
+                  </div>
+                  <div class="team_roster_member_info">
+                    <span class="team_roster_member_name">${displayName}</span>
+                    ${roleBadge}
+                  </div>
+                </div>`;
+            })
+            .join('')
+        : '<p class="team_roster_empty">عضوی برای این تیم ثبت نشده است.</p>';
+
     item.innerHTML = `
-        <div class="team_list_item__header">
-            <span class="team_list_item__name">${teamName}</span>
-            <span class="team_list_item__members_count">${memberCountLabel}</span>
-        </div>
-        <div class="team_list_item__body">
-            <div class="team_list_item__row">
-                <span class="team_list_item__label">کاپیتان:</span>
-                <span class="team_list_item__value">${captainName}</span>
+        <div class="team_list_item__overview">
+          <div class="team_list_item__identity">
+            <div class="team_list_item__logo">
+              <img src="${teamAvatarSource}" alt="لوگوی ${teamName}" onerror="this.src='${fallbackTeamAvatar}'; this.onerror=null;">
             </div>
-            ${membersText ? `
-            <div class="team_list_item__row">
-                <span class="team_list_item__label">اعضا:</span>
-                <span class="team_list_item__value">${membersText}</span>
-            </div>` : ''}
+            <div class="team_list_item__info">
+              <span class="team_list_item__name">${teamName}</span>
+              <span class="team_list_item__members_count">${memberCountLabel}</span>
+            </div>
+          </div>
+        </div>
+        <div class="team_roster" role="list">
+          ${rosterMarkup}
         </div>
     `;
 
