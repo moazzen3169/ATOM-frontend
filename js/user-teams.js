@@ -61,6 +61,7 @@ let teamsState = [];
 let invitationsState = { incoming: [], outgoing: [], requests: [] };
 let activeTeamsRequest = null;
 let autoBootstrapCompleted = false;
+let activeConfirmation = null;
 
 const fallbackClient = createAuthApiClient();
 
@@ -267,86 +268,19 @@ function mergeTeamIntoState(team) {
   }
 }
 
-function cloneFormData(formData) {
-  if (typeof FormData === "undefined" || !(formData instanceof FormData)) {
-    return formData;
-  }
-
-  const cloned = new FormData();
-  for (const [key, value] of formData.entries()) {
-    cloned.append(key, value);
-  }
-  return cloned;
-}
-
-function isSerializableObject(value) {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  if (typeof FormData !== "undefined" && value instanceof FormData) {
-    return false;
-  }
-
-  if (typeof Blob !== "undefined" && value instanceof Blob) {
-    return false;
-  }
-
-  if (typeof ArrayBuffer !== "undefined") {
-    if (value instanceof ArrayBuffer) {
-      return false;
-    }
-    if (typeof ArrayBuffer.isView === "function" && ArrayBuffer.isView(value)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 async function sendTeamRequest(url, { method = "GET", body, headers, signal } = {}) {
   const fetch = getFetchWithAuth();
+  const options = { method, signal };
 
-  if (method === "GET" || method === "POST") {
-    return fetch(url, { method, body, headers, signal });
+  if (headers) {
+    options.headers = headers;
   }
 
-  let overrideHeaders = headers;
-  let overrideBody = body;
-
-  if (typeof FormData !== "undefined" && body instanceof FormData) {
-    overrideBody = cloneFormData(body);
-    overrideBody.append("_method", method);
-  } else if (isSerializableObject(body)) {
-    overrideBody = JSON.stringify({ ...body, _method: method });
-    overrideHeaders = { ...(headers || {}), "Content-Type": "application/json" };
-  } else if (typeof body === "string") {
-    try {
-      const parsed = JSON.parse(body);
-      overrideBody = JSON.stringify({ ...parsed, _method: method });
-      overrideHeaders = {
-        ...(headers || {}),
-        "Content-Type": "application/json",
-      };
-    } catch (_error) {
-      const formData = new FormData();
-      formData.append("_method", method);
-      overrideBody = formData;
-    }
-  } else if (!body) {
-    const formData = new FormData();
-    formData.append("_method", method);
-    overrideBody = formData;
+  if (body !== undefined) {
+    options.body = body;
   }
 
-  const overrideResponse = await fetch(url, {
-    method: "POST",
-    body: overrideBody,
-    headers: overrideHeaders,
-    signal,
-  });
-
-  return overrideResponse;
+  return fetch(url, options);
 }
 
 function extractTeamArray(payload) {
@@ -1703,7 +1637,7 @@ async function handleInviteMember(event) {
   }
 }
 
-async function handleDeleteTeam(teamId) {
+async function handleDeleteTeam(teamId, triggerButton) {
   if (!teamId) {
     helpers.showError("تیم معتبر نیست.");
     return;
@@ -1737,8 +1671,19 @@ async function handleDeleteTeam(teamId) {
     return;
   }
 
-  if (!window.confirm("آیا از حذف تیم اطمینان دارید؟")) {
+  const teamName = team?.name ?? team?.title ?? "تیم";
+  const confirmed = await showConfirmationModal({
+    message: `آیا از حذف تیم «${teamName}» اطمینان دارید؟`,
+    confirmLabel: "حذف تیم",
+    confirmVariant: "btn--danger",
+  });
+
+  if (!confirmed) {
     return;
+  }
+
+  if (triggerButton) {
+    getToggleButtonHelper()(triggerButton, true, "در حال حذف...");
   }
 
   try {
@@ -1757,23 +1702,41 @@ async function handleDeleteTeam(teamId) {
   } catch (error) {
     console.error("Failed to delete team:", error);
     helpers.showError(error.message || "خطا در حذف تیم.");
+  } finally {
+    if (triggerButton) {
+      getToggleButtonHelper()(triggerButton, false);
+    }
   }
 }
 
-async function handleLeaveTeam(teamId) {
+async function handleLeaveTeam(teamId, triggerButton) {
   if (!teamId) {
     helpers.showError("تیم معتبر نیست.");
     return;
   }
 
-  if (!window.confirm("از خروج از تیم اطمینان دارید؟")) {
+  await ensureUserContext().catch(() => {});
+  const team = findTeamInState(teamId);
+  const teamName = team?.name ?? team?.title ?? "تیم";
+
+  const confirmed = await showConfirmationModal({
+    message: `آیا از خروج از تیم «${teamName}» مطمئن هستید؟`,
+    confirmLabel: "خروج",
+    confirmVariant: "btn--danger",
+  });
+
+  if (!confirmed) {
     return;
   }
 
+  if (triggerButton) {
+    getToggleButtonHelper()(triggerButton, true, "در حال خروج...");
+  }
+
   try {
-    const fetch = getFetchWithAuth();
-    const response = await fetch(API_ENDPOINTS.users.teamLeave(teamId), {
+    const response = await sendTeamRequest(API_ENDPOINTS.users.teamLeave(teamId), {
       method: "POST",
+      body: {},
     });
 
     if (!response.ok) {
@@ -1787,6 +1750,10 @@ async function handleLeaveTeam(teamId) {
   } catch (error) {
     console.error("Failed to leave team:", error);
     helpers.showError(error.message || "خطا در خروج از تیم.");
+  } finally {
+    if (triggerButton) {
+      getToggleButtonHelper()(triggerButton, false);
+    }
   }
 }
 
@@ -1843,10 +1810,10 @@ function attachTeamEventHandlers() {
           openEditTeamModal(teamId);
           break;
         case "delete":
-          handleDeleteTeam(teamId);
+          handleDeleteTeam(teamId, actionButton);
           break;
         case "leave":
-          handleLeaveTeam(teamId);
+          handleLeaveTeam(teamId, actionButton);
           break;
         default:
           break;
@@ -2005,6 +1972,81 @@ async function openInviteMemberModal(teamId) {
   getOpenModalHelper()("invite_member_modal");
 }
 
+function showConfirmationModal({ message, confirmLabel = "تایید", confirmVariant = "btn--primary" } = {}) {
+  const modal = document.getElementById("confirm_modal");
+  const messageElement = document.getElementById("confirm_modal_message");
+  const confirmButton = document.getElementById("confirm_modal_confirm");
+
+  if (!modal || !messageElement || !confirmButton) {
+    return Promise.resolve(window.confirm(message || "آیا مطمئن هستید؟"));
+  }
+
+  if (activeConfirmation && typeof activeConfirmation.cancel === "function") {
+    activeConfirmation.cancel();
+  }
+
+  return new Promise((resolve) => {
+    const cancelButtons = Array.from(modal.querySelectorAll("[data-close-modal]"));
+    const previousLabel = confirmButton.textContent;
+    const previousClassName = confirmButton.className;
+
+    const cleanup = (result) => {
+      confirmButton.removeEventListener("click", onConfirm);
+      cancelButtons.forEach((btn) => btn.removeEventListener("click", onCancel));
+      modal.removeEventListener("click", onBackdropClick);
+      document.removeEventListener("keydown", onKeydown);
+      confirmButton.className = previousClassName;
+      confirmButton.textContent = previousLabel;
+      activeConfirmation = null;
+      resolve(result);
+    };
+
+    const closeModal = () => {
+      getCloseModalHelper()("confirm_modal");
+    };
+
+    const onConfirm = () => {
+      closeModal();
+      cleanup(true);
+    };
+
+    const onCancel = () => {
+      closeModal();
+      cleanup(false);
+    };
+
+    const onBackdropClick = (event) => {
+      if (event.target === modal) {
+        onCancel();
+      }
+    };
+
+    const onKeydown = (event) => {
+      if (event.key === "Escape") {
+        onCancel();
+      }
+    };
+
+    activeConfirmation = {
+      cancel: () => {
+        closeModal();
+        cleanup(false);
+      },
+    };
+
+    messageElement.textContent = message || "آیا از انجام این عملیات اطمینان دارید؟";
+    confirmButton.textContent = confirmLabel || "تایید";
+    confirmButton.className = `btn ${confirmVariant || "btn--primary"}`;
+
+    confirmButton.addEventListener("click", onConfirm, { once: true });
+    cancelButtons.forEach((btn) => btn.addEventListener("click", onCancel, { once: true }));
+    modal.addEventListener("click", onBackdropClick);
+    document.addEventListener("keydown", onKeydown);
+
+    getOpenModalHelper()("confirm_modal");
+  });
+}
+
 async function safeJson(response) {
   try {
     return await response.clone().json();
@@ -2089,15 +2131,34 @@ function defaultToggleButtonLoading(button, isLoading, loadingLabel = "در حا
 function defaultOpenModal(id) {
   const modal = document.getElementById(id);
   if (!modal) return;
-  modal.classList.add("is-open");
+  modal.classList.add("modal--open");
   modal.setAttribute("aria-hidden", "false");
+  document.body.classList.add("modal_open");
+
+  const focusTarget =
+    modal.querySelector("[data-autofocus]") ||
+    modal.querySelector(
+      'input, select, textarea, button, [tabindex]:not([tabindex="-1"])',
+    );
+
+  if (focusTarget && typeof focusTarget.focus === "function") {
+    const focusHandler = () => focusTarget.focus();
+    if (typeof requestAnimationFrame === "function") {
+      requestAnimationFrame(focusHandler);
+    } else {
+      setTimeout(focusHandler, 0);
+    }
+  }
 }
 
 function defaultCloseModal(id) {
   const modal = document.getElementById(id);
   if (!modal) return;
-  modal.classList.remove("is-open");
+  modal.classList.remove("modal--open");
   modal.setAttribute("aria-hidden", "true");
+  if (!document.querySelector(".modal.modal--open")) {
+    document.body.classList.remove("modal_open");
+  }
 }
 
 function bootstrapTeamsPage() {
