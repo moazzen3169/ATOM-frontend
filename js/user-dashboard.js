@@ -100,60 +100,6 @@ function applySnapshotMeta(meta = {}) {
   }
 }
 
-function isDashboardHeaderReady(container) {
-  if (!container) {
-    return false;
-  }
-
-  if (container.dataset?.dashboardHeaderSource) {
-    return true;
-  }
-
-  if (container.childElementCount && container.childElementCount > 0) {
-    return true;
-  }
-
-  if (typeof container.innerHTML === "string" && container.innerHTML.trim()) {
-    return true;
-  }
-
-  return false;
-}
-
-function applyHeaderSnapshot(snapshot) {
-  if (!snapshot || typeof snapshot !== "object") {
-    return;
-  }
-
-  const headerContainer = document.getElementById("dashboard_header");
-  if (!isDashboardHeaderReady(headerContainer)) {
-    return;
-  }
-
-  const headerTextEntries = {};
-  if (snapshot.text && "#page_title_text" in snapshot.text) {
-    headerTextEntries["#page_title_text"] = snapshot.text["#page_title_text"];
-  }
-  if (snapshot.text && "#header_user_name" in snapshot.text) {
-    headerTextEntries["#header_user_name"] = snapshot.text["#header_user_name"];
-  }
-
-  if (Object.keys(headerTextEntries).length > 0) {
-    applyTextContent(headerTextEntries);
-  }
-
-  const headerImageEntries = {};
-  if (snapshot.images && "#header_user_avatar" in snapshot.images) {
-    headerImageEntries["#header_user_avatar"] = snapshot.images["#header_user_avatar"];
-  }
-
-  if (Object.keys(headerImageEntries).length > 0) {
-    applyImageSources(headerImageEntries);
-  }
-
-  applySnapshotMeta(snapshot.meta);
-}
-
 function resolveImageUrl(source, fallback = DEFAULT_USER_AVATAR) {
   if (!source) {
     return fallback;
@@ -418,7 +364,6 @@ function applySnapshot(snapshot = {}) {
 
   applySnapshotToDom(snapshot);
   applySnapshotMeta(snapshot.meta);
-  applyHeaderSnapshot(snapshot);
 
   const flash = snapshot.flash || {};
   if (flash.error) {
@@ -722,18 +667,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const headerContainer = document.getElementById("dashboard_header");
   if (headerContainer) {
-    const handleHeaderLoaded = () => {
+    headerContainer.addEventListener("dashboardHeader:loaded", () => {
       if (!dashboardSnapshot) {
         return;
       }
-      applyHeaderSnapshot(dashboardSnapshot);
-    };
-
-    headerContainer.addEventListener("dashboardHeader:loaded", handleHeaderLoaded);
-
-    if (isDashboardHeaderReady(headerContainer)) {
-      handleHeaderLoaded();
-    }
+      applySnapshotToDom(dashboardSnapshot);
+      applySnapshotMeta(dashboardSnapshot.meta);
+    });
   }
 
   loadDashboard();
