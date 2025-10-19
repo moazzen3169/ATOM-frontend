@@ -148,6 +148,7 @@ function toggleButtonLoadingState(button, isLoading, loadingLabel = "در حال
     }
     button.disabled = true;
     button.classList.add("is-loading");
+    button.setAttribute("aria-busy", "true");
     return;
   }
 
@@ -157,6 +158,7 @@ function toggleButtonLoadingState(button, isLoading, loadingLabel = "در حال
   }
   button.disabled = false;
   button.classList.remove("is-loading");
+  button.removeAttribute("aria-busy");
 }
 
 function resolveUserIdValue(value) {
@@ -366,35 +368,66 @@ async function requestDashboardSnapshot() {
 
 /* ------------------------- دریافت اعضای تیم ------------------------- */
 async function enrichTeamsWithMembers(teams) {
-  const results = [];
-
-  for (const team of teams) {
-    try {
-      const res = await apiClient.fetch(API_ENDPOINTS.users.team(team.id), { method: "GET" });
-      if (res.ok) {
-        const json = await res.json();
-        const membersPayload =
-          json.members ??
-          json.memberships ??
-          json.results ??
-          json.data ??
-          json.items ??
-          json.entries ??
-          json.players ??
-          json.team_members ??
-          [];
-        team.members = Array.isArray(membersPayload) ? membersPayload : [];
-      } else {
-        team.members = [];
-      }
-    } catch (e) {
-      console.warn("Failed to fetch team members:", e);
-      team.members = [];
-    }
-    results.push(team);
+  if (!Array.isArray(teams) || teams.length === 0) {
+    return Array.isArray(teams) ? teams : [];
   }
 
-  return results;
+  const fetchPromises = teams.map(async (team) => {
+    if (!team || typeof team !== "object") {
+      return team;
+    }
+
+    const normalizedTeam = { ...team };
+
+    if (Array.isArray(team.members) && team.members.length) {
+      normalizedTeam.members = team.members.slice();
+      return normalizedTeam;
+    }
+
+    const teamId = team.id ?? team.team_id ?? team.slug;
+    if (!teamId) {
+      normalizedTeam.members = [];
+      return normalizedTeam;
+    }
+
+    try {
+      const res = await apiClient.fetch(API_ENDPOINTS.users.team(teamId), { method: "GET" });
+      if (!res.ok) {
+        normalizedTeam.members = [];
+        return normalizedTeam;
+      }
+
+      let json = null;
+      try {
+        json = await res.clone().json();
+      } catch (error) {
+        console.warn("Failed to parse team members response:", error);
+      }
+
+      const membersPayload =
+        json?.members ??
+        json?.memberships ??
+        json?.results ??
+        json?.data ??
+        json?.items ??
+        json?.entries ??
+        json?.players ??
+        json?.team_members ??
+        [];
+
+      normalizedTeam.members = Array.isArray(membersPayload)
+        ? membersPayload.filter(Boolean)
+        : [];
+    } catch (error) {
+      console.warn("Failed to fetch team members:", error);
+      normalizedTeam.members = [];
+    }
+
+    return normalizedTeam;
+  });
+
+  const enriched = await Promise.all(fetchPromises);
+  return enriched;
 }
 
 /* ------------------------- ساخت Snapshot ------------------------- */
@@ -502,14 +535,38 @@ async function handleProfileSubmit(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const submitButton = form.querySelector('[type="submit"]');
-  if (submitButton) submitButton.disabled = true;
+
+  toggleButtonLoadingState(submitButton, true, "در حال ذخیره...");
 
   const endpoint = API_ENDPOINTS.auth.profile;
-  const method = "POST";
   const formData = new FormData(form);
 
+  [
+    "username",
+    "first_name",
+    "last_name",
+    "email",
+    "phone_number",
+  ].forEach((field) => {
+    const value = formData.get(field);
+    if (typeof value === "string") {
+      formData.set(field, value.trim());
+    }
+  });
+
+  const avatarFile = formData.get("profile_picture");
+  const hasFileConstructor = typeof File !== "undefined";
+  const isFileObject = hasFileConstructor && avatarFile instanceof File;
+  const hasValidAvatar = isFileObject && avatarFile.size > 0;
+
+  if (!hasValidAvatar) {
+    if (isFileObject || typeof avatarFile === "string") {
+      formData.delete("profile_picture");
+    }
+  }
+
   try {
-    const response = await apiClient.fetch(endpoint, { method, body: formData });
+    const response = await apiClient.fetch(endpoint, { method: "PATCH", body: formData });
     if (!response.ok) {
       const msg = await extractApiError(response);
       throw new Error(msg || "خطا در ذخیره اطلاعات.");
@@ -522,7 +579,7 @@ async function handleProfileSubmit(event) {
     console.error("Profile update failed:", err);
     showError(err.message || "خطا در ذخیره اطلاعات.");
   } finally {
-    if (submitButton) submitButton.disabled = false;
+    toggleButtonLoadingState(submitButton, false);
   }
 }
 
