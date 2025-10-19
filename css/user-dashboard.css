@@ -242,7 +242,7 @@
     flex-direction: column;
     gap: 20px;
     min-height: 100%;
-    max-height: none;
+    max-height: 582px;
   }
 
   .team_title {
@@ -372,18 +372,14 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: var(--surface-tint-02);
-    border: 1px solid var(--surface-tint-06);
+    /* background: var(--surface-tint-02); */
+    border: 1px solid var(--border-color);
     border-radius: 12px;
     padding: 8px 12px;
-    box-shadow: 0 10px 22px var(--shadow-soft);
+    /* box-shadow: 0 10px 22px var(--shadow-soft); */
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .team_roster_member:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 14px 28px var(--shadow-strong);
-  }
 
   .team_roster_member_avatar {
     width: 36px;
@@ -408,13 +404,13 @@
   }
 
   .team_roster_member_name {
-    font-size: 14px;
+    font-size: 12px;
     color: var(--white-color);
     font-weight: 500;
   }
 
   .team_roster_member_role {
-    font-size: 12px;
+    font-size: 10px;
     color: var(--gray-color);
     background: var(--surface-tint-06);
     border-radius: 999px;
@@ -429,8 +425,7 @@
 
   .team_roster_member--captain {
     border-color: color-mix(in srgb, var(--color-primary) 60%, transparent);
-    box-shadow: 0 16px 32px color-mix(in srgb, var(--color-primary) 30%, transparent);
-  }
+    }
 
   .team_roster_member--captain .team_roster_member_name {
     color: var(--color-primary);

@@ -15,6 +15,7 @@
     border-radius: 10px;
     position: fixed;
     top: 20px;
+    margin-top: 3px;
 
   }
 
@@ -32,7 +33,7 @@
     right: 22.81px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 5px;
     width: 90%;
     list-style: none;
     margin: 0;
@@ -44,7 +45,7 @@
 }
 
 .sidebar_link{
-    width: 100%;
+    width: 90%;
     height: 50px;
     border: none;
     display: flex;

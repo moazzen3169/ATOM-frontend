@@ -36,7 +36,7 @@ function buildQuery(query) {
 export const API_ENDPOINTS = {
   auth: {
     refresh: "/auth/jwt/refresh/",
-    profile: "/auth/users/me/",
+    profile: "/api/users/users/me/",
   },
   users: {
     dashboard: "/api/users/dashboard/",
