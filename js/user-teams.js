@@ -431,6 +431,13 @@ function showTeamsLoadingState() {
 async function requestTeams({ signal } = {}) {
   const fetch = getFetchWithAuth();
   const params = new URLSearchParams({ page_size: "24" });
+  const identity = buildUserIdentity();
+
+  if (identity.id) {
+    params.set("captain", identity.id);
+    params.set("member", identity.id);
+  }
+
   const url = `${API_ENDPOINTS.users.teams}?${params.toString()}`;
   const response = await fetch(url, { method: "GET", signal });
 
