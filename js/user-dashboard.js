@@ -541,6 +541,30 @@ async function handleProfileSubmit(event) {
   const endpoint = API_ENDPOINTS.auth.profile;
   const formData = new FormData(form);
 
+  [
+    "username",
+    "first_name",
+    "last_name",
+    "email",
+    "phone_number",
+  ].forEach((field) => {
+    const value = formData.get(field);
+    if (typeof value === "string") {
+      formData.set(field, value.trim());
+    }
+  });
+
+  const avatarFile = formData.get("profile_picture");
+  const hasFileConstructor = typeof File !== "undefined";
+  const isFileObject = hasFileConstructor && avatarFile instanceof File;
+  const hasValidAvatar = isFileObject && avatarFile.size > 0;
+
+  if (!hasValidAvatar) {
+    if (isFileObject || typeof avatarFile === "string") {
+      formData.delete("profile_picture");
+    }
+  }
+
   try {
     const response = await apiClient.fetch(endpoint, { method: "PATCH", body: formData });
     if (!response.ok) {

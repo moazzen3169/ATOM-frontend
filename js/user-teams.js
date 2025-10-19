@@ -1586,7 +1586,10 @@ async function handleInviteMember(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const formData = new FormData(form);
-  const teamId = formData.get("team_id") || formData.get("team");
+  const rawTeamId = formData.get("team_id") || formData.get("team");
+  const teamId = rawTeamId === undefined || rawTeamId === null
+    ? ""
+    : String(rawTeamId).trim();
   const username = (formData.get("username") || "").toString().trim();
 
   if (!teamId) {
@@ -1612,11 +1615,20 @@ async function handleInviteMember(event) {
 
   try {
     const fetch = getFetchWithAuth();
-    const payload = { username };
+    const payload = new FormData();
+    if (typeof payload.set === "function") {
+      payload.set("username", username);
+      payload.set("team", teamId);
+      payload.set("team_id", teamId);
+    } else {
+      payload.append("username", username);
+      payload.append("team", teamId);
+      payload.append("team_id", teamId);
+    }
+
     const response = await fetch(API_ENDPOINTS.users.teamAddMember(teamId), {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
+      body: payload,
     });
 
     if (!response.ok) {
