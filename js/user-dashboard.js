@@ -67,6 +67,39 @@ function applyHtmlContent(map = {}) {
   });
 }
 
+function applySnapshotToDom(snapshot = {}) {
+  if (!snapshot || typeof snapshot !== "object") {
+    return;
+  }
+
+  if (snapshot.title) {
+    document.title = snapshot.title;
+  }
+
+  if (snapshot.text) {
+    applyTextContent(snapshot.text);
+  }
+
+  if (snapshot.html) {
+    applyHtmlContent(snapshot.html);
+  }
+
+  if (snapshot.images) {
+    applyImageSources(snapshot.images);
+  }
+}
+
+function applySnapshotMeta(meta = {}) {
+  if (!meta || typeof meta !== "object") {
+    return;
+  }
+
+  const headerAvatar = document.getElementById("header_user_avatar");
+  if (headerAvatar && meta.headerAvatarAlt) {
+    headerAvatar.setAttribute("alt", meta.headerAvatarAlt);
+  }
+}
+
 function resolveImageUrl(source, fallback = DEFAULT_USER_AVATAR) {
   if (!source) {
     return fallback;
@@ -329,10 +362,8 @@ function handleDashboardDataSnapshot(snapshot) {
 function applySnapshot(snapshot = {}) {
   dashboardSnapshot = snapshot;
 
-  if (snapshot.title) document.title = snapshot.title;
-  applyTextContent(snapshot.text);
-  applyHtmlContent(snapshot.html);
-  applyImageSources(snapshot.images);
+  applySnapshotToDom(snapshot);
+  applySnapshotMeta(snapshot.meta);
 
   const flash = snapshot.flash || {};
   if (flash.error) {
@@ -465,9 +496,29 @@ function buildDashboardSnapshot(data) {
     tournament_history: normalizedTournaments,
   };
 
+  const displayNameCandidate = [normalizedUser.first_name, normalizedUser.last_name]
+    .filter(Boolean)
+    .join(" ")
+    .trim();
+  const displayName =
+    displayNameCandidate ||
+    normalizedUser.username ||
+    normalizedUser.full_name ||
+    normalizedUser.name ||
+    normalizedUser.email ||
+    "کاربر";
+
+  const pageHeading = data.page_title || "داشبورد";
+  const headerTitle = displayName ? `${pageHeading} — ${displayName}` : pageHeading;
+  const documentTitle = displayName
+    ? `داشبورد کاربری | ${displayName}`
+    : "داشبورد کاربری";
+
   return {
-    title: "داشبورد کاربری",
+    title: documentTitle,
     text: {
+      "#page_title_text": headerTitle,
+      "#header_user_name": displayName,
       "#user_name": normalizedUser.username || "-",
       "#user_email_primary": normalizedUser.email || "-",
       "#user_username": normalizedUser.username || "-",
@@ -486,11 +537,18 @@ function buildDashboardSnapshot(data) {
         src: normalizedUser.profile_picture,
         fallback: DEFAULT_USER_AVATAR,
       },
+      "#header_user_avatar": {
+        src: normalizedUser.profile_picture,
+        fallback: DEFAULT_USER_AVATAR,
+      },
     },
     flash: {
       success: "اطلاعات با موفقیت بارگذاری شد.",
     },
     data: normalizedData,
+    meta: {
+      headerAvatarAlt: displayName ? `پروفایل ${displayName}` : "پروفایل کاربر",
+    },
   };
 }
 
@@ -606,6 +664,18 @@ async function loadDashboard() {
 
 document.addEventListener("DOMContentLoaded", () => {
   registerModalInteractions();
+
+  const headerContainer = document.getElementById("dashboard_header");
+  if (headerContainer) {
+    headerContainer.addEventListener("dashboardHeader:loaded", () => {
+      if (!dashboardSnapshot) {
+        return;
+      }
+      applySnapshotToDom(dashboardSnapshot);
+      applySnapshotMeta(dashboardSnapshot.meta);
+    });
+  }
+
   loadDashboard();
 
   const editButton = document.querySelector('[data-action="edit-user"]');
