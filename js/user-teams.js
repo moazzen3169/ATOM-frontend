@@ -268,86 +268,19 @@ function mergeTeamIntoState(team) {
   }
 }
 
-function cloneFormData(formData) {
-  if (typeof FormData === "undefined" || !(formData instanceof FormData)) {
-    return formData;
-  }
-
-  const cloned = new FormData();
-  for (const [key, value] of formData.entries()) {
-    cloned.append(key, value);
-  }
-  return cloned;
-}
-
-function isSerializableObject(value) {
-  if (!value || typeof value !== "object") {
-    return false;
-  }
-
-  if (typeof FormData !== "undefined" && value instanceof FormData) {
-    return false;
-  }
-
-  if (typeof Blob !== "undefined" && value instanceof Blob) {
-    return false;
-  }
-
-  if (typeof ArrayBuffer !== "undefined") {
-    if (value instanceof ArrayBuffer) {
-      return false;
-    }
-    if (typeof ArrayBuffer.isView === "function" && ArrayBuffer.isView(value)) {
-      return false;
-    }
-  }
-
-  return true;
-}
-
 async function sendTeamRequest(url, { method = "GET", body, headers, signal } = {}) {
   const fetch = getFetchWithAuth();
+  const options = { method, signal };
 
-  if (method === "GET" || method === "POST") {
-    return fetch(url, { method, body, headers, signal });
+  if (headers) {
+    options.headers = headers;
   }
 
-  let overrideHeaders = headers;
-  let overrideBody = body;
-
-  if (typeof FormData !== "undefined" && body instanceof FormData) {
-    overrideBody = cloneFormData(body);
-    overrideBody.append("_method", method);
-  } else if (isSerializableObject(body)) {
-    overrideBody = JSON.stringify({ ...body, _method: method });
-    overrideHeaders = { ...(headers || {}), "Content-Type": "application/json" };
-  } else if (typeof body === "string") {
-    try {
-      const parsed = JSON.parse(body);
-      overrideBody = JSON.stringify({ ...parsed, _method: method });
-      overrideHeaders = {
-        ...(headers || {}),
-        "Content-Type": "application/json",
-      };
-    } catch (_error) {
-      const formData = new FormData();
-      formData.append("_method", method);
-      overrideBody = formData;
-    }
-  } else if (!body) {
-    const formData = new FormData();
-    formData.append("_method", method);
-    overrideBody = formData;
+  if (body !== undefined) {
+    options.body = body;
   }
 
-  const overrideResponse = await fetch(url, {
-    method: "POST",
-    body: overrideBody,
-    headers: overrideHeaders,
-    signal,
-  });
-
-  return overrideResponse;
+  return fetch(url, options);
 }
 
 function extractTeamArray(payload) {
@@ -1801,9 +1734,9 @@ async function handleLeaveTeam(teamId, triggerButton) {
   }
 
   try {
-    const fetch = getFetchWithAuth();
-    const response = await fetch(API_ENDPOINTS.users.teamLeave(teamId), {
+    const response = await sendTeamRequest(API_ENDPOINTS.users.teamLeave(teamId), {
       method: "POST",
+      body: {},
     });
 
     if (!response.ok) {
