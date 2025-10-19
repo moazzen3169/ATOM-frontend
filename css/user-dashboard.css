@@ -88,7 +88,7 @@
     width: 88px;
     height: 88px;
     border-radius: 50%;
-    border: 2px solid var(--color-primary);
+    border: 2px solid var(--border-color);
     overflow: hidden;
   }
 
@@ -137,7 +137,7 @@
     background-color: transparent;
     border: none;
     border-radius: 50%;
-    border: 1px solid var(--color-primary);
+    border: 1px solid var(--border-color);
     width: 44px;
     height: 44px;
     display: inline-flex;
@@ -149,7 +149,8 @@
 
   .edit_user_btn:hover {
     transform: translateY(-2px);
-    box-shadow: 0 10px 22px var(--shadow-strong);
+    border: 1px solid var(--color-primary);
+
   }
 
   .edit_user_btn__icon {
@@ -168,8 +169,11 @@
   }
 
   .user_profile_list > div {
-    background: var(--background-color);
+    background: linear-gradient( to right, var(--border-color) , var(--background-color) );
     border-radius: 12px;
+    background-position: center ;
+    background-size: 500% 500%;
+    border: 1px solid var(--border-color);
     padding: 12px 16px;
     display: flex;
     flex-direction: column;
@@ -196,7 +200,9 @@
   }
 
   .user_stat_card {
-    background: linear-gradient(135deg, var(--surface-tint-08), var(--surface-tint-02));
+    background: linear-gradient( to right, var(--border-color) , var(--background-color) );
+    background-size: 500% 500%;
+    background-position: center;
     border-radius: 16px;
     padding: 18px;
     display: flex;
@@ -271,6 +277,7 @@
     border-radius: 10px;
     font-size: 14px;
     transition: background 0.2s ease;
+    text-decoration: none;
   }
 
   .creat_team_link:hover {

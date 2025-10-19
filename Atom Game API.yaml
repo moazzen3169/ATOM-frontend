@@ -78,513 +78,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/BotSettings'
           description: ''
-  /api/auth/jwt/create/:
-    post:
-      operationId: auth_jwt_create_create
-      description: |-
-        Takes a set of user credentials and returns an access and refresh JSON web
-        token pair to prove the authentication of those credentials.
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenObtainPair'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TokenObtainPair'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TokenObtainPair'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenObtainPair'
-          description: ''
-  /api/auth/jwt/refresh/:
-    post:
-      operationId: auth_jwt_refresh_create
-      description: |-
-        Takes a refresh type JSON web token and returns an access type JSON web
-        token if the refresh token is valid.
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenRefresh'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TokenRefresh'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TokenRefresh'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenRefresh'
-          description: ''
-  /api/auth/jwt/verify/:
-    post:
-      operationId: auth_jwt_verify_create
-      description: |-
-        Takes a token and indicates if it is valid.  This view provides no
-        information about a token's fitness for a particular use.
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/TokenVerify'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/TokenVerify'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/TokenVerify'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/TokenVerify'
-          description: ''
-  /api/auth/users/:
-    get:
-      operationId: auth_users_list
-      tags:
-      - auth
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/User'
-          description: ''
-    post:
-      operationId: auth_users_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UserCreatePasswordRetype'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/UserCreatePasswordRetype'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/UserCreatePasswordRetype'
-        required: true
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserCreatePasswordRetype'
-          description: ''
-  /api/auth/users/{id}/:
-    get:
-      operationId: auth_users_retrieve
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this user.
-        required: true
-      tags:
-      - auth
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    put:
-      operationId: auth_users_update
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this user.
-        required: true
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/User'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/User'
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    patch:
-      operationId: auth_users_partial_update
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this user.
-        required: true
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    delete:
-      operationId: auth_users_destroy
-      parameters:
-      - in: path
-        name: id
-        schema:
-          type: integer
-        description: A unique integer value identifying this user.
-        required: true
-      tags:
-      - auth
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/auth/users/activation/:
-    post:
-      operationId: auth_users_activation_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Activation'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Activation'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Activation'
-        required: true
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Activation'
-          description: ''
-  /api/auth/users/me/:
-    get:
-      operationId: auth_users_me_retrieve
-      tags:
-      - auth
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    put:
-      operationId: auth_users_me_update
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/User'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/User'
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    patch:
-      operationId: auth_users_me_partial_update
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PatchedUser'
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/User'
-          description: ''
-    delete:
-      operationId: auth_users_me_destroy
-      tags:
-      - auth
-      security:
-      - jwtAuth: []
-      responses:
-        '204':
-          description: No response body
-  /api/auth/users/resend_activation/:
-    post:
-      operationId: auth_users_resend_activation_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-        required: true
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SendEmailReset'
-          description: ''
-  /api/auth/users/reset_password/:
-    post:
-      operationId: auth_users_reset_password_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-        required: true
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SendEmailReset'
-          description: ''
-  /api/auth/users/reset_password_confirm/:
-    post:
-      operationId: auth_users_reset_password_confirm_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PasswordResetConfirmRetype'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/PasswordResetConfirmRetype'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/PasswordResetConfirmRetype'
-        required: true
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PasswordResetConfirmRetype'
-          description: ''
-  /api/auth/users/reset_username/:
-    post:
-      operationId: auth_users_reset_username_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SendEmailReset'
-        required: true
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SendEmailReset'
-          description: ''
-  /api/auth/users/reset_username_confirm/:
-    post:
-      operationId: auth_users_reset_username_confirm_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UsernameResetConfirm'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/UsernameResetConfirm'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/UsernameResetConfirm'
-        required: true
-      security:
-      - jwtAuth: []
-      - {}
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UsernameResetConfirm'
-          description: ''
-  /api/auth/users/set_password/:
-    post:
-      operationId: auth_users_set_password_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetPasswordRetype'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SetPasswordRetype'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SetPasswordRetype'
-        required: true
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetPasswordRetype'
-          description: ''
-  /api/auth/users/set_username/:
-    post:
-      operationId: auth_users_set_username_create
-      tags:
-      - auth
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SetUsernameRetype'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/SetUsernameRetype'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/SetUsernameRetype'
-        required: true
-      security:
-      - jwtAuth: []
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SetUsernameRetype'
-          description: ''
   /api/categories/:
     get:
       operationId: categories_list
@@ -3387,6 +2880,7 @@ paths:
         schema:
           type: string
           enum:
+          - all
           - finished
           - ongoing
           - upcoming
@@ -3394,6 +2888,7 @@ paths:
           * `upcoming` - Upcoming
           * `ongoing` - Ongoing
           * `finished` - Finished
+          * `all` - All
       - in: query
         name: type
         schema:
@@ -4522,6 +4017,7 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/User'
+        required: true
       security:
       - jwtAuth: []
       responses:
@@ -4625,6 +4121,21 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
+  /api/users/users/me/:
+    get:
+      operationId: users_users_me_retrieve
+      description: Return the authenticated user's data.
+      tags:
+      - users
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
   /api/users/users/send_otp/:
     post:
       operationId: users_users_send_otp_create
@@ -4642,6 +4153,7 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/User'
+        required: true
       security:
       - jwtAuth: []
       - {}
@@ -4669,6 +4181,7 @@ paths:
           multipart/form-data:
             schema:
               $ref: '#/components/schemas/User'
+        required: true
       security:
       - jwtAuth: []
       - {}
@@ -4790,6 +4303,147 @@ paths:
               schema:
                 $ref: '#/components/schemas/VerificationLevel3'
           description: ''
+  /api/wallet/admin/withdrawal-requests/:
+    get:
+      operationId: wallet_admin_withdrawal_requests_list
+      tags:
+      - wallet
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/WithdrawalRequest'
+          description: ''
+    post:
+      operationId: wallet_admin_withdrawal_requests_create
+      tags:
+      - wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WithdrawalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WithdrawalRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawalRequest'
+          description: ''
+  /api/wallet/admin/withdrawal-requests/{id}/:
+    get:
+      operationId: wallet_admin_withdrawal_requests_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this withdrawal request.
+        required: true
+      tags:
+      - wallet
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawalRequest'
+          description: ''
+    put:
+      operationId: wallet_admin_withdrawal_requests_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this withdrawal request.
+        required: true
+      tags:
+      - wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WithdrawalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/WithdrawalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/WithdrawalRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawalRequest'
+          description: ''
+    patch:
+      operationId: wallet_admin_withdrawal_requests_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this withdrawal request.
+        required: true
+      tags:
+      - wallet
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedWithdrawalRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedWithdrawalRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedWithdrawalRequest'
+      security:
+      - jwtAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WithdrawalRequest'
+          description: ''
+    delete:
+      operationId: wallet_admin_withdrawal_requests_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this withdrawal request.
+        required: true
+      tags:
+      - wallet
+      security:
+      - jwtAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/wallet/deposit/:
     post:
       operationId: wallet_deposit_create
@@ -4909,44 +4563,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/Wallet'
           description: ''
-  /api/wallet/withdraw/:
+  /api/wallet/withdrawal-requests/:
     post:
-      operationId: wallet_withdraw_create
+      operationId: wallet_withdrawal_requests_create
       tags:
       - wallet
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Payment'
+              $ref: '#/components/schemas/CreateWithdrawalRequest'
           application/x-www-form-urlencoded:
             schema:
-              $ref: '#/components/schemas/Payment'
+              $ref: '#/components/schemas/CreateWithdrawalRequest'
           multipart/form-data:
             schema:
-              $ref: '#/components/schemas/Payment'
+              $ref: '#/components/schemas/CreateWithdrawalRequest'
         required: true
       security:
       - jwtAuth: []
       responses:
-        '200':
+        '201':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Payment'
+                $ref: '#/components/schemas/CreateWithdrawalRequest'
           description: ''
 components:
   schemas:
-    Activation:
-      type: object
-      properties:
-        uid:
-          type: string
-        token:
-          type: string
-      required:
-      - token
-      - uid
     AdminLogin:
       type: object
       description: Serializer for admin login.
@@ -5146,6 +4790,23 @@ components:
             type: integer
       required:
       - participants
+    CreateWithdrawalRequest:
+      type: object
+      properties:
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        card_number:
+          type: string
+          maxLength: 16
+        sheba_number:
+          type: string
+          maxLength: 26
+      required:
+      - amount
+      - card_number
+      - sheba_number
     GameCreateUpdate:
       type: object
       description: Serializer for creating and updating games.
@@ -5480,22 +5141,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/TournamentList'
-    PasswordResetConfirmRetype:
-      type: object
-      properties:
-        uid:
-          type: string
-        token:
-          type: string
-        new_password:
-          type: string
-        re_new_password:
-          type: string
-      required:
-      - new_password
-      - re_new_password
-      - token
-      - uid
     PatchedAttachment:
       type: object
       description: Serializer for the Attachment model.
@@ -5881,20 +5526,55 @@ components:
           format: uri
     PatchedUser:
       type: object
+      description: Serializer for the User model (full view for owner).
       properties:
-        email:
-          type: string
-          format: email
-          title: Email address
-          maxLength: 254
         id:
           type: integer
           readOnly: true
         username:
           type: string
-          readOnly: true
           description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
             only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        phone_number:
+          type: string
+          maxLength: 128
+        profile_picture:
+          type: string
+          format: uri
+          nullable: true
+        score:
+          type: integer
+          readOnly: true
+        rank:
+          type: integer
+          readOnly: true
+          nullable: true
+        role:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        in_game_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/InGameID'
+        verification:
+          allOf:
+          - $ref: '#/components/schemas/Verification'
+          readOnly: true
     PatchedWinnerSubmission:
       type: object
       description: Serializer for the WinnerSubmission model.
@@ -5915,6 +5595,31 @@ components:
           - $ref: '#/components/schemas/WinnerSubmissionStatusEnum'
           readOnly: true
         created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedWithdrawalRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          allOf:
+          - $ref: '#/components/schemas/WithdrawalRequestStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
           type: string
           format: date-time
           readOnly: true
@@ -6116,45 +5821,6 @@ components:
       required:
       - id
       - name
-    SendEmailReset:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-      required:
-      - email
-    SetPasswordRetype:
-      type: object
-      properties:
-        new_password:
-          type: string
-        re_new_password:
-          type: string
-        current_password:
-          type: string
-      required:
-      - current_password
-      - new_password
-      - re_new_password
-    SetUsernameRetype:
-      type: object
-      properties:
-        current_password:
-          type: string
-        new_username:
-          type: string
-          title: Username
-          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
-            only.
-          pattern: ^[\w.@+-]+$
-          maxLength: 150
-        re_new_username:
-          type: string
-      required:
-      - current_password
-      - new_username
-      - re_new_username
     Spin:
       type: object
       properties:
@@ -6320,46 +5986,6 @@ components:
       description: |-
         * `open` - Open
         * `closed` - Closed
-    TokenObtainPair:
-      type: object
-      properties:
-        username:
-          type: string
-          writeOnly: true
-        password:
-          type: string
-          writeOnly: true
-        access:
-          type: string
-          readOnly: true
-        refresh:
-          type: string
-          readOnly: true
-      required:
-      - access
-      - password
-      - refresh
-      - username
-    TokenRefresh:
-      type: object
-      properties:
-        access:
-          type: string
-          readOnly: true
-        refresh:
-          type: string
-          writeOnly: true
-      required:
-      - access
-      - refresh
-    TokenVerify:
-      type: object
-      properties:
-        token:
-          type: string
-          writeOnly: true
-      required:
-      - token
     TournamentColor:
       type: object
       description: Serializer for the TournamentColor model.
@@ -6744,23 +6370,63 @@ components:
         * `team` - Team
     User:
       type: object
+      description: Serializer for the User model (full view for owner).
       properties:
-        email:
-          type: string
-          format: email
-          title: Email address
-          maxLength: 254
         id:
           type: integer
           readOnly: true
         username:
           type: string
-          readOnly: true
           description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
             only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        first_name:
+          type: string
+          maxLength: 150
+        last_name:
+          type: string
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        phone_number:
+          type: string
+          maxLength: 128
+        profile_picture:
+          type: string
+          format: uri
+          nullable: true
+        score:
+          type: integer
+          readOnly: true
+        rank:
+          type: integer
+          readOnly: true
+          nullable: true
+        role:
+          type: array
+          items:
+            type: string
+          readOnly: true
+        in_game_ids:
+          type: array
+          items:
+            $ref: '#/components/schemas/InGameID'
+        verification:
+          allOf:
+          - $ref: '#/components/schemas/Verification'
+          readOnly: true
       required:
       - id
+      - phone_number
+      - rank
+      - role
+      - score
       - username
+      - verification
     UserCreate:
       type: object
       description: Serializer for creating a new User.
@@ -6777,10 +6443,6 @@ components:
         phone_number:
           type: string
           maxLength: 128
-        password:
-          type: string
-          writeOnly: true
-          maxLength: 128
         first_name:
           type: string
           maxLength: 150
@@ -6792,35 +6454,7 @@ components:
           writeOnly: true
       required:
       - email
-      - password
       - phone_number
-      - username
-    UserCreatePasswordRetype:
-      type: object
-      properties:
-        email:
-          type: string
-          format: email
-          title: Email address
-          maxLength: 254
-        username:
-          type: string
-          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
-            only.
-          pattern: ^[\w.@+-]+$
-          maxLength: 150
-        id:
-          type: integer
-          readOnly: true
-        password:
-          type: string
-          writeOnly: true
-        re_password:
-          type: string
-      required:
-      - id
-      - password
-      - re_password
       - username
     UserReadOnly:
       type: object
@@ -6870,18 +6504,6 @@ components:
       - role
       - score
       - username
-    UsernameResetConfirm:
-      type: object
-      properties:
-        new_username:
-          type: string
-          title: Username
-          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
-            only.
-          pattern: ^[\w.@+-]+$
-          maxLength: 150
-      required:
-      - new_username
     Verification:
       type: object
       properties:
@@ -6980,8 +6602,12 @@ components:
           items:
             $ref: '#/components/schemas/Transaction'
           readOnly: true
+        summary:
+          type: string
+          readOnly: true
       required:
       - id
+      - summary
       - token_balance
       - total_balance
       - transactions
@@ -7049,6 +6675,48 @@ components:
         * `pending` - Pending
         * `approved` - Approved
         * `rejected` - Rejected
+    WithdrawalRequest:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        user:
+          type: integer
+          readOnly: true
+        amount:
+          type: string
+          format: decimal
+          pattern: ^-?\d{0,8}(?:\.\d{0,2})?$
+        status:
+          allOf:
+          - $ref: '#/components/schemas/WithdrawalRequestStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - amount
+      - created_at
+      - id
+      - status
+      - updated_at
+      - user
+    WithdrawalRequestStatusEnum:
+      enum:
+      - pending
+      - approved
+      - rejected
+      type: string
+      description: |-
+        * `pending` - در انتظار بررسی
+        * `approved` - تایید شده
+        * `rejected` - رد شده
   securitySchemes:
     jwtAuth:
       type: http
