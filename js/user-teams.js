@@ -55,7 +55,8 @@ const helperDefaults = {
 };
 
 let helpers = { ...helperDefaults };
-let userContext = { id: null, username: "", email: "" };
+let userContext = { id: null, username: null, email: null };
+let userContextLoadPromise = null;
 let teamsState = [];
 let invitationsState = { incoming: [], outgoing: [], requests: [] };
 let activeTeamsRequest = null;
@@ -63,19 +64,32 @@ let autoBootstrapCompleted = false;
 
 const fallbackClient = createAuthApiClient();
 
+function normalizeIdentityValue(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  const normalized = String(value).trim();
+  return normalized.length ? normalized : null;
+}
+
+function normalizeEmailValue(value) {
+  const normalized = normalizeIdentityValue(value);
+  return normalized ? normalized.toLowerCase() : null;
+}
+
 export function configureTeamModule(config = {}) {
   helpers = { ...helperDefaults, ...config };
 }
 
 export function setTeamUserContext({ id, username, email } = {}) {
   if (typeof id !== "undefined") {
-    userContext.id = id;
+    userContext.id = normalizeIdentityValue(id);
   }
-  if (typeof username === "string") {
-    userContext.username = username;
+  if (typeof username !== "undefined") {
+    userContext.username = normalizeIdentityValue(username);
   }
-  if (typeof email === "string") {
-    userContext.email = email;
+  if (typeof email !== "undefined") {
+    userContext.email = normalizeEmailValue(email);
   }
 }
 
@@ -114,6 +128,29 @@ async function refreshTeamsData({ includeInvitations } = {}) {
     typeof includeInvitations === "boolean"
       ? includeInvitations
       : shouldFetchInvitations();
+
+  try {
+    await ensureUserContext();
+  } catch (error) {
+    console.error("Failed to resolve user identity for teams:", error);
+    helpers.showError("برای مشاهده تیم‌ها ابتدا وارد حساب کاربری خود شوید.");
+    renderTeams([]);
+    if (shouldIncludeInvitations) {
+      renderInvitations({ incoming: [], outgoing: [], requests: [] });
+    }
+    activeTeamsRequest = null;
+    return;
+  }
+
+  if (!hasUserIdentity()) {
+    console.warn("User identity could not be determined; skipping team fetch.");
+    renderTeams([]);
+    if (shouldIncludeInvitations) {
+      renderInvitations({ incoming: [], outgoing: [], requests: [] });
+    }
+    activeTeamsRequest = null;
+    return;
+  }
 
   try {
     const fetchPromises = [requestTeams({ signal: controller.signal })];
@@ -181,6 +218,137 @@ function getCloseModalHelper() {
   return defaultCloseModal;
 }
 
+function normalizeTeamIdentifier(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const normalized = String(value).trim();
+  return normalized.length ? normalized : null;
+}
+
+function findTeamInState(teamId) {
+  const normalizedId = normalizeTeamIdentifier(teamId);
+  if (!normalizedId) {
+    return null;
+  }
+
+  return (
+    teamsState.find((item) => {
+      const candidateId =
+        item && normalizeTeamIdentifier(item.id ?? item.team_id ?? item.slug);
+      return candidateId === normalizedId;
+    }) || null
+  );
+}
+
+function mergeTeamIntoState(team) {
+  if (!team || typeof team !== "object") {
+    return;
+  }
+
+  const normalizedId = normalizeTeamIdentifier(
+    team.id ?? team.team_id ?? team.slug,
+  );
+
+  if (!normalizedId) {
+    return;
+  }
+
+  const index = teamsState.findIndex((item) => {
+    const candidateId =
+      item && normalizeTeamIdentifier(item.id ?? item.team_id ?? item.slug);
+    return candidateId === normalizedId;
+  });
+
+  if (index >= 0) {
+    teamsState[index] = { ...teamsState[index], ...team };
+  } else {
+    teamsState.push(team);
+  }
+}
+
+function cloneFormData(formData) {
+  if (typeof FormData === "undefined" || !(formData instanceof FormData)) {
+    return formData;
+  }
+
+  const cloned = new FormData();
+  for (const [key, value] of formData.entries()) {
+    cloned.append(key, value);
+  }
+  return cloned;
+}
+
+function isSerializableObject(value) {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  if (typeof FormData !== "undefined" && value instanceof FormData) {
+    return false;
+  }
+
+  if (typeof Blob !== "undefined" && value instanceof Blob) {
+    return false;
+  }
+
+  if (typeof ArrayBuffer !== "undefined") {
+    if (value instanceof ArrayBuffer) {
+      return false;
+    }
+    if (typeof ArrayBuffer.isView === "function" && ArrayBuffer.isView(value)) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+async function sendTeamRequest(url, { method = "GET", body, headers, signal } = {}) {
+  const fetch = getFetchWithAuth();
+
+  if (method === "GET" || method === "POST") {
+    return fetch(url, { method, body, headers, signal });
+  }
+
+  let overrideHeaders = headers;
+  let overrideBody = body;
+
+  if (typeof FormData !== "undefined" && body instanceof FormData) {
+    overrideBody = cloneFormData(body);
+    overrideBody.append("_method", method);
+  } else if (isSerializableObject(body)) {
+    overrideBody = JSON.stringify({ ...body, _method: method });
+    overrideHeaders = { ...(headers || {}), "Content-Type": "application/json" };
+  } else if (typeof body === "string") {
+    try {
+      const parsed = JSON.parse(body);
+      overrideBody = JSON.stringify({ ...parsed, _method: method });
+      overrideHeaders = {
+        ...(headers || {}),
+        "Content-Type": "application/json",
+      };
+    } catch (_error) {
+      const formData = new FormData();
+      formData.append("_method", method);
+      overrideBody = formData;
+    }
+  } else if (!body) {
+    const formData = new FormData();
+    formData.append("_method", method);
+    overrideBody = formData;
+  }
+
+  const overrideResponse = await fetch(url, {
+    method: "POST",
+    body: overrideBody,
+    headers: overrideHeaders,
+    signal,
+  });
+
+  return overrideResponse;
+}
+
 function extractTeamArray(payload) {
   if (!payload) {
     return [];
@@ -246,6 +414,10 @@ function createTeamCardMarkup(team = {}) {
   );
 
   const membersPreview = createMembersPreviewMarkup(members);
+  const actionsMarkup = createTeamActionButtons(team);
+  const actionsSection = actionsMarkup
+    ? `<footer class="team_card__actions">${actionsMarkup}</footer>`
+    : "";
 
   return `
     <article class="team_card" data-team-id="${escapeHtml(teamId)}">
@@ -267,14 +439,42 @@ function createTeamCardMarkup(team = {}) {
         <section class="team_members_preview">
           ${membersPreview}
         </section>
-        <footer class="team_card__actions">
-          <button type="button" class="btn btn--ghost" data-team-action="invite" data-team-id="${escapeHtml(teamId)}">دعوت عضو</button>
-          <button type="button" class="btn btn--ghost" data-team-action="edit" data-team-id="${escapeHtml(teamId)}">ویرایش</button>
-          <button type="button" class="btn btn--danger" data-team-action="leave" data-team-id="${escapeHtml(teamId)}">خروج</button>
-        </footer>
+        ${actionsSection}
       </div>
     </article>
   `;
+}
+
+function createTeamActionButtons(team = {}) {
+  const identity = buildUserIdentity();
+  const isCaptain = isUserTeamCaptain(team, identity);
+  const isMember = !isCaptain && isUserTeamConfirmedMember(team, identity);
+
+  if (isCaptain) {
+    const teamId = team.id ?? team.team_id ?? team.slug ?? "";
+    return `
+      <button type="button" class="btn btn--ghost" data-team-action="invite" data-team-id="${escapeHtml(
+        teamId,
+      )}">دعوت عضو</button>
+      <button type="button" class="btn btn--ghost" data-team-action="edit" data-team-id="${escapeHtml(
+        teamId,
+      )}">ویرایش</button>
+      <button type="button" class="btn btn--danger" data-team-action="delete" data-team-id="${escapeHtml(
+        teamId,
+      )}">حذف</button>
+    `;
+  }
+
+  if (isMember) {
+    const teamId = team.id ?? team.team_id ?? team.slug ?? "";
+    return `
+      <button type="button" class="btn btn--danger" data-team-action="leave" data-team-id="${escapeHtml(
+        teamId,
+      )}">خروج از گروه</button>
+    `;
+  }
+
+  return "";
 }
 
 function createTeamStatMarkup(label, value) {
@@ -390,15 +590,36 @@ function extractCaptainName(team) {
       "نامشخص"
     );
   }
+
+  const captainId = resolveMemberId(team.captain ?? team.captain_id ?? team.owner_id);
+
   if (Array.isArray(team.members)) {
-    const captain = team.members.find((member) => isMemberCaptain(member));
+    const captain = team.members.find((member) => {
+      const memberId = resolveMemberId(member);
+      if (captainId && memberId && captainId === memberId) {
+        return true;
+      }
+      return isMemberCaptain(member);
+    });
+
     if (captain) {
       return (
-        captain.username || captain.name || captain.full_name || "نامشخص"
+        captain.display_name ||
+        captain.full_name ||
+        captain.username ||
+        captain.name ||
+        "نامشخص"
       );
     }
   }
-  return team.captain_name || team.owner_name || "نامشخص";
+
+  return (
+    team.captain_name ||
+    team.captain_username ||
+    team.owner_name ||
+    team.owner_username ||
+    (captainId ? `#${captainId}` : "نامشخص")
+  );
 }
 
 function updateTeamsCounter(count) {
@@ -431,6 +652,13 @@ function showTeamsLoadingState() {
 async function requestTeams({ signal } = {}) {
   const fetch = getFetchWithAuth();
   const params = new URLSearchParams({ page_size: "24" });
+  const identity = buildUserIdentity();
+
+  if (identity.id) {
+    params.set("captain", identity.id);
+    params.set("member", identity.id);
+  }
+
   const url = `${API_ENDPOINTS.users.teams}?${params.toString()}`;
   const response = await fetch(url, { method: "GET", signal });
 
@@ -529,6 +757,189 @@ function buildUserIdentity() {
   };
 }
 
+function hasUserIdentity() {
+  if (userContext.id && String(userContext.id).trim().length) {
+    return true;
+  }
+  if (
+    typeof userContext.username === "string" &&
+    userContext.username.trim().length
+  ) {
+    return true;
+  }
+  if (
+    typeof userContext.email === "string" &&
+    userContext.email.trim().length
+  ) {
+    return true;
+  }
+  return false;
+}
+
+async function ensureUserContext() {
+  if (hasUserIdentity()) {
+    return userContext;
+  }
+
+  if (userContextLoadPromise) {
+    return userContextLoadPromise;
+  }
+
+  const storedIdentity = loadUserIdentityFromStorage();
+  if (storedIdentity) {
+    setTeamUserContext(storedIdentity);
+    if (hasUserIdentity()) {
+      return userContext;
+    }
+  }
+
+  const fetch = getFetchWithAuth();
+
+  userContextLoadPromise = (async () => {
+    try {
+      const profile = await fetchCurrentUserProfile(fetch);
+      if (profile) {
+        const resolved = resolveIdentityFromProfile(profile);
+        if (resolved) {
+          setTeamUserContext(resolved);
+        }
+      }
+    } catch (error) {
+      if (error && error.code === "AUTH_REQUIRED") {
+        throw error;
+      }
+      console.error("Failed to load user profile for teams module:", error);
+    } finally {
+      userContextLoadPromise = null;
+    }
+
+    return userContext;
+  })();
+
+  return userContextLoadPromise;
+}
+
+async function fetchCurrentUserProfile(fetch) {
+  const endpoints = Array.from(
+    new Set(
+      [API_ENDPOINTS.users?.me, API_ENDPOINTS.auth?.profile].filter(
+        (endpoint) => typeof endpoint === "string" && endpoint.length,
+      ),
+    ),
+  );
+
+  let lastError = null;
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint, { method: "GET" });
+      if (response.status === 401 || response.status === 403) {
+        const authError = new Error("AUTH_REQUIRED");
+        authError.code = "AUTH_REQUIRED";
+        throw authError;
+      }
+      if (!response.ok) {
+        lastError = new Error(
+          `Request to ${endpoint} failed with status ${response.status}`,
+        );
+        continue;
+      }
+
+      const data = await safeJson(response);
+      if (data && typeof data === "object") {
+        return data;
+      }
+    } catch (error) {
+      if (error && error.code === "AUTH_REQUIRED") {
+        throw error;
+      }
+      lastError = error;
+    }
+  }
+
+  if (lastError) {
+    console.warn("Unable to fetch user context for teams:", lastError);
+  }
+
+  return null;
+}
+
+function resolveIdentityFromProfile(profile) {
+  if (!profile || typeof profile !== "object") {
+    return null;
+  }
+
+  const nestedSources = [profile.user, profile.profile, profile.account, profile.data];
+
+  const id = pickFirstNonEmpty([
+    profile.id,
+    profile.pk,
+    profile.user_id,
+    profile.uuid,
+    profile.member_id,
+    profile.account_id,
+    ...nestedSources.map((item) => item && item.id),
+    ...nestedSources.map((item) => item && item.pk),
+    ...nestedSources.map((item) => item && item.user_id),
+  ]);
+
+  const username = pickFirstNonEmpty([
+    profile.username,
+    profile.name,
+    profile.full_name,
+    profile.user_name,
+    profile.user?.username,
+    profile.profile?.username,
+    profile.account?.username,
+    profile.data?.username,
+  ]);
+
+  const email = pickFirstNonEmpty([
+    profile.email,
+    profile.user?.email,
+    profile.profile?.email,
+    profile.account?.email,
+    profile.data?.email,
+  ]);
+
+  if (!id && !username && !email) {
+    return null;
+  }
+
+  return { id, username, email };
+}
+
+function pickFirstNonEmpty(candidates = []) {
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) {
+      continue;
+    }
+    const normalized = String(candidate).trim();
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return null;
+}
+
+function loadUserIdentityFromStorage() {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return null;
+  }
+
+  try {
+    const stored = window.localStorage.getItem("user_data");
+    if (!stored) {
+      return null;
+    }
+    const parsed = JSON.parse(stored);
+    return resolveIdentityFromProfile(parsed);
+  } catch (error) {
+    console.warn("Failed to read user identity from localStorage:", error);
+    return null;
+  }
+}
+
 function isTeamRelevantForUser(team, identity) {
   if (!team || typeof team !== "object") {
     return false;
@@ -559,7 +970,11 @@ function isUserTeamCaptain(team, identity) {
   const idMatches = (value) =>
     identity.id && value !== undefined && String(value) === identity.id;
 
-  if (idMatches(team.captain_id) || idMatches(team.owner_id)) {
+  if (
+    idMatches(team.captain_id) ||
+    idMatches(team.owner_id) ||
+    idMatches(team.captain)
+  ) {
     return true;
   }
 
@@ -662,6 +1077,7 @@ function matchesUserRecord(record, identity) {
       "profile_id",
       "account_id",
       "owner_id",
+      "pk",
     ];
     for (const key of idKeys) {
       const value = record[key];
@@ -881,6 +1297,19 @@ function getMemberKey(member) {
 }
 
 function resolveMemberId(member) {
+  if (member === null || member === undefined) {
+    return null;
+  }
+
+  if (typeof member === "number" || typeof member === "bigint") {
+    return member.toString();
+  }
+
+  if (typeof member === "string") {
+    const normalizedValue = member.trim();
+    return normalizedValue.length ? normalizedValue : null;
+  }
+
   const idKeys = [
     "id",
     "user_id",
@@ -888,6 +1317,8 @@ function resolveMemberId(member) {
     "membership_id",
     "profile_id",
     "account_id",
+    "owner_id",
+    "pk",
   ];
 
   for (const key of idKeys) {
@@ -985,6 +1416,14 @@ function isMemberTeamCaptain(member, team) {
 
   if (team.captain && matchesUserRecord(member, buildIdentityFromMember(team.captain))) {
     return true;
+  }
+
+  const captainId = resolveMemberId(team.captain ?? team.captain_id ?? team.owner_id);
+  if (captainId) {
+    const memberId = resolveMemberId(member);
+    if (memberId && memberId === captainId) {
+      return true;
+    }
   }
 
   return false;
@@ -1158,11 +1597,18 @@ async function handleEditTeam(event) {
     return;
   }
 
+  await ensureUserContext().catch(() => {});
+  const team = findTeamInState(teamId);
+  const identity = buildUserIdentity();
+  if (team && !isUserTeamCaptain(team, identity)) {
+    helpers.showError("تنها کاپیتان تیم می‌تواند این عملیات را انجام دهد.");
+    return;
+  }
+
   const button = form.querySelector('button[type="submit"]');
   getToggleButtonHelper()(button, true, "در حال ذخیره...");
 
   try {
-    const fetch = getFetchWithAuth();
     const payload = new FormData();
     payload.append("name", name);
     const picture = formData.get("team_picture");
@@ -1170,7 +1616,7 @@ async function handleEditTeam(event) {
       payload.append("team_picture", picture);
     }
 
-    const response = await fetch(API_ENDPOINTS.users.team(teamId), {
+    const response = await sendTeamRequest(API_ENDPOINTS.users.team(teamId), {
       method: "PATCH",
       body: payload,
     });
@@ -1178,6 +1624,15 @@ async function handleEditTeam(event) {
     if (!response.ok) {
       const message = await helpers.extractErrorMessage(response);
       throw new Error(message || "خطا در بروزرسانی تیم.");
+    }
+
+    const updatedTeam = await safeJson(response);
+    if (
+      updatedTeam &&
+      typeof updatedTeam === "object" &&
+      isTeamRelevantForUser(updatedTeam, identity)
+    ) {
+      mergeTeamIntoState(updatedTeam);
     }
 
     helpers.showSuccess("تیم با موفقیت بروزرسانی شد.");
@@ -1207,6 +1662,14 @@ async function handleInviteMember(event) {
 
   if (!username) {
     helpers.showError("نام کاربری را وارد کنید.");
+    return;
+  }
+
+  await ensureUserContext().catch(() => {});
+  const team = findTeamInState(teamId);
+  const identity = buildUserIdentity();
+  if (team && !isUserTeamCaptain(team, identity)) {
+    helpers.showError("تنها کاپیتان می‌تواند عضو جدید دعوت کند.");
     return;
   }
 
@@ -1246,13 +1709,40 @@ async function handleDeleteTeam(teamId) {
     return;
   }
 
+  await ensureUserContext().catch(() => {});
+  let team = findTeamInState(teamId);
+  let identity = buildUserIdentity();
+
+  if (!team) {
+    try {
+      const fetchedTeam = await fetchTeamDetails(teamId);
+      if (fetchedTeam && typeof fetchedTeam === "object") {
+        if (isTeamRelevantForUser(fetchedTeam, identity)) {
+          mergeTeamIntoState(fetchedTeam);
+          team = findTeamInState(teamId) || fetchedTeam;
+        } else {
+          team = fetchedTeam;
+        }
+      }
+    } catch (error) {
+      console.error("Failed to fetch team before deletion:", error);
+      helpers.showError(error.message || "خطا در دریافت اطلاعات تیم.");
+      return;
+    }
+  }
+
+  identity = buildUserIdentity();
+  if (team && !isUserTeamCaptain(team, identity)) {
+    helpers.showError("فقط کاپیتان تیم می‌تواند تیم را حذف کند.");
+    return;
+  }
+
   if (!window.confirm("آیا از حذف تیم اطمینان دارید؟")) {
     return;
   }
 
   try {
-    const fetch = getFetchWithAuth();
-    const response = await fetch(API_ENDPOINTS.users.team(teamId), {
+    const response = await sendTeamRequest(API_ENDPOINTS.users.team(teamId), {
       method: "DELETE",
     });
 
@@ -1409,15 +1899,46 @@ function attachTeamEventHandlers() {
   });
 }
 
-function openEditTeamModal(teamId) {
-  const team = teamsState.find((item) => String(item.id ?? item.team_id) === String(teamId));
+async function openEditTeamModal(teamId) {
+  const modal = document.getElementById("edit_team_modal");
+  if (!modal) return;
+
+  if (!teamId) {
+    helpers.showError("تیم یافت نشد.");
+    return;
+  }
+
+  await ensureUserContext().catch(() => {});
+  const identity = buildUserIdentity();
+  let team = findTeamInState(teamId);
+
+  if (!team) {
+    try {
+      const fetchedTeam = await fetchTeamDetails(teamId);
+      if (fetchedTeam && typeof fetchedTeam === "object") {
+        if (isTeamRelevantForUser(fetchedTeam, identity)) {
+          mergeTeamIntoState(fetchedTeam);
+          team = findTeamInState(teamId) || fetchedTeam;
+        } else {
+          team = fetchedTeam;
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load team details:", error);
+      helpers.showError(error.message || "خطا در دریافت اطلاعات تیم.");
+      return;
+    }
+  }
+
   if (!team) {
     helpers.showError("تیم یافت نشد.");
     return;
   }
 
-  const modal = document.getElementById("edit_team_modal");
-  if (!modal) return;
+  if (!isUserTeamCaptain(team, identity)) {
+    helpers.showError("تنها کاپیتان تیم می‌تواند این عملیات را انجام دهد.");
+    return;
+  }
 
   const idInput = document.getElementById("edit_team_id");
   const nameInput = document.getElementById("edit_team_name");
@@ -1435,10 +1956,41 @@ function openEditTeamModal(teamId) {
   getOpenModalHelper()("edit_team_modal");
 }
 
-function openInviteMemberModal(teamId) {
-  const team = teamsState.find((item) => String(item.id ?? item.team_id) === String(teamId));
+async function openInviteMemberModal(teamId) {
+  if (!teamId) {
+    helpers.showError("تیم یافت نشد.");
+    return;
+  }
+
+  await ensureUserContext().catch(() => {});
+  const identity = buildUserIdentity();
+  let team = findTeamInState(teamId);
+
+  if (!team) {
+    try {
+      const fetchedTeam = await fetchTeamDetails(teamId);
+      if (fetchedTeam && typeof fetchedTeam === "object") {
+        if (isTeamRelevantForUser(fetchedTeam, identity)) {
+          mergeTeamIntoState(fetchedTeam);
+          team = findTeamInState(teamId) || fetchedTeam;
+        } else {
+          team = fetchedTeam;
+        }
+      }
+    } catch (error) {
+      console.error("Failed to load team details for invite modal:", error);
+      helpers.showError(error.message || "خطا در دریافت اطلاعات تیم.");
+      return;
+    }
+  }
+
   if (!team) {
     helpers.showError("تیم یافت نشد.");
+    return;
+  }
+
+  if (!isUserTeamCaptain(team, identity)) {
+    helpers.showError("تنها کاپیتان می‌تواند عضو جدید دعوت کند.");
     return;
   }
 
@@ -1460,6 +2012,30 @@ async function safeJson(response) {
     console.warn("Failed to parse JSON response:", error);
     return null;
   }
+}
+
+async function fetchTeamDetails(teamId, { signal } = {}) {
+  const normalizedId = normalizeTeamIdentifier(teamId);
+  if (!normalizedId) {
+    throw new Error("تیم معتبر نیست.");
+  }
+
+  const response = await sendTeamRequest(
+    API_ENDPOINTS.users.team(normalizedId),
+    { method: "GET", signal },
+  );
+
+  if (!response.ok) {
+    const message = await helpers.extractErrorMessage(response);
+    throw new Error(message || "خطا در دریافت اطلاعات تیم.");
+  }
+
+  const data = await safeJson(response);
+  if (data && typeof data === "object") {
+    return data;
+  }
+
+  return null;
 }
 
 function resolveImageUrl(source, fallback) {
