@@ -55,7 +55,8 @@ const helperDefaults = {
 };
 
 let helpers = { ...helperDefaults };
-let userContext = { id: null, username: "", email: "" };
+let userContext = { id: null, username: null, email: null };
+let userContextLoadPromise = null;
 let teamsState = [];
 let invitationsState = { incoming: [], outgoing: [], requests: [] };
 let activeTeamsRequest = null;
@@ -63,19 +64,32 @@ let autoBootstrapCompleted = false;
 
 const fallbackClient = createAuthApiClient();
 
+function normalizeIdentityValue(value) {
+  if (value === undefined || value === null) {
+    return null;
+  }
+  const normalized = String(value).trim();
+  return normalized.length ? normalized : null;
+}
+
+function normalizeEmailValue(value) {
+  const normalized = normalizeIdentityValue(value);
+  return normalized ? normalized.toLowerCase() : null;
+}
+
 export function configureTeamModule(config = {}) {
   helpers = { ...helperDefaults, ...config };
 }
 
 export function setTeamUserContext({ id, username, email } = {}) {
   if (typeof id !== "undefined") {
-    userContext.id = id;
+    userContext.id = normalizeIdentityValue(id);
   }
-  if (typeof username === "string") {
-    userContext.username = username;
+  if (typeof username !== "undefined") {
+    userContext.username = normalizeIdentityValue(username);
   }
-  if (typeof email === "string") {
-    userContext.email = email;
+  if (typeof email !== "undefined") {
+    userContext.email = normalizeEmailValue(email);
   }
 }
 
@@ -114,6 +128,29 @@ async function refreshTeamsData({ includeInvitations } = {}) {
     typeof includeInvitations === "boolean"
       ? includeInvitations
       : shouldFetchInvitations();
+
+  try {
+    await ensureUserContext();
+  } catch (error) {
+    console.error("Failed to resolve user identity for teams:", error);
+    helpers.showError("برای مشاهده تیم‌ها ابتدا وارد حساب کاربری خود شوید.");
+    renderTeams([]);
+    if (shouldIncludeInvitations) {
+      renderInvitations({ incoming: [], outgoing: [], requests: [] });
+    }
+    activeTeamsRequest = null;
+    return;
+  }
+
+  if (!hasUserIdentity()) {
+    console.warn("User identity could not be determined; skipping team fetch.");
+    renderTeams([]);
+    if (shouldIncludeInvitations) {
+      renderInvitations({ incoming: [], outgoing: [], requests: [] });
+    }
+    activeTeamsRequest = null;
+    return;
+  }
 
   try {
     const fetchPromises = [requestTeams({ signal: controller.signal })];
@@ -534,6 +571,189 @@ function buildUserIdentity() {
       normalizedUsername && normalizedUsername.length ? normalizedUsername : null,
     email: normalizedEmail && normalizedEmail.length ? normalizedEmail : null,
   };
+}
+
+function hasUserIdentity() {
+  if (userContext.id && String(userContext.id).trim().length) {
+    return true;
+  }
+  if (
+    typeof userContext.username === "string" &&
+    userContext.username.trim().length
+  ) {
+    return true;
+  }
+  if (
+    typeof userContext.email === "string" &&
+    userContext.email.trim().length
+  ) {
+    return true;
+  }
+  return false;
+}
+
+async function ensureUserContext() {
+  if (hasUserIdentity()) {
+    return userContext;
+  }
+
+  if (userContextLoadPromise) {
+    return userContextLoadPromise;
+  }
+
+  const storedIdentity = loadUserIdentityFromStorage();
+  if (storedIdentity) {
+    setTeamUserContext(storedIdentity);
+    if (hasUserIdentity()) {
+      return userContext;
+    }
+  }
+
+  const fetch = getFetchWithAuth();
+
+  userContextLoadPromise = (async () => {
+    try {
+      const profile = await fetchCurrentUserProfile(fetch);
+      if (profile) {
+        const resolved = resolveIdentityFromProfile(profile);
+        if (resolved) {
+          setTeamUserContext(resolved);
+        }
+      }
+    } catch (error) {
+      if (error && error.code === "AUTH_REQUIRED") {
+        throw error;
+      }
+      console.error("Failed to load user profile for teams module:", error);
+    } finally {
+      userContextLoadPromise = null;
+    }
+
+    return userContext;
+  })();
+
+  return userContextLoadPromise;
+}
+
+async function fetchCurrentUserProfile(fetch) {
+  const endpoints = Array.from(
+    new Set(
+      [API_ENDPOINTS.users?.me, API_ENDPOINTS.auth?.profile].filter(
+        (endpoint) => typeof endpoint === "string" && endpoint.length,
+      ),
+    ),
+  );
+
+  let lastError = null;
+
+  for (const endpoint of endpoints) {
+    try {
+      const response = await fetch(endpoint, { method: "GET" });
+      if (response.status === 401 || response.status === 403) {
+        const authError = new Error("AUTH_REQUIRED");
+        authError.code = "AUTH_REQUIRED";
+        throw authError;
+      }
+      if (!response.ok) {
+        lastError = new Error(
+          `Request to ${endpoint} failed with status ${response.status}`,
+        );
+        continue;
+      }
+
+      const data = await safeJson(response);
+      if (data && typeof data === "object") {
+        return data;
+      }
+    } catch (error) {
+      if (error && error.code === "AUTH_REQUIRED") {
+        throw error;
+      }
+      lastError = error;
+    }
+  }
+
+  if (lastError) {
+    console.warn("Unable to fetch user context for teams:", lastError);
+  }
+
+  return null;
+}
+
+function resolveIdentityFromProfile(profile) {
+  if (!profile || typeof profile !== "object") {
+    return null;
+  }
+
+  const nestedSources = [profile.user, profile.profile, profile.account, profile.data];
+
+  const id = pickFirstNonEmpty([
+    profile.id,
+    profile.pk,
+    profile.user_id,
+    profile.uuid,
+    profile.member_id,
+    profile.account_id,
+    ...nestedSources.map((item) => item && item.id),
+    ...nestedSources.map((item) => item && item.pk),
+    ...nestedSources.map((item) => item && item.user_id),
+  ]);
+
+  const username = pickFirstNonEmpty([
+    profile.username,
+    profile.name,
+    profile.full_name,
+    profile.user_name,
+    profile.user?.username,
+    profile.profile?.username,
+    profile.account?.username,
+    profile.data?.username,
+  ]);
+
+  const email = pickFirstNonEmpty([
+    profile.email,
+    profile.user?.email,
+    profile.profile?.email,
+    profile.account?.email,
+    profile.data?.email,
+  ]);
+
+  if (!id && !username && !email) {
+    return null;
+  }
+
+  return { id, username, email };
+}
+
+function pickFirstNonEmpty(candidates = []) {
+  for (const candidate of candidates) {
+    if (candidate === undefined || candidate === null) {
+      continue;
+    }
+    const normalized = String(candidate).trim();
+    if (normalized) {
+      return normalized;
+    }
+  }
+  return null;
+}
+
+function loadUserIdentityFromStorage() {
+  if (typeof window === "undefined" || !window.localStorage) {
+    return null;
+  }
+
+  try {
+    const stored = window.localStorage.getItem("user_data");
+    if (!stored) {
+      return null;
+    }
+    const parsed = JSON.parse(stored);
+    return resolveIdentityFromProfile(parsed);
+  } catch (error) {
+    console.warn("Failed to read user identity from localStorage:", error);
+    return null;
+  }
 }
 
 function isTeamRelevantForUser(team, identity) {
