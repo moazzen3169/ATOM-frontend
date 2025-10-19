@@ -396,8 +396,10 @@ function updateCurrentLevelSummary(verifiedLevel, statusData) {
   if (!levelSummary) return;
 
   const statusFlags = extractStatusFlags(statusData);
+  const hasProfile = Boolean(userProfile);
+  const hasStatusData = Boolean(statusData);
 
-  if (!userProfile) {
+  if (!hasProfile && !hasStatusData) {
     if (currentLevelLabel) {
       currentLevelLabel.textContent = "—";
     }
@@ -411,13 +413,19 @@ function updateCurrentLevelSummary(verifiedLevel, statusData) {
     return;
   }
 
+  const normalizedLevel = normalizeLevel(
+    typeof verifiedLevel === "number" || typeof verifiedLevel === "string"
+      ? verifiedLevel
+      : userProfile?.verification_level ?? statusFlags.level ?? 1
+  );
+
   if (currentLevelLabel) {
-    currentLevelLabel.textContent = `سطح ${verifiedLevel}`;
+    currentLevelLabel.textContent = `سطح ${normalizedLevel}`;
   }
 
   if (currentLevelBenefits) {
     currentLevelBenefits.textContent =
-      LEVEL_BENEFITS[verifiedLevel] || LEVEL_BENEFITS[1];
+      LEVEL_BENEFITS[normalizedLevel] || LEVEL_BENEFITS[1];
   }
 
   if (!currentLevelStatus) return;
@@ -434,10 +442,10 @@ function updateCurrentLevelSummary(verifiedLevel, statusData) {
     return;
   }
 
-  if (verifiedLevel >= 3) {
+  if (normalizedLevel >= 3) {
     currentLevelStatus.textContent = "تمامی سطوح تایید شده";
     setSummaryVisualState("success");
-  } else {
+  } else if (hasProfile || hasStatusData) {
     currentLevelStatus.textContent = "سطح فعلی تایید شده";
     setSummaryVisualState("success");
   }
