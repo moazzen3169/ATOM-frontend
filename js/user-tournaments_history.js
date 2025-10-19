@@ -12,6 +12,8 @@ const helperDefaults = {
     const handler = window.showError || console.error;
     handler(message);
   },
+  enableServerFiltering: false,
+  historyEndpoint: API_ENDPOINTS.tournaments.myTournaments,
 };
 
 let helpers = { ...helperDefaults };
@@ -280,6 +282,10 @@ function buildHistoryQueryParams() {
     params.set("ordering", ordering);
   }
 
+  if (helpers.enableServerFiltering && historyUserId) {
+    params.set("user", historyUserId);
+  }
+
   if (!params.has("page_size")) {
     params.set("page_size", String(HISTORY_PAGE_SIZE));
   }
@@ -290,7 +296,7 @@ function buildHistoryQueryParams() {
 async function requestTournamentHistory({ signal } = {}) {
   const params = buildHistoryQueryParams();
   const queryString = params.toString();
-  const baseUrl = API_ENDPOINTS.users.userMatchHistory(historyUserId);
+  const baseUrl = resolveHistoryEndpoint();
   const url = queryString ? `${baseUrl}?${queryString}` : baseUrl;
 
   const response = await helpers.fetchWithAuth(url, {
@@ -319,6 +325,27 @@ async function requestTournamentHistory({ signal } = {}) {
   const items = extractMatchesFromPayload(data);
   const totalCount = extractTotalCount(data, items.length);
   return { items, totalCount, raw: data };
+}
+
+function resolveHistoryEndpoint() {
+  let endpoint = helpers.historyEndpoint;
+
+  if (typeof endpoint === "function") {
+    endpoint = endpoint({ userId: historyUserId });
+  }
+
+  if (typeof endpoint !== "string" || !endpoint.trim()) {
+    endpoint = API_ENDPOINTS.tournaments.myTournaments;
+  }
+
+  if (endpoint.includes("{userId}")) {
+    if (!historyUserId) {
+      throw new Error("شناسه کاربر برای دریافت تاریخچه لازم است.");
+    }
+    return endpoint.replace("{userId}", encodeURIComponent(String(historyUserId)));
+  }
+
+  return endpoint;
 }
 
 function extractMatchesFromPayload(payload) {
@@ -387,40 +414,56 @@ function renderHistoryTable(matches) {
 }
 
 function createHistoryRowMarkup(match = {}) {
-  const score = pickFirstValue(match, [
-    "score",
-    "points",
-    "user_score",
-    "team_score",
-    "total_score",
-  ]);
-  const rank = pickFirstValue(match, ["rank", "position", "place"]);
-  const date = pickFirstValue(match, [
-    "created_at",
-    "date",
-    "match_date",
-    "played_at",
-    "start_date",
-  ]);
-  const teamName = pickFirstValue(match, [
-    "team_name",
-    "team",
-    "team_title",
-    "team_display",
-    "team_label",
-  ]);
-  const gameName = pickFirstValue(match, [
-    "game_name",
-    "game",
-    "game_title",
-    "game_display",
-  ]);
-  const tournamentName = pickFirstValue(match, [
-    "tournament_name",
-    "tournament",
-    "name",
-    "title",
-  ]);
+  const score = normalizeDisplayValue(
+    pickFirstValue(match, [
+      "score",
+      "points",
+      "user_score",
+      "team_score",
+      "total_score",
+    ]),
+  );
+  const rank = normalizeDisplayValue(
+    pickFirstValue(match, ["rank", "position", "place"]),
+  );
+  const date = formatDateValue(
+    pickFirstValue(match, [
+      "created_at",
+      "date",
+      "match_date",
+      "played_at",
+      "start_date",
+    ]),
+  );
+  const teamName = normalizeDisplayValue(
+    pickFirstValue(match, [
+      "team_name",
+      "team",
+      "team_title",
+      "team_display",
+      "team_label",
+      "user_team",
+    ]),
+    ["name", "title", "label"],
+  );
+  const gameName = normalizeDisplayValue(
+    pickFirstValue(match, [
+      "game_name",
+      "game",
+      "game_title",
+      "game_display",
+    ]),
+    ["name", "title", "display_name"],
+  );
+  const tournamentName = normalizeDisplayValue(
+    pickFirstValue(match, [
+      "tournament_name",
+      "tournament",
+      "name",
+      "title",
+    ]),
+    ["name", "title"],
+  );
 
   return `
     <tr>
@@ -447,7 +490,19 @@ function escapeHtml(value) {
 }
 
 function pickFirstValue(source, keys) {
-  if (!source || typeof source !== "object") {
+  if (!source) {
+    return null;
+  }
+  if (Array.isArray(source)) {
+    for (const item of source) {
+      const value = pickFirstValue(item, keys);
+      if (value !== undefined && value !== null && value !== "") {
+        return value;
+      }
+    }
+    return null;
+  }
+  if (typeof source !== "object") {
     return null;
   }
   for (const key of keys) {
@@ -459,6 +514,69 @@ function pickFirstValue(source, keys) {
     }
   }
   return null;
+}
+
+function normalizeDisplayValue(value, nestedKeys = []) {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  if (Array.isArray(value)) {
+    const firstItem = value.find((item) => item !== null && item !== undefined);
+    return firstItem !== undefined
+      ? normalizeDisplayValue(firstItem, nestedKeys)
+      : null;
+  }
+
+  if (typeof value === "object") {
+    for (const key of nestedKeys) {
+      if (value[key] !== undefined && value[key] !== null) {
+        return normalizeDisplayValue(value[key]);
+      }
+    }
+
+    if (typeof value.name === "string") {
+      return value.name;
+    }
+    if (typeof value.title === "string") {
+      return value.title;
+    }
+    if (typeof value.label === "string") {
+      return value.label;
+    }
+    if (typeof value.display === "string") {
+      return value.display;
+    }
+    if (typeof value.value === "string") {
+      return value.value;
+    }
+
+    return null;
+  }
+
+  return value;
+}
+
+function formatDateValue(value) {
+  if (!value || typeof value !== "string") {
+    return value;
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return value;
+  }
+
+  const date = new Date(trimmed);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  try {
+    return date.toLocaleDateString("fa-IR");
+  } catch (_error) {
+    return date.toISOString().split("T")[0];
+  }
 }
 
 function setHistoryLoading(isLoading) {

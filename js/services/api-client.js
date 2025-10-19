@@ -55,6 +55,7 @@ export const API_ENDPOINTS = {
     search: "/api/users/users/",
   },
   tournaments: {
+    myTournaments: "/api/tournaments/my-tournaments/",
     list: "/api/tournaments/tournaments/",
     detail: (tournamentId) =>
       `/api/tournaments/tournaments/${encodeURIComponent(String(tournamentId))}/`,
