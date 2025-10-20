@@ -446,10 +446,11 @@
    Close Button
 ================================ */
 .modal-close-btn {
-    position: sticky;
+    position: absolute;
     top: 12px;
+    left: 12px;
     margin-inline-start: auto;
-    background: rgba(255, 255, 255, 0.08);
+    background: var(--border-color);
     border: none;
     color: var(--white-color);
     font-size: 24px;
@@ -457,7 +458,7 @@
     height: 38px;
     border-radius: 50%;
     cursor: pointer;
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
     transition: background-color 0.3s ease, transform 0.3s ease;
@@ -657,7 +658,7 @@
     transform: translateY(-2px);
     box-shadow: 0 18px 30px rgba(64, 202, 165, 0.35);
 }
-
+/* 
 .modal-close-btn {
     position: sticky;
     top: 12px;
@@ -676,7 +677,7 @@
     justify-content: center;
     transition: background-color 0.3s ease, transform 0.3s ease;
     z-index: 10;
-}
+} */
 
 .modal-close-btn:hover,
 .modal-close-btn:focus-visible {

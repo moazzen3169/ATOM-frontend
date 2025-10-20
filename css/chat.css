@@ -21,9 +21,10 @@
     overflow-y: scroll;
     overflow-x: hidden;
     padding: 10px;
-    display: grid;
+    display: flex;
+    flex-direction: column;
     align-items: start;
-    justify-content: center;
+    justify-content: start;
     width: 320px;
     height: 100%;
     background-color: var(--background-color);
@@ -33,6 +34,7 @@
     align-items: center;
     justify-content: space-between;
     height: 70px;
+    width: 100%;
     padding: 10px;
     border-bottom: 1px solid var(--border-color);
 }
@@ -261,6 +263,7 @@
     align-items: center;
     justify-content: flex-end;
     gap: 16px;
+    direction: ltr;
 }
 
 .selected_contact .contact_profile{
@@ -277,8 +280,8 @@
 
 .selected_contact .contact_content{
     display: grid;
-    gap: 4px;
-    text-align: right;
+    gap: 2px;
+    text-align: left;
 }
 
 .selected_contact .contact_username{
@@ -568,7 +571,7 @@
         width: 100%;
         display: flex;
         align-items: start;
-        justify-content: center;
+        justify-content: start;
     }
     .chat_container.mobile-chat-open .chat_contacts_list {
       display: none; /* وقتی چت باز شد، لیست مخفی بشه */
