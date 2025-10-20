@@ -21,13 +21,35 @@ function getCurrentUser() {
 // --- DOM ELEMENTS ---
 const contactsList = document.querySelector('.contact_list');
 const messagesContainer = document.querySelector('.messages_container');
-const selectedContactName = document.querySelector('.selected_contact .contact_content span');
+const selectedContactName = document.querySelector('.selected_contact .contact_username');
+const selectedContactMeta = document.querySelector('.selected_contact .contact_meta');
+const selectedContactAvatar = document.querySelector('.selected_contact .contact_profile img');
 const chatContainer = document.querySelector('.chat_container');
 const emptyStateTemplate = `
     <div class="chat_empty_state">
         <p>گفتگویی یافت نشد.</p>
     </div>
 `;
+
+const editIconSvg = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25z" />
+        <path d="M20.71 7.04a1 1 0 000-1.41l-2.34-2.34a1 1 0 00-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z" />
+    </svg>
+`;
+
+const deleteIconSvg = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+        <path d="M9 3a2 2 0 00-2 2H4a1 1 0 100 2h16a1 1 0 100-2h-3a2 2 0 00-2-2H9zm-3 6v9a3 3 0 003 3h6a3 3 0 003-3V9H6zm5 3a1 1 0 112 0v5a1 1 0 11-2 0v-5z" />
+    </svg>
+`;
+
+function setElementText(el, value) {
+    if (!el) {
+        return;
+    }
+    el.textContent = value;
+}
 
 function getParticipant(conversation, currentUser = getCurrentUser()) {
     return conversation?.participants?.find((p) => p.id !== currentUser?.id) || conversation?.participants?.[0] || null;
@@ -66,6 +88,25 @@ function formatTimestamp(timestamp) {
     }
 }
 
+function setMessageMetadata(messageEl, message = {}) {
+    if (!messageEl) {
+        return;
+    }
+
+    const messageId = message.id ?? message.pk;
+    if (messageId !== undefined && messageId !== null) {
+        messageEl.dataset.messageId = String(messageId);
+    }
+
+    messageEl.dataset.messageContent = message.content || '';
+    messageEl.dataset.messageDeleted = message.is_deleted ? 'true' : 'false';
+    messageEl.dataset.messageEdited = message.is_edited ? 'true' : 'false';
+    if (message.sender) {
+        messageEl.dataset.messageSenderId = message.sender.id != null ? String(message.sender.id) : '';
+        messageEl.dataset.messageSenderName = message.sender.username || '';
+    }
+}
+
 function applyDeletedState(messageEl) {
     if (!messageEl) {
         return;
@@ -86,6 +127,12 @@ function applyDeletedState(messageEl) {
     messageEl.querySelector('.message-status')?.remove();
     messageEl.querySelector('.attachments')?.remove();
     messageEl.querySelector('.message-actions')?.remove();
+
+    setMessageMetadata(messageEl, {
+        id: messageEl.dataset.messageId,
+        content: '',
+        is_deleted: true,
+    });
 }
 
 function renderMessageContent(container, message, isSent) {
@@ -145,14 +192,18 @@ function renderMessageContent(container, message, isSent) {
         actions.classList.add('message-actions');
 
         const editBtn = document.createElement('button');
-        editBtn.classList.add('edit_btn');
+        editBtn.type = 'button';
+        editBtn.classList.add('message-actions__btn', 'edit_btn');
         editBtn.dataset.messageId = String(messageId);
-        editBtn.textContent = 'ویرایش';
+        editBtn.setAttribute('aria-label', 'ویرایش پیام');
+        editBtn.innerHTML = editIconSvg;
 
         const deleteBtn = document.createElement('button');
-        deleteBtn.classList.add('delete_btn');
+        deleteBtn.type = 'button';
+        deleteBtn.classList.add('message-actions__btn', 'delete_btn');
         deleteBtn.dataset.messageId = String(messageId);
-        deleteBtn.textContent = 'حذف';
+        deleteBtn.setAttribute('aria-label', 'حذف پیام');
+        deleteBtn.innerHTML = deleteIconSvg;
 
         actions.appendChild(editBtn);
         actions.appendChild(deleteBtn);
@@ -229,7 +280,7 @@ function updateConversationPreview(conversationId, message) {
     previewEl.textContent = getMessagePreviewText(message);
 }
 
-export function renderConversations(conversations, currentUser = getCurrentUser()) {
+export function renderConversations(conversations, currentUser = getCurrentUser(), activeConversationId = null) {
     if (!contactsList) {
         return;
     }
@@ -247,6 +298,9 @@ export function renderConversations(conversations, currentUser = getCurrentUser(
         const div = document.createElement('div');
         div.classList.add('contact');
         div.dataset.id = conv.id;
+        if (activeConversationId && Number(activeConversationId) === Number(conv.id)) {
+            div.classList.add('open');
+        }
         div.innerHTML = `
             <div class="contact_contant_right" data-conv-id="${conv.id}">
                 <div class="contact_profile">
@@ -304,12 +358,13 @@ export function renderMessages(messages, append = false, currentUser = getCurren
 
         const div = document.createElement('div');
         div.classList.add(messageType);
-        div.dataset.messageId = messageId;
+        div.dataset.messageId = String(messageId);
         if (msg.is_deleted) {
             div.classList.add('message-deleted');
         }
 
         renderMessageContent(div, msg, isSent);
+        setMessageMetadata(div, msg);
 
         if (isSent && !msg.is_deleted) {
             div.querySelector('.edit_btn')?.addEventListener('click', () => editMessageHandler?.(messageId));
@@ -328,7 +383,24 @@ export function updateSelectedContact(conversation, currentUser = getCurrentUser
     }
 
     const participant = getParticipant(conversation, currentUser);
-    selectedContactName.textContent = participant?.username || conversation?.name || 'Chat';
+    const username = participant?.username || conversation?.name || 'Chat';
+    const displayName = participant?.full_name || participant?.email || '';
+    setElementText(selectedContactName, username);
+
+    if (selectedContactMeta) {
+        if (displayName && displayName !== username) {
+            selectedContactMeta.textContent = displayName;
+        } else if (conversation?.participants?.length > 2) {
+            selectedContactMeta.textContent = `گروه ${conversation.participants.length} نفره`;
+        } else {
+            selectedContactMeta.textContent = 'گفتگو خصوصی';
+        }
+    }
+
+    if (selectedContactAvatar) {
+        selectedContactAvatar.src = participant?.profile_picture || '/img/icons/user-icon.svg';
+        selectedContactAvatar.alt = username;
+    }
 }
 
 export function clearChatWindow() {
@@ -337,6 +409,13 @@ export function clearChatWindow() {
     }
     if (selectedContactName) {
         selectedContactName.textContent = 'Chat';
+    }
+    if (selectedContactMeta) {
+        selectedContactMeta.textContent = 'در انتظار انتخاب مکالمه';
+    }
+    if (selectedContactAvatar) {
+        selectedContactAvatar.src = '/img/icons/user-icon.svg';
+        selectedContactAvatar.alt = 'profile';
     }
 }
 
@@ -363,6 +442,7 @@ export function handleEditedMessage(message) {
     }
 
     messageEl.classList.toggle('message-deleted', Boolean(message.is_deleted));
+    setMessageMetadata(messageEl, message);
 
     const hasAttachmentsInfo = Array.isArray(message.attachments);
     const shouldPreserveAttachments = !message.is_deleted && !hasAttachmentsInfo;
@@ -441,4 +521,26 @@ export function toggleMobileChatView(show) {
     if (window.innerWidth <= 1000) {
         chatContainer.classList.toggle('mobile-chat-open', Boolean(show));
     }
+}
+
+export function getMessageDetails(messageId) {
+    if (!messagesContainer || messageId === undefined || messageId === null) {
+        return null;
+    }
+
+    const messageEl = messagesContainer.querySelector(`[data-message-id="${messageId}"]`);
+    if (!messageEl) {
+        return null;
+    }
+
+    return {
+        id: messageId,
+        content: messageEl.dataset.messageContent || '',
+        is_deleted: messageEl.dataset.messageDeleted === 'true',
+        is_edited: messageEl.dataset.messageEdited === 'true',
+        sender: {
+            id: messageEl.dataset.messageSenderId ? Number(messageEl.dataset.messageSenderId) : undefined,
+            username: messageEl.dataset.messageSenderName || '',
+        },
+    };
 }

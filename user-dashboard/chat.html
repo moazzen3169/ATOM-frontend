@@ -36,16 +36,17 @@
                 <div class="logo">
                     <img src="../img/logo.png" alt="logo">
                 </div>
-                <div class="selected_contact">
-                    <div class="contact_content">
-                        <span>contact name</span>
-                    </div>
-                    <div class="contact_profile">
-                        <img src="../img/icons/user-icon.svg" alt="profile">
-                    </div>
+                <div class="selected_contact" role="presentation">
                     <button class="back" type="button" aria-label="بازگشت">
                         <img src="../img/icons/back.svg" alt="back">
                     </button>
+                    <div class="contact_profile" aria-hidden="true">
+                        <img src="../img/icons/user-icon.svg" alt="profile">
+                    </div>
+                    <div class="contact_content">
+                        <span class="contact_username">contact name</span>
+                        <span class="contact_meta">در انتظار انتخاب مکالمه</span>
+                    </div>
                 </div>
             </div>
 
@@ -80,6 +81,39 @@
             </form>
             <p id="chat-modal-error" class="chat-modal__error hidden" role="alert"></p>
             <div id="chat-user-search-results" class="chat-modal__results"></div>
+        </div>
+    </div>
+
+    <div id="chat-edit-modal" class="chat-modal chat-modal--compact" role="dialog" aria-modal="true" aria-labelledby="chat-edit-modal-title">
+        <div class="chat-modal__content">
+            <button type="button" class="chat-modal__close" data-close-modal aria-label="بستن">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="chat-edit-modal-title">ویرایش پیام</h2>
+            <p class="chat-modal__description">متن پیام خود را به‌روزرسانی کنید و سپس روی ذخیره کلیک کنید.</p>
+            <form id="chat-edit-form" class="chat-modal__form">
+                <label for="chat-edit-input">متن پیام</label>
+                <textarea id="chat-edit-input" class="chat-modal__textarea" rows="4" required placeholder="متن جدید پیام را وارد کنید."></textarea>
+                <p id="chat-edit-error" class="chat-modal__error hidden" role="alert"></p>
+                <div class="chat-modal__actions">
+                    <button type="button" class="chat-modal__secondary" data-close-modal>انصراف</button>
+                    <button type="submit" class="chat-modal__primary">ذخیره</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="chat-delete-modal" class="chat-modal chat-modal--compact" role="dialog" aria-modal="true" aria-labelledby="chat-delete-modal-title">
+        <div class="chat-modal__content">
+            <button type="button" class="chat-modal__close" data-close-modal aria-label="بستن">
+                <span aria-hidden="true">&times;</span>
+            </button>
+            <h2 id="chat-delete-modal-title">حذف پیام</h2>
+            <p class="chat-modal__description">آیا از حذف این پیام مطمئن هستید؟ پس از حذف، متن پیام برای همه کاربران قابل مشاهده نخواهد بود.</p>
+            <div class="chat-modal__actions">
+                <button type="button" class="chat-modal__secondary" data-close-modal>انصراف</button>
+                <button type="button" id="chat-delete-confirm" class="chat-modal__primary chat-modal__primary--danger">حذف پیام</button>
+            </div>
         </div>
     </div>
 
