@@ -8,10 +8,13 @@
 }
 
 .chat_container{
-    display: flex;
-    align-items: start;
-    justify-content: start;
-    height: 100vh;
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-template-rows: repeat(9 , 1fr);
+    /* align-items: start;
+    justify-content: start; */
+    max-height: 100vh;
+    height: 100%;
     background-color: var(--card-color);
     direction: rtl;
     width: 100%;
@@ -20,12 +23,13 @@
     direction: rtl;
     overflow-y: scroll;
     overflow-x: hidden;
+    grid-column: 1/4;
+    grid-row: 1/ 10;
     padding: 10px;
     display: flex;
     flex-direction: column;
     align-items: start;
     justify-content: start;
-    width: 320px;
     height: 100%;
     background-color: var(--background-color);
 }
@@ -37,6 +41,9 @@
     width: 100%;
     padding: 10px;
     border-bottom: 1px solid var(--border-color);
+    grid-column: 4/13;
+
+
 }
 .user_info{
     display: flex;
@@ -235,12 +242,15 @@
 
 
 .chat_contact_messages {
-    flex: 1;               /* بقیه‌ی فضا رو بگیره */
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    min-height: 0;
-    overflow: hidden;
+    display: grid;
+    grid-column: 4/13;
+    grid-row: 1/ 10;
+    grid-template-rows: repeat(9 , 1fr);
+    overflow: scroll;
+
+
+
+    /* grid-template-rows: repeat(12 , 1fr); */
 }
 .contact_messages_header{
     display: flex;
@@ -249,6 +259,7 @@
     background-color: var(--background-color);
     padding: 10px 20px 10px 40px;
     flex: 0 0 auto;
+    grid-row: 1/2;
 
 }
 .logo{
@@ -315,11 +326,13 @@
 
 
 .messages_container{
-    flex: 1 1 auto;
-    min-height: 0;
     overflow-y: auto;
     padding: 20px;
     color: var(--white-color);
+    overflow: scroll;
+    height: 75%;
+    grid-row: 2/ 5;
+
 }
 .messages_send{
     direction: rtl;
@@ -570,6 +583,7 @@
     width: 100%;          /* عرض کامل */
     box-sizing: border-box;
     flex: 0 0 auto;
+    max-height: 260px;
 }
 
 .data_sender_form{
@@ -612,7 +626,7 @@
     border: 1px solid rgba(255, 255, 255, 0.08);
     max-height: 160px;
     overflow-y: auto;
-    width: 100%;
+    width: 23%;
     box-sizing: border-box;
 }
 
@@ -747,6 +761,9 @@
   }
   .chat_contact_messages {
     display: block;
+    display: flex;
+    justify-content: space-between;
+    flex-direction: column;
   }
   
   /* حالت موبایل و تبلت (تا 1000px) */
