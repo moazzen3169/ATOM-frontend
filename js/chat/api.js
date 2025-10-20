@@ -1,10 +1,22 @@
 // This module handles all API requests to the server for the chat feature.
 import { createAuthApiClient, API_ENDPOINTS } from '../services/api-client.js';
 
+const CHAT_API_BASE_PATH = '/api/chat/conversations/';
+
+function buildConversationPath(conversationId = '') {
+    if (conversationId === undefined || conversationId === null || conversationId === '') {
+        return CHAT_API_BASE_PATH;
+    }
+
+    const normalizedId = encodeURIComponent(String(conversationId));
+    return `${CHAT_API_BASE_PATH}${normalizedId}/`;
+}
+
 const CHAT_API_ENDPOINTS = {
-    conversations: '/api/conversations/',
-    messages: (conversationId) => `/api/conversations/${encodeURIComponent(String(conversationId))}/messages/`,
-    attachments: (conversationId, messageId) => `/api/conversations/${encodeURIComponent(String(conversationId))}/messages/${encodeURIComponent(String(messageId))}/attachments/`,
+    conversations: CHAT_API_BASE_PATH,
+    conversationDetail: (conversationId) => buildConversationPath(conversationId),
+    messages: (conversationId) => `${buildConversationPath(conversationId)}messages/`,
+    attachments: (conversationId, messageId) => `${buildConversationPath(conversationId)}messages/${encodeURIComponent(String(messageId))}/attachments/`,
 };
 
 const apiClient = createAuthApiClient();
@@ -54,7 +66,7 @@ export async function createConversation(participantIds) {
  * @param {number} conversationId The ID of the conversation to delete.
  */
 export async function deleteConversation(conversationId) {
-    const response = await apiClient.fetch(`${CHAT_API_ENDPOINTS.conversations}${encodeURIComponent(String(conversationId))}/`, {
+    const response = await apiClient.fetch(CHAT_API_ENDPOINTS.conversationDetail(conversationId), {
         method: 'DELETE',
     });
 
