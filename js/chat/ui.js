@@ -44,6 +44,184 @@ const deleteIconSvg = `
     </svg>
 `;
 
+const IMAGE_EXTENSION_PATTERN = /\.(?:gif|jpe?g|png|webp|bmp|svg)$/i;
+const VIDEO_EXTENSION_PATTERN = /\.(?:mp4|webm|ogg|ogv|mov|m4v)$/i;
+
+function getAttachmentUrl(attachment) {
+    if (!attachment) {
+        return '';
+    }
+
+    const candidates = [
+        attachment.file,
+        attachment.url,
+        attachment.attachment,
+        attachment.path,
+        attachment.location,
+        attachment.source,
+        attachment.download_url,
+        attachment.downloadUrl,
+    ];
+
+    for (let index = 0; index < candidates.length; index += 1) {
+        const candidate = candidates[index];
+        if (typeof candidate === 'string' && candidate.trim()) {
+            return candidate;
+        }
+    }
+
+    return '';
+}
+
+function getAttachmentName(attachment, index = 0) {
+    if (!attachment) {
+        return `پیوست ${index + 1}`;
+    }
+
+    const candidates = [
+        attachment.name,
+        attachment.original_name,
+        attachment.originalName,
+        attachment.filename,
+        attachment.file_name,
+        attachment.title,
+        attachment.label,
+    ];
+
+    for (let idx = 0; idx < candidates.length; idx += 1) {
+        const candidate = candidates[idx];
+        if (typeof candidate === 'string' && candidate.trim()) {
+            return candidate.trim();
+        }
+    }
+
+    const url = getAttachmentUrl(attachment);
+    if (url) {
+        const parts = url.split('/').filter(Boolean);
+        if (parts.length > 0) {
+            return parts[parts.length - 1];
+        }
+    }
+
+    return `پیوست ${index + 1}`;
+}
+
+function getAttachmentContentType(attachment) {
+    if (!attachment || typeof attachment !== 'object') {
+        return '';
+    }
+
+    const rawType =
+        attachment.content_type ?? attachment.mime_type ?? attachment.mimeType ?? attachment.type ?? '';
+    return typeof rawType === 'string' ? rawType.toLowerCase() : '';
+}
+
+function detectAttachmentKind(attachment) {
+    const type = getAttachmentContentType(attachment);
+    if (type.startsWith('image/')) {
+        return 'image';
+    }
+    if (type.startsWith('video/')) {
+        return 'video';
+    }
+
+    const url = getAttachmentUrl(attachment).toLowerCase();
+    if (url) {
+        if (IMAGE_EXTENSION_PATTERN.test(url)) {
+            return 'image';
+        }
+        if (VIDEO_EXTENSION_PATTERN.test(url)) {
+            return 'video';
+        }
+    }
+
+    return 'file';
+}
+
+function createMessageAttachmentElement(attachment, index) {
+    const url = getAttachmentUrl(attachment);
+    if (!url) {
+        return null;
+    }
+
+    const label = getAttachmentName(attachment, index);
+    const kind = detectAttachmentKind(attachment);
+
+    if (kind === 'image') {
+        const figure = document.createElement('figure');
+        figure.classList.add('attachment-item', 'attachment-item--image');
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank';
+        link.rel = 'noopener';
+
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = label || 'پیوست تصویری';
+        img.loading = 'lazy';
+
+        link.appendChild(img);
+        figure.appendChild(link);
+
+        if (label) {
+            const caption = document.createElement('figcaption');
+            caption.textContent = label;
+            figure.appendChild(caption);
+        }
+
+        return figure;
+    }
+
+    if (kind === 'video') {
+        const figure = document.createElement('figure');
+        figure.classList.add('attachment-item', 'attachment-item--video');
+
+        const video = document.createElement('video');
+        video.src = url;
+        video.controls = true;
+        video.preload = 'metadata';
+        video.setAttribute('playsinline', '');
+        video.setAttribute('aria-label', label || 'پیوست ویدیویی');
+
+        figure.appendChild(video);
+
+        if (label) {
+            const caption = document.createElement('figcaption');
+            const link = document.createElement('a');
+            link.href = url;
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.textContent = label;
+            caption.appendChild(link);
+            figure.appendChild(caption);
+        }
+
+        return figure;
+    }
+
+    const item = document.createElement('div');
+    item.classList.add('attachment-item', 'attachment-item--file');
+
+    const link = document.createElement('a');
+    link.href = url;
+    link.target = '_blank';
+    link.rel = 'noopener';
+
+    const icon = document.createElement('span');
+    icon.classList.add('attachment-item__icon');
+    icon.setAttribute('aria-hidden', 'true');
+    icon.textContent = '📎';
+    link.appendChild(icon);
+
+    const nameEl = document.createElement('span');
+    nameEl.textContent = label || 'پیوست';
+    link.appendChild(nameEl);
+
+    item.appendChild(link);
+    return item;
+}
+
 function setElementText(el, value) {
     if (!el) {
         return;
@@ -166,17 +344,11 @@ function renderMessageContent(container, message, isSent) {
     if (!isDeleted && Array.isArray(message.attachments) && message.attachments.length > 0) {
         const attachmentsWrapper = document.createElement('div');
         attachmentsWrapper.classList.add('attachments');
-        message.attachments.forEach((att, index) => {
-            if (!att || !att.file) {
-                return;
+        message.attachments.forEach((attachment, index) => {
+            const element = createMessageAttachmentElement(attachment, index);
+            if (element) {
+                attachmentsWrapper.appendChild(element);
             }
-            const label = att.name || att.file || `Attachment ${index + 1}`;
-            const link = document.createElement('a');
-            link.href = att.file;
-            link.target = '_blank';
-            link.rel = 'noopener';
-            link.textContent = label;
-            attachmentsWrapper.appendChild(link);
         });
         if (attachmentsWrapper.childNodes.length) {
             container.appendChild(attachmentsWrapper);

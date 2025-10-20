@@ -237,9 +237,9 @@
 .chat_contact_messages {
     flex: 1;               /* بقیه‌ی فضا رو بگیره */
     display: flex;
-    justify-content: space-between;
     flex-direction: column;
-    height: 100vh   ;
+    justify-content: space-between;
+    min-height: 0;
     overflow: hidden;
 }
 .contact_messages_header{
@@ -248,7 +248,7 @@
     justify-content: space-between;
     background-color: var(--background-color);
     padding: 10px 20px 10px 40px;
-    height: 10%;
+    flex: 0 0 auto;
 
 }
 .logo{
@@ -315,9 +315,10 @@
 
 
 .messages_container{
-    overflow-y: scroll;
-    height: 80%;
-    padding: 20px;  
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 20px;
     color: var(--white-color);
 }
 .messages_send{
@@ -356,8 +357,73 @@
 
 }
 
+.attachments{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
 
+.attachment-item{
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    max-width: 220px;
+    margin: 0;
+}
 
+.attachment-item a{
+    color: var(--white-color);
+    text-decoration: none;
+}
+
+.attachment-item--image img,
+.attachment-item--video video{
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    object-fit: cover;
+    background: rgba(0, 0, 0, 0.4);
+}
+
+.attachment-item--video video{
+    aspect-ratio: 16 / 9;
+}
+
+.attachment-item figcaption{
+    font-size: 12px;
+    padding: 6px 10px;
+    color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(6px);
+    background: rgba(0, 0, 0, 0.45);
+    text-align: right;
+    direction: rtl;
+}
+
+.attachment-item--file{
+    padding: 10px 14px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.attachment-item--file a{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 14px;
+    word-break: break-word;
+}
+
+.attachment-item__icon{
+    font-size: 16px;
+}
 
 .message-actions{
     display: flex;
@@ -501,18 +567,23 @@
     justify-content: center;
     background-color: var(--background-color);
     padding: 10px 20px;
-    height: 10%;
     width: 100%;          /* عرض کامل */
     box-sizing: border-box;
-
+    flex: 0 0 auto;
 }
 
 .data_sender_form{
     display: flex;
-    align-items: center;
-    justify-content: space-between;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 12px;
     width: 100%;
     padding: 10px;
+}
+
+.data_sender_form.is-loading {
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 
@@ -522,9 +593,123 @@
     cursor: pointer;
 
 }
+
+.attachment_inputs {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 10px 0 0;
+}
+
+.attachment_previews {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 10px;
+    margin: 0 10px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    max-height: 160px;
+    overflow-y: auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.attachment_previews[hidden] {
+    display: none;
+}
+
+.attachment_preview_item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    background: rgba(0, 0, 0, 0.35);
+    backdrop-filter: blur(6px);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    min-width: 180px;
+}
+
+.attachment_preview_thumb {
+    flex: 0 0 48px;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.attachment_preview_thumb img,
+.attachment_preview_thumb video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.attachment_preview_thumb video {
+    pointer-events: none;
+}
+
+.attachment_preview_icon {
+    font-size: 24px;
+    color: var(--white-color);
+    opacity: 0.7;
+}
+
+.attachment_preview_meta {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1 1 auto;
+    min-width: 0;
+}
+
+.attachment_preview_name {
+    font-size: 0.9rem;
+    color: var(--white-color);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.attachment_preview_size {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.attachment_preview_remove {
+    flex: 0 0 auto;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.attachment_preview_remove:hover,
+.attachment_preview_remove:focus-visible {
+    color: var(--danger-text-strong);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.attachment_error {
+    width: 100%;
+    margin: 0 10px;
+    font-size: 0.85rem;
+    color: var(--danger-text-strong);
+}
+
 .chat_input {
-    flex: 1;              
-    max-width: 90%;
+    flex: 1 1 auto;
     height: 50px;
     background-color: transparent;
     border: none;

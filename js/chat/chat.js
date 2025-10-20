@@ -6,6 +6,9 @@ import * as ui from './ui.js';
 const chatInput = document.querySelector('.chat_input');
 const dataSenderForm = document.getElementById('data_sender_form');
 const fileInput = document.getElementById('file_input');
+const attachmentPreviewsContainer = document.getElementById('attachment_previews');
+const attachmentErrorEl = document.getElementById('attachment_error');
+const chatSubmitBtn = document.getElementById('chat-submit-btn');
 const newConversationBtn = document.getElementById('new-conversation-btn');
 const backBtn = document.querySelector('.back');
 
@@ -27,6 +30,9 @@ const deleteConfirmBtn = document.getElementById('chat-delete-confirm');
 const deleteModalDescription = deleteModalElement?.querySelector('.chat-modal__description') || null;
 const deleteModalDefaultDescription = deleteModalDescription?.textContent || '';
 
+const MAX_ATTACHMENT_SIZE = 25 * 1024 * 1024; // 25 MB
+const MAX_ATTACHMENTS = 5;
+
 // --- STATE ---
 let conversations = [];
 let selectedConversationId = null;
@@ -34,6 +40,9 @@ let currentUser = null;
 let isSearchingUsers = false;
 let pendingEditMessageId = null;
 let pendingDeleteMessageId = null;
+let pendingAttachments = [];
+let attachmentIdCounter = 0;
+let isSendingMessage = false;
 
 // --- HELPERS ---
 
@@ -87,6 +96,324 @@ function highlightMatch(text, query) {
         console.error('Failed to highlight match:', error);
         return escapeHtml(text);
     }
+}
+
+function formatFileSize(bytes) {
+    if (!Number.isFinite(bytes)) {
+        return 'اندازه نامشخص';
+    }
+    if (bytes < 1024) {
+        return `${bytes} بایت`;
+    }
+    const units = ['کیلوبایت', 'مگابایت', 'گیگابایت'];
+    let size = bytes / 1024;
+    let unitIndex = 0;
+    while (size >= 1024 && unitIndex < units.length - 1) {
+        size /= 1024;
+        unitIndex += 1;
+    }
+    return `${size.toFixed(size >= 10 ? 0 : 1)} ${units[unitIndex]}`;
+}
+
+function buildAttachmentPlaceholder(files) {
+    if (!Array.isArray(files) || files.length === 0) {
+        return '';
+    }
+    if (files.length === 1) {
+        return `پیوست: ${files[0].name}`;
+    }
+    return `پیوست‌ها (${files.length} فایل)`;
+}
+
+function normalizeMessageId(candidate) {
+    if (candidate === undefined || candidate === null) {
+        return null;
+    }
+
+    if (typeof candidate === 'number') {
+        return Number.isNaN(candidate) ? null : candidate;
+    }
+
+    if (typeof candidate === 'string') {
+        const trimmed = candidate.trim();
+        if (!trimmed) {
+            return null;
+        }
+        const numeric = Number(trimmed);
+        return Number.isNaN(numeric) ? trimmed : numeric;
+    }
+
+    return null;
+}
+
+function resolveMessageIdFromResponse(response) {
+    if (!response) {
+        return null;
+    }
+
+    const visited = new Set();
+    const stack = [response];
+
+    while (stack.length) {
+        const current = stack.pop();
+        if (current === undefined || current === null) {
+            continue;
+        }
+
+        if (typeof current !== 'object') {
+            const normalized = normalizeMessageId(current);
+            if (normalized !== null) {
+                return normalized;
+            }
+            continue;
+        }
+
+        if (visited.has(current)) {
+            continue;
+        }
+        visited.add(current);
+
+        const directCandidate = normalizeMessageId(
+            current.id ??
+                current.pk ??
+                current.message_id ??
+                current.messageId ??
+                current.result_id ??
+                current.resultId,
+        );
+        if (directCandidate !== null) {
+            return directCandidate;
+        }
+
+        const values = Array.isArray(current) ? current : Object.values(current);
+        for (let index = 0; index < values.length; index += 1) {
+            const value = values[index];
+            if (value === undefined || value === null) {
+                continue;
+            }
+            if (typeof value === 'object' || typeof value === 'string' || typeof value === 'number') {
+                stack.push(value);
+            }
+        }
+    }
+
+    return null;
+}
+
+function setAttachmentError(message) {
+    if (!attachmentErrorEl) {
+        return;
+    }
+    const hasMessage = Boolean(message);
+    attachmentErrorEl.textContent = hasMessage ? message : '';
+    attachmentErrorEl.hidden = !hasMessage;
+}
+
+function setFormLoading(isLoading) {
+    isSendingMessage = Boolean(isLoading);
+    if (dataSenderForm) {
+        dataSenderForm.classList.toggle('is-loading', isSendingMessage);
+        dataSenderForm.setAttribute('aria-busy', isSendingMessage ? 'true' : 'false');
+    }
+    if (chatSubmitBtn) {
+        chatSubmitBtn.disabled = isSendingMessage;
+    }
+    if (chatInput) {
+        chatInput.disabled = isSendingMessage;
+    }
+    if (fileInput) {
+        fileInput.disabled = isSendingMessage;
+    }
+}
+
+function createAttachmentPreviewElement(attachment) {
+    if (!attachmentPreviewsContainer || !attachment) {
+        return null;
+    }
+
+    const { id, file, previewUrl } = attachment;
+    const item = document.createElement('div');
+    item.classList.add('attachment_preview_item');
+    item.dataset.attachmentId = id;
+
+    const thumb = document.createElement('div');
+    thumb.classList.add('attachment_preview_thumb');
+
+    const type = file?.type || '';
+    if (type.startsWith('image/')) {
+        const img = document.createElement('img');
+        img.src = previewUrl || '';
+        img.alt = file.name || 'پیوست تصویری';
+        thumb.appendChild(img);
+    } else if (type.startsWith('video/')) {
+        const video = document.createElement('video');
+        if (previewUrl) {
+            video.src = previewUrl;
+        }
+        video.muted = true;
+        video.loop = true;
+        video.autoplay = true;
+        video.playsInline = true;
+        video.setAttribute('aria-label', file.name || 'پیوست ویدیویی');
+        video.addEventListener('loadeddata', () => {
+            video.play().catch(() => {});
+        }, { once: true });
+        thumb.appendChild(video);
+    } else {
+        const icon = document.createElement('span');
+        icon.classList.add('attachment_preview_icon');
+        icon.textContent = '📎';
+        thumb.appendChild(icon);
+    }
+
+    item.appendChild(thumb);
+
+    const meta = document.createElement('div');
+    meta.classList.add('attachment_preview_meta');
+    const nameEl = document.createElement('span');
+    nameEl.classList.add('attachment_preview_name');
+    nameEl.innerHTML = escapeHtml(file?.name || 'فایل بدون نام');
+
+    const sizeEl = document.createElement('span');
+    sizeEl.classList.add('attachment_preview_size');
+    sizeEl.textContent = formatFileSize(file?.size);
+
+    meta.appendChild(nameEl);
+    meta.appendChild(sizeEl);
+    item.appendChild(meta);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.classList.add('attachment_preview_remove');
+    removeBtn.dataset.attachmentId = id;
+    removeBtn.setAttribute('aria-label', `حذف ${file?.name || 'پیوست'}`);
+    removeBtn.textContent = '×';
+    item.appendChild(removeBtn);
+
+    return item;
+}
+
+function renderAttachmentPreviews() {
+    if (!attachmentPreviewsContainer) {
+        return;
+    }
+
+    attachmentPreviewsContainer.innerHTML = '';
+
+    if (!pendingAttachments.length) {
+        attachmentPreviewsContainer.hidden = true;
+        return;
+    }
+
+    const fragment = document.createDocumentFragment();
+    pendingAttachments.forEach((attachment) => {
+        const element = createAttachmentPreviewElement(attachment);
+        if (element) {
+            fragment.appendChild(element);
+        }
+    });
+
+    attachmentPreviewsContainer.appendChild(fragment);
+    attachmentPreviewsContainer.hidden = false;
+}
+
+function clearPendingAttachments() {
+    pendingAttachments.forEach((attachment) => {
+        if (attachment.previewUrl) {
+            URL.revokeObjectURL(attachment.previewUrl);
+        }
+    });
+    pendingAttachments = [];
+    if (fileInput) {
+        fileInput.value = '';
+    }
+    setAttachmentError('');
+    renderAttachmentPreviews();
+}
+
+function removePendingAttachment(attachmentId) {
+    if (!attachmentId) {
+        return;
+    }
+
+    const index = pendingAttachments.findIndex((item) => item.id === attachmentId);
+    if (index === -1) {
+        return;
+    }
+
+    const [removed] = pendingAttachments.splice(index, 1);
+    if (removed?.previewUrl) {
+        URL.revokeObjectURL(removed.previewUrl);
+    }
+
+    if (pendingAttachments.length < MAX_ATTACHMENTS) {
+        setAttachmentError('');
+    }
+
+    renderAttachmentPreviews();
+}
+
+function addPendingAttachments(files) {
+    if (!Array.isArray(files) || files.length === 0) {
+        return;
+    }
+
+    const availableSlots = MAX_ATTACHMENTS - pendingAttachments.length;
+    const acceptedFiles = files.slice(0, Math.max(availableSlots, 0));
+    const extraFiles = files.length - acceptedFiles.length;
+    const errors = [];
+
+    if (extraFiles > 0) {
+        errors.push(`حداکثر ${MAX_ATTACHMENTS} پیوست می‌توانید اضافه کنید.`);
+    }
+
+    acceptedFiles.forEach((file) => {
+        if (!file) {
+            return;
+        }
+        if (file.size > MAX_ATTACHMENT_SIZE) {
+            errors.push(`حجم فایل ${file.name} نباید بیش از ${(MAX_ATTACHMENT_SIZE / (1024 * 1024)).toFixed(0)} مگابایت باشد.`);
+            return;
+        }
+
+        const id = `attachment-${Date.now()}-${attachmentIdCounter}`;
+        attachmentIdCounter += 1;
+        const isPreviewable = file.type?.startsWith('image/') || file.type?.startsWith('video/');
+        const previewUrl = isPreviewable ? URL.createObjectURL(file) : null;
+        pendingAttachments.push({ id, file, previewUrl });
+    });
+
+    if (errors.length) {
+        setAttachmentError(errors.join(' '));
+    } else {
+        setAttachmentError('');
+    }
+
+    renderAttachmentPreviews();
+}
+
+function handleFileSelection(event) {
+    const files = Array.from(event?.target?.files || []);
+    if (!files.length) {
+        return;
+    }
+    addPendingAttachments(files);
+    if (fileInput) {
+        fileInput.value = '';
+    }
+}
+
+function handleAttachmentPreviewsClick(event) {
+    const target = event.target;
+    if (!target) {
+        return;
+    }
+    const removeBtn = target.closest('.attachment_preview_remove');
+    if (!removeBtn) {
+        return;
+    }
+    const { attachmentId } = removeBtn.dataset;
+    removePendingAttachment(attachmentId);
 }
 
 function openModal(modal) {
@@ -400,6 +727,11 @@ export async function openChat(conversationId) {
         return;
     }
 
+    const isNewConversation = selectedConversationId !== conversationId;
+    if (isNewConversation) {
+        clearPendingAttachments();
+    }
+
     selectedConversationId = conversationId;
 
     document.querySelectorAll('.contact').forEach((el) => {
@@ -424,19 +756,23 @@ export async function openChat(conversationId) {
 async function handleFormSubmit(event) {
     event.preventDefault();
 
+    if (isSendingMessage) {
+        return;
+    }
+
     if (!selectedConversationId) {
         alert('ابتدا یک گفتگو را انتخاب کنید.');
         return;
     }
 
     const content = chatInput?.value?.trim() || '';
-    const file = fileInput?.files?.[0];
+    const attachments = pendingAttachments.map((item) => item.file).filter(Boolean);
 
-    if (!content && !file) {
+    if (!content && attachments.length === 0) {
         return;
     }
 
-    if (content && !file) {
+    if (!attachments.length && content) {
         const payload = { type: 'chat_message', message: content };
         const sent = ws.sendWebSocketMessage(payload);
         if (!sent) {
@@ -455,26 +791,62 @@ async function handleFormSubmit(event) {
     }
 
     try {
-        const messageText = content || (file ? `File: ${file.name}` : '');
-        const newMessage = await api.sendMessage(selectedConversationId, messageText);
+        setFormLoading(true);
 
-        if (file) {
+        const attachmentsToSend = pendingAttachments.slice();
+        const messageText = content || buildAttachmentPlaceholder(attachmentsToSend.map((item) => item.file).filter(Boolean));
+        const newMessage = await api.sendMessage(selectedConversationId, messageText);
+        const messageId = resolveMessageIdFromResponse(newMessage);
+
+        if (messageId === undefined || messageId === null) {
+            throw new Error('شناسه پیام برای بارگذاری پیوست یافت نشد.');
+        }
+
+        const failedUploads = [];
+
+        for (const attachment of attachmentsToSend) {
+            if (!attachment?.file) {
+                continue;
+            }
+
             const formData = new FormData();
-            formData.append('file', file);
-            await api.uploadAttachment(selectedConversationId, newMessage.id, formData);
+            formData.append('file', attachment.file, attachment.file.name);
+
+            try {
+                await api.uploadAttachment(selectedConversationId, messageId, formData);
+                removePendingAttachment(attachment.id);
+            } catch (uploadError) {
+                console.error(`Failed to upload attachment ${attachment.file?.name || attachment.id}:`, uploadError);
+                failedUploads.push(attachment);
+            }
         }
 
         if (chatInput) {
             chatInput.value = '';
         }
-        if (fileInput) {
-            fileInput.value = '';
+
+        if (failedUploads.length === 0) {
+            setAttachmentError('');
+            clearPendingAttachments();
+        } else {
+            const failedNames = failedUploads
+                .map((item) => item?.file?.name)
+                .filter(Boolean);
+            if (failedNames.length) {
+                setAttachmentError(`بارگذاری فایل‌های ${failedNames.join('، ')} انجام نشد. لطفاً دوباره تلاش کنید.`);
+            } else {
+                setAttachmentError('بارگذاری برخی از پیوست‌ها انجام نشد. لطفاً دوباره تلاش کنید.');
+            }
+            renderAttachmentPreviews();
         }
 
         await openChat(selectedConversationId);
         await loadConversations();
     } catch (error) {
         console.error('Could not send message with attachment:', error);
+        alert('ارسال پیام با پیوست با مشکل مواجه شد. لطفاً دوباره تلاش کنید.');
+    } finally {
+        setFormLoading(false);
     }
 }
 
@@ -627,6 +999,14 @@ async function initialize() {
 
     if (dataSenderForm) {
         dataSenderForm.addEventListener('submit', handleFormSubmit);
+    }
+
+    if (fileInput) {
+        fileInput.addEventListener('change', handleFileSelection);
+    }
+
+    if (attachmentPreviewsContainer) {
+        attachmentPreviewsContainer.addEventListener('click', handleAttachmentPreviewsClick);
     }
 
     let typingTimeout;
