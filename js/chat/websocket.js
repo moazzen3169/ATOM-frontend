@@ -46,7 +46,10 @@ export function connectWebSocket(conversationId) {
                     handleEditedMessage(data.message);
                     break;
                 case 'message.deleted':
-                    handleDeletedMessage(data.message_id);
+                    handleDeletedMessage(
+                        data.message_id,
+                        data.conversation ?? data.conversation_id ?? data.conversationId ?? null,
+                    );
                     break;
                 case 'user.typing':
                     handleTypingIndicator(data.user, data.is_typing);

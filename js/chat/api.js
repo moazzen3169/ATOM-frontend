@@ -4,7 +4,8 @@ import { createAuthApiClient, API_ENDPOINTS } from '../services/api-client.js';
 const CHAT_API_ENDPOINTS = {
     conversations: '/api/chat/conversations/',
     messages: (conversationId) => `/api/chat/conversations/${encodeURIComponent(String(conversationId))}/messages/`,
-    attachments: (conversationId, messageId) => `/api/chat/conversations/${encodeURIComponent(String(conversationId))}/messages/${encodeURIComponent(String(messageId))}/attachments/`,
+    attachments: (conversationId, messageId) =>
+        `/api/chat/conversations/${encodeURIComponent(String(conversationId))}/messages/${encodeURIComponent(String(messageId))}/attachments/`,
 };
 
 const apiClient = createAuthApiClient();

@@ -228,6 +228,7 @@ async function handleFormSubmit(e) {
             try {
                 await api.sendMessage(selectedConversationId, content);
                 await openChat(selectedConversationId);
+                await loadConversations();
             } catch (error) {
                 console.error('Error sending text message via REST API:', error);
             }
@@ -255,7 +256,8 @@ async function handleFormSubmit(e) {
             fileInput.value = '';
         }
 
-        openChat(selectedConversationId);
+        await openChat(selectedConversationId);
+        await loadConversations();
     } catch (error) {
         console.error('Could not send message with attachment:', error);
     }
@@ -307,6 +309,33 @@ async function loadConversations() {
         console.error('Could not load conversations:', error);
         return [];
     }
+}
+
+export function updateConversationCache(conversationId, lastMessage) {
+    if (!conversationId) {
+        return;
+    }
+
+    const normalizedId = typeof conversationId === 'string' ? Number(conversationId) : conversationId;
+    if (Number.isNaN(normalizedId)) {
+        return;
+    }
+
+    const index = conversations.findIndex((conv) => conv.id === normalizedId);
+    if (index === -1) {
+        return;
+    }
+
+    const conversation = { ...conversations[index] };
+    if (lastMessage === null) {
+        conversation.last_message = null;
+    } else if (lastMessage && typeof lastMessage === 'object') {
+        conversation.last_message = { ...conversation.last_message, ...lastMessage };
+    } else if (lastMessage !== undefined) {
+        conversation.last_message = { ...(conversation.last_message || {}), content: String(lastMessage) };
+    }
+
+    conversations[index] = conversation;
 }
 
 // --- INITIALIZATION ---
@@ -361,6 +390,9 @@ async function initialize() {
     let typingTimeout;
     if (chatInput) {
         chatInput.addEventListener('input', () => {
+            if (!selectedConversationId) {
+                return;
+            }
             clearTimeout(typingTimeout);
 
             ws.sendWebSocketMessage({
@@ -369,6 +401,9 @@ async function initialize() {
             });
 
             typingTimeout = setTimeout(() => {
+                if (!selectedConversationId) {
+                    return;
+                }
                 ws.sendWebSocketMessage({
                     type: 'typing',
                     is_typing: false,
@@ -381,6 +416,9 @@ async function initialize() {
                 e.preventDefault();
                 dataSenderForm?.dispatchEvent(new Event('submit', { cancelable: true }));
                 clearTimeout(typingTimeout);
+                if (!selectedConversationId) {
+                    return;
+                }
                 ws.sendWebSocketMessage({
                     type: 'typing',
                     is_typing: false,
