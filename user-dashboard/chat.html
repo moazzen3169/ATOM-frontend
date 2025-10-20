@@ -1,12 +1,12 @@
 <!DOCTYPE html>
-<html lang="fa">
+<html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>chat page</title>
-    <link rel="stylesheet" href="/css/colors.css">
-    <link rel="stylesheet" href="/fonts/fonts.css">
-    <link rel="stylesheet" href="/css/chat.css">
+    <link rel="stylesheet" href="../css/colors.css">
+    <link rel="stylesheet" href="../fonts/fonts.css">
+    <link rel="stylesheet" href="../css/chat.css">
 </head>
 <body>
     <div class="chat_container">
@@ -15,13 +15,13 @@
             <div class="chat_header">
                 <div class="user_info">
                     <div class="user_profile">
-                        <img src="/img/profile.jpg" alt="profile">
+                        <img src="../img/profile.jpg" alt="profile">
                     </div>
                     <span>شما</span>
                 </div>
                 <div class="chat_menu">
                     <button class="menu_btn" id="new-conversation-btn" aria-label="ایجاد گفتگو جدید">
-                        <img src="/img/icons/plus.svg" alt="New Conversation">
+                        <img src="../img/icons/plus.svg" alt="New Conversation">
                     </button>
                 </div>
             </div>
@@ -34,17 +34,17 @@
         <div class="chat_contact_messages">
             <div class="contact_messages_header">
                 <div class="logo">
-                    <img src="/img/logo.png" alt="logo">
+                    <img src="../img/logo.png" alt="logo">
                 </div>
                 <div class="selected_contact">
                     <div class="contact_content">
                         <span>contact name</span>
                     </div>
                     <div class="contact_profile">
-                        <img src="/img/icons/user-icon.svg" alt="profile">
+                        <img src="../img/icons/user-icon.svg" alt="profile">
                     </div>
                     <button class="back" type="button" aria-label="بازگشت">
-                        <img src="/img/icons/back.svg" alt="back">
+                        <img src="../img/icons/back.svg" alt="back">
                     </button>
                 </div>
             </div>
@@ -53,11 +53,11 @@
 
             <div class="data_sending_section">
                 <form id="data_sender_form" class="data_sender_form" method="post">
-                    <label class="files" for="file_input"><img src="/img/icons/file-input.svg" alt="file"></label>
+                    <label class="files" for="file_input"><img src="../img/icons/file-input.svg" alt="file"></label>
                     <input type="file" name="file" id="file_input" style="display: none;">
-                    <input class="chat_input" type="text" name="chat-input" id="chat-input" placeholder="متن خود را وارد کنید..">
+                      <input class="chat_input" type="text" name="chat-input" id="chat-input" placeholder="متن خود را وارد کنید..">
                     <button type="submit" class="sender" aria-label="ارسال پیام">
-                        <img src="/img/icons/send.svg" alt="send">
+                        <img src="../img/icons/send.svg" alt="send">
                     </button>
                 </form>
             </div>
@@ -83,7 +83,7 @@
         </div>
     </div>
 
-    <script src="/js/chat/api.js" type="module"></script>
-    <script src="/js/chat/chat.js" type="module"></script>
+    <script src="../js/chat/api.js" type="module"></script>
+    <script src="../js/chat/chat.js" type="module"></script>
 </body>
 </html>

@@ -1,0 +1,13 @@
+.user_tournaments_history[data-component="user-tournaments-history"] {
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.user_tournaments_history [data-component-fallback] {
+  margin: 0;
+  padding: 32px 16px;
+  text-align: center;
+  width: 100%;
+}
