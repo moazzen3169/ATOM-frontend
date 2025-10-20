@@ -722,6 +722,13 @@
     color: var(--danger-text-strong);
 }
 
+.chat_form_error {
+    width: 100%;
+    margin: 0 10px;
+    font-size: 0.85rem;
+    color: var(--danger-text-strong);
+}
+
 .chat_input {
     flex: 1 1 auto;
     height: 50px;
@@ -735,6 +742,11 @@
 .chat_input:focus {
     border: none;
     outline: none;   /* 🔹 حتما اینجا هم باشه */
+}
+
+.chat_input[aria-invalid="true"] {
+    box-shadow: 0 0 0 1px rgba(255, 102, 102, 0.9);
+    border-radius: 12px;
 }
 
 
@@ -751,6 +763,13 @@
     margin-left: 10px;
     margin: 10px;
 
+}
+
+.sender[disabled],
+.sender[aria-disabled="true"] {
+    cursor: not-allowed;
+    opacity: 0.6;
+    background-color: var(--border-color);
 }
 
 

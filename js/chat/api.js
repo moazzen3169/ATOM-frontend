@@ -16,7 +16,10 @@ const CHAT_API_ENDPOINTS = {
     conversations: CHAT_API_BASE_PATH,
     conversationDetail: (conversationId) => buildConversationPath(conversationId),
     messages: (conversationId) => `${buildConversationPath(conversationId)}messages/`,
-    attachments: (conversationId, messageId) => `${buildConversationPath(conversationId)}messages/${encodeURIComponent(String(messageId))}/attachments/`,
+    messageDetail: (conversationId, messageId) =>
+        `${buildConversationPath(conversationId)}messages/${encodeURIComponent(String(messageId))}/`,
+    attachments: (conversationId, messageId) =>
+        `${CHAT_API_ENDPOINTS.messageDetail(conversationId, messageId)}attachments/`,
 };
 
 const apiClient = createAuthApiClient();
@@ -114,9 +117,18 @@ export async function sendMessage(conversationId, content) {
  * @param {FormData} formData
  */
 export async function uploadAttachment(conversationId, messageId, formData) {
+    let payload = formData;
+    if (!(payload instanceof FormData)) {
+        payload = new FormData();
+    }
+
+    if (payload instanceof FormData && !payload.has('message')) {
+        payload.append('message', String(messageId));
+    }
+
     const response = await apiClient.fetch(CHAT_API_ENDPOINTS.attachments(conversationId, messageId), {
         method: 'POST',
-        body: formData,
+        body: payload,
     });
 
     if (!response.ok) {
@@ -159,4 +171,25 @@ export async function searchUsers(query) {
     }
 
     return [];
+}
+
+export async function updateMessage(conversationId, messageId, content) {
+    if (!content?.trim()) {
+        throw new Error('Message content is required for update.');
+    }
+
+    return await apiClient.fetchJson(CHAT_API_ENDPOINTS.messageDetail(conversationId, messageId), {
+        method: 'PATCH',
+        body: { content },
+    });
+}
+
+export async function deleteMessage(conversationId, messageId) {
+    const response = await apiClient.fetch(CHAT_API_ENDPOINTS.messageDetail(conversationId, messageId), {
+        method: 'DELETE',
+    });
+
+    if (response.status !== 204 && !response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+    }
 }
