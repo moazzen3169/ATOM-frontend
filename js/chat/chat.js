@@ -8,6 +8,7 @@ const dataSenderForm = document.getElementById('data_sender_form');
 const fileInput = document.getElementById('file_input');
 const attachmentPreviewsContainer = document.getElementById('attachment_previews');
 const attachmentErrorEl = document.getElementById('attachment_error');
+const formErrorEl = document.getElementById('chat-form-error');
 const chatSubmitBtn = document.getElementById('chat-submit-btn');
 const newConversationBtn = document.getElementById('new-conversation-btn');
 const backBtn = document.querySelector('.back');
@@ -43,6 +44,7 @@ let pendingDeleteMessageId = null;
 let pendingAttachments = [];
 let attachmentIdCounter = 0;
 let isSendingMessage = false;
+let formErrorMessage = '';
 
 // --- HELPERS ---
 
@@ -134,6 +136,51 @@ function setAttachmentError(message) {
     attachmentErrorEl.hidden = !hasMessage;
 }
 
+function setFormError(message) {
+    if (!formErrorEl) {
+        return;
+    }
+    formErrorMessage = message || '';
+    const hasMessage = Boolean(formErrorMessage);
+    formErrorEl.textContent = formErrorMessage;
+    formErrorEl.hidden = !hasMessage;
+    if (chatInput) {
+        chatInput.setAttribute('aria-invalid', hasMessage ? 'true' : 'false');
+    }
+}
+
+function clearFormError() {
+    setFormError('');
+}
+
+function hasMessageContent() {
+    const content = chatInput?.value?.trim();
+    return Boolean(content);
+}
+
+function hasPendingAttachments() {
+    return pendingAttachments.some((item) => Boolean(item?.file));
+}
+
+function canSubmitMessage() {
+    if (!selectedConversationId) {
+        return false;
+    }
+    if (isSendingMessage) {
+        return false;
+    }
+    return hasMessageContent() || hasPendingAttachments();
+}
+
+function updateSendButtonState() {
+    if (!chatSubmitBtn) {
+        return;
+    }
+    const canSend = canSubmitMessage();
+    chatSubmitBtn.disabled = !canSend;
+    chatSubmitBtn.setAttribute('aria-disabled', canSend ? 'false' : 'true');
+}
+
 function setFormLoading(isLoading) {
     isSendingMessage = Boolean(isLoading);
     if (dataSenderForm) {
@@ -149,6 +196,7 @@ function setFormLoading(isLoading) {
     if (fileInput) {
         fileInput.disabled = isSendingMessage;
     }
+    updateSendButtonState();
 }
 
 function createAttachmentPreviewElement(attachment) {
@@ -254,6 +302,7 @@ function clearPendingAttachments() {
     }
     setAttachmentError('');
     renderAttachmentPreviews();
+    updateSendButtonState();
 }
 
 function removePendingAttachment(attachmentId) {
@@ -276,6 +325,7 @@ function removePendingAttachment(attachmentId) {
     }
 
     renderAttachmentPreviews();
+    updateSendButtonState();
 }
 
 function addPendingAttachments(files) {
@@ -312,9 +362,13 @@ function addPendingAttachments(files) {
         setAttachmentError(errors.join(' '));
     } else {
         setAttachmentError('');
+        if (acceptedFiles.length) {
+            clearFormError();
+        }
     }
 
     renderAttachmentPreviews();
+    updateSendButtonState();
 }
 
 function handleFileSelection(event) {
@@ -495,27 +549,44 @@ async function handleCreateConversation(user) {
         return;
     }
 
+    const existingConversation = conversations.find((conv) =>
+        conv?.participants?.some((participant) => participant?.id === user.id),
+    );
+    if (existingConversation) {
+        hideNewConversationModal();
+        await openChat(existingConversation.id);
+        return;
+    }
+
     try {
         setModalError('');
         setModalLoading(true);
         const response = await api.createConversation([user.id]);
-        hideNewConversationModal();
-
-        const newConversationId = response?.id || null;
+        const newConversationId = response?.id ?? response?.pk ?? null;
         const updatedConversations = await loadConversations();
 
-        if (newConversationId) {
-            openChat(newConversationId);
-            return;
-        }
+        const createdConv =
+            updatedConversations?.find((conv) => conv.id === newConversationId) ||
+            updatedConversations?.find((conv) => conv.participants?.some((p) => p.id === user.id));
 
-        const createdConv = updatedConversations?.find((conv) => conv.participants?.some((p) => p.id === user.id));
+        hideNewConversationModal();
+
         if (createdConv) {
-            openChat(createdConv.id);
+            await openChat(createdConv.id);
+        } else if (newConversationId) {
+            await openChat(newConversationId);
         }
     } catch (error) {
         console.error('Could not create conversation:', error);
         setModalError('ایجاد گفتگو با خطا مواجه شد. دوباره تلاش کنید.');
+        const updatedConversations = await loadConversations();
+        const fallbackConversation = updatedConversations?.find((conv) =>
+            conv?.participants?.some((participant) => participant?.id === user.id),
+        );
+        if (fallbackConversation) {
+            hideNewConversationModal();
+            await openChat(fallbackConversation.id);
+        }
     } finally {
         setModalLoading(false);
     }
@@ -658,6 +729,8 @@ export async function openChat(conversationId) {
     }
 
     selectedConversationId = conversationId;
+    clearFormError();
+    updateSendButtonState();
 
     document.querySelectorAll('.contact').forEach((el) => {
         el.classList.toggle('open', el.dataset.id == conversationId);
@@ -687,6 +760,7 @@ async function handleFormSubmit(event) {
 
     if (!selectedConversationId) {
         alert('ابتدا یک گفتگو را انتخاب کنید.');
+        setFormError('برای ارسال پیام، ابتدا یک گفتگو را انتخاب کنید.');
         return;
     }
 
@@ -694,6 +768,8 @@ async function handleFormSubmit(event) {
     const attachments = pendingAttachments.map((item) => item.file).filter(Boolean);
 
     if (!content && attachments.length === 0) {
+        setFormError('برای ارسال پیام، متن بنویسید یا پیوست اضافه کنید.');
+        updateSendButtonState();
         return;
     }
 
@@ -707,16 +783,22 @@ async function handleFormSubmit(event) {
                 await loadConversations();
             } catch (error) {
                 console.error('Error sending text message via REST API:', error);
+                setFormError('ارسال پیام با مشکل مواجه شد. لطفاً دوباره تلاش کنید.');
+                updateSendButtonState();
+                return;
             }
         }
         if (chatInput) {
             chatInput.value = '';
         }
+        clearFormError();
+        updateSendButtonState();
         return;
     }
 
     try {
         setFormLoading(true);
+        clearFormError();
 
         const attachmentsToSend = pendingAttachments.slice();
         const messageText = content || buildAttachmentPlaceholder(attachmentsToSend.map((item) => item.file).filter(Boolean));
@@ -744,6 +826,8 @@ async function handleFormSubmit(event) {
 
         await openChat(selectedConversationId);
         await loadConversations();
+        clearFormError();
+        updateSendButtonState();
     } catch (error) {
         console.error('Could not send message with attachment:', error);
         alert('ارسال پیام با پیوست با مشکل مواجه شد. لطفاً دوباره تلاش کنید.');
@@ -764,6 +848,8 @@ export async function deleteConversationHandler(conversationId) {
             selectedConversationId = null;
         }
         await loadConversations();
+        clearFormError();
+        updateSendButtonState();
     } catch (error) {
         console.error(`Could not delete conversation ${conversationId}:`, error);
     }
@@ -914,6 +1000,10 @@ async function initialize() {
     let typingTimeout;
     if (chatInput) {
         chatInput.addEventListener('input', () => {
+            if (chatInput.value) {
+                clearFormError();
+            }
+            updateSendButtonState();
             if (!selectedConversationId) {
                 return;
             }
@@ -962,10 +1052,15 @@ async function initialize() {
     }
 
     if (editForm) {
-        editForm.addEventListener('submit', (event) => {
+        editForm.addEventListener('submit', async (event) => {
             event.preventDefault();
             if (!pendingEditMessageId) {
                 hideEditModal();
+                return;
+            }
+
+            if (!selectedConversationId) {
+                setEditModalError('ابتدا یک گفتگو را انتخاب کنید.');
                 return;
             }
 
@@ -975,30 +1070,48 @@ async function initialize() {
                 return;
             }
 
-            setEditModalError('');
-            ws.sendWebSocketMessage({
-                type: 'edit_message',
-                message_id: pendingEditMessageId,
-                content,
-            });
-            hideEditModal();
+            try {
+                setEditModalError('');
+                const updatedMessage = await api.updateMessage(selectedConversationId, pendingEditMessageId, content);
+                if (updatedMessage) {
+                    ui.handleEditedMessage(updatedMessage);
+                } else {
+                    await openChat(selectedConversationId);
+                }
+                await loadConversations();
+                hideEditModal();
+            } catch (error) {
+                console.error('Failed to update message:', error);
+                setEditModalError('به‌روزرسانی پیام با خطا مواجه شد. دوباره تلاش کنید.');
+            }
         });
     }
 
     if (deleteConfirmBtn) {
-        deleteConfirmBtn.addEventListener('click', () => {
+        deleteConfirmBtn.addEventListener('click', async () => {
             if (!pendingDeleteMessageId) {
                 hideDeleteModal();
                 return;
             }
 
-            ws.sendWebSocketMessage({
-                type: 'delete_message',
-                message_id: pendingDeleteMessageId,
-            });
-            hideDeleteModal();
+            if (!selectedConversationId) {
+                alert('ابتدا یک گفتگو را انتخاب کنید.');
+                return;
+            }
+
+            try {
+                await api.deleteMessage(selectedConversationId, pendingDeleteMessageId);
+                ui.handleDeletedMessage(pendingDeleteMessageId, selectedConversationId);
+                await loadConversations();
+                hideDeleteModal();
+            } catch (error) {
+                console.error('Failed to delete message:', error);
+                alert('حذف پیام با خطا مواجه شد. دوباره تلاش کنید.');
+            }
         });
     }
+
+    updateSendButtonState();
 }
 
 document.addEventListener('DOMContentLoaded', initialize);
