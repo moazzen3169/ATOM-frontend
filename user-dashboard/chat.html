@@ -54,13 +54,14 @@
 
             <div class="data_sending_section">
                 <form id="data_sender_form" class="data_sender_form" method="post" novalidate>
+                    <div id="attachment_previews" class="attachment_previews" aria-live="polite" aria-label="پیوست های انتخاب شده" hidden></div>
+
                     <div class="attachment_inputs">
                         <label class="files" for="file_input" title="افزودن پیوست">
                             <img src="../img/icons/file-input.svg" alt="افزودن پیوست">
                         </label>
                         <input type="file" name="file" id="file_input" accept="image/*,video/*,.pdf,.zip,.rar,.7z,.txt,.doc,.docx,.ppt,.pptx,.xls,.xlsx" multiple style="display: none;">
                     </div>
-                    <div id="attachment_previews" class="attachment_previews" aria-live="polite" aria-label="پیوست های انتخاب شده" hidden></div>
                     <p id="attachment_error" class="attachment_error" role="alert" aria-live="assertive" hidden></p>
                     <input class="chat_input" type="text" name="chat-input" id="chat-input" placeholder="متن خود را وارد کنید.">
                     <button type="submit" class="sender" aria-label="ارسال پیام" id="chat-submit-btn">
