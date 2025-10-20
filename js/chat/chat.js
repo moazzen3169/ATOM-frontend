@@ -8,7 +8,8 @@ const dataSenderForm = document.getElementById('data_sender_form');
 const fileInput = document.getElementById('file_input');
 const newConversationBtn = document.getElementById('new-conversation-btn');
 const backBtn = document.querySelector('.back');
-const modalElement = document.getElementById('new-conversation-modal');
+
+const newConversationModal = document.getElementById('new-conversation-modal');
 const modalForm = document.getElementById('chat-new-conversation-form');
 const modalCloseButtons = document.querySelectorAll('[data-close-modal]');
 const modalSearchInput = document.getElementById('chat-user-search-input');
@@ -16,28 +17,100 @@ const modalResultsContainer = document.getElementById('chat-user-search-results'
 const modalErrorEl = document.getElementById('chat-modal-error');
 const modalSubmitBtn = document.getElementById('chat-modal-submit');
 
+const editModalElement = document.getElementById('chat-edit-modal');
+const editForm = document.getElementById('chat-edit-form');
+const editInput = document.getElementById('chat-edit-input');
+const editErrorEl = document.getElementById('chat-edit-error');
+
+const deleteModalElement = document.getElementById('chat-delete-modal');
+const deleteConfirmBtn = document.getElementById('chat-delete-confirm');
+const deleteModalDescription = deleteModalElement?.querySelector('.chat-modal__description') || null;
+const deleteModalDefaultDescription = deleteModalDescription?.textContent || '';
+
 // --- STATE ---
 let conversations = [];
 let selectedConversationId = null;
 let currentUser = null;
 let isSearchingUsers = false;
+let pendingEditMessageId = null;
+let pendingDeleteMessageId = null;
 
 // --- HELPERS ---
 
+function escapeHtml(value) {
+    if (value === null || value === undefined) {
+        return '';
+    }
+    return String(value).replace(/[&<>"']/g, (char) => {
+        switch (char) {
+            case '&':
+                return '&amp;';
+            case '<':
+                return '&lt;';
+            case '>':
+                return '&gt;';
+            case '"':
+                return '&quot;';
+            case '\'':
+                return '&#39;';
+            default:
+                return char;
+        }
+    });
+}
+
+function escapeRegExp(value) {
+    return value.replace(/[-\^$*+?.()|[\]{}]/g, '\$&');
+}
+
+function highlightMatch(text, query) {
+    if (!text) {
+        return '';
+    }
+    if (!query) {
+        return escapeHtml(text);
+    }
+
+    try {
+        const pattern = new RegExp(escapeRegExp(query), 'gi');
+        let result = '';
+        let lastIndex = 0;
+        let match;
+        while ((match = pattern.exec(text)) !== null) {
+            result += escapeHtml(text.slice(lastIndex, match.index));
+            result += `<mark>${escapeHtml(match[0])}</mark>`;
+            lastIndex = pattern.lastIndex;
+        }
+        result += escapeHtml(text.slice(lastIndex));
+        return result;
+    } catch (error) {
+        console.error('Failed to highlight match:', error);
+        return escapeHtml(text);
+    }
+}
+
+function openModal(modal) {
+    modal?.classList.add('open');
+}
+
+function closeModal(modal) {
+    modal?.classList.remove('open');
+}
+
 function showNewConversationModal() {
-    if (!modalElement) {
+    if (!newConversationModal) {
         return;
     }
     resetNewConversationModal();
-    modalElement.classList.add('open');
+    openModal(newConversationModal);
     modalSearchInput?.focus();
 }
 
 function hideNewConversationModal() {
-    if (!modalElement) {
+    if (!newConversationModal) {
         return;
     }
-    modalElement.classList.remove('open');
+    closeModal(newConversationModal);
     setModalLoading(false);
     resetNewConversationModal();
 }
@@ -68,12 +141,34 @@ function setModalLoading(isLoading) {
     if (modalSubmitBtn) {
         modalSubmitBtn.disabled = isLoading;
     }
-    if (modalElement) {
-        modalElement.classList.toggle('loading', isLoading);
+    if (newConversationModal) {
+        newConversationModal.classList.toggle('loading', isLoading);
     }
 }
 
-function renderUserSearchResults(users) {
+function computeUserScore(user, normalizedQuery) {
+    const username = user?.username?.toLowerCase?.() || '';
+    const fullName = user?.full_name?.toLowerCase?.() || '';
+    const idString = user?.id != null ? String(user.id).toLowerCase() : '';
+
+    if (normalizedQuery && idString === normalizedQuery) {
+        return -1000;
+    }
+
+    const usernameIndex = normalizedQuery ? username.indexOf(normalizedQuery) : -1;
+    const fullNameIndex = normalizedQuery ? fullName.indexOf(normalizedQuery) : -1;
+
+    const usernameScore = usernameIndex !== -1 ? usernameIndex : Number.MAX_SAFE_INTEGER;
+    const fullNameScore = fullNameIndex !== -1 ? fullNameIndex + 50 : Number.MAX_SAFE_INTEGER;
+
+    const baseScore = Math.min(usernameScore, fullNameScore);
+    const reference = username || fullName || idString;
+    const lengthPenalty = reference ? Math.abs(reference.length - (normalizedQuery?.length || 0)) : 100;
+
+    return baseScore * 100 + lengthPenalty;
+}
+
+function renderUserSearchResults(users, query) {
     if (!modalResultsContainer) {
         return;
     }
@@ -85,28 +180,49 @@ function renderUserSearchResults(users) {
         return;
     }
 
+    const normalizedQuery = query?.trim?.().toLowerCase() || '';
+    const sortedUsers = [...users].sort((a, b) => computeUserScore(a, normalizedQuery) - computeUserScore(b, normalizedQuery));
+
     const list = document.createElement('ul');
     list.classList.add('chat-modal-results');
 
-    users.forEach((user) => {
+    sortedUsers.forEach((user) => {
         if (!user || user.id === currentUser?.id) {
             return;
         }
+
+        const usernameValue = user.username || 'کاربر';
+        const usernameHtml = highlightMatch(usernameValue, query);
+        const fullNameHtml = user.full_name ? highlightMatch(user.full_name, query) : '';
+        const idHtml = user.id != null ? highlightMatch(`#${user.id}`, query) : '';
+
+        const metaParts = [];
+        if (fullNameHtml && fullNameHtml !== usernameHtml) {
+            metaParts.push(`<span class="chat-modal-result-meta">${fullNameHtml}</span>`);
+        }
+        if (idHtml) {
+            metaParts.push(`<span class="chat-modal-result-meta">${idHtml}</span>`);
+        }
+
         const item = document.createElement('li');
         item.classList.add('chat-modal-result-item');
         item.innerHTML = `
             <button type="button" class="chat-modal-result" data-user-id="${user.id}">
                 <div class="chat-modal-result-avatar">
-                    <img src="${user.profile_picture || '/img/icons/profile.svg'}" alt="${user.username}">
+                    <img src="${user.profile_picture || '/img/icons/profile.svg'}" alt="${escapeHtml(usernameValue)}">
                 </div>
                 <div class="chat-modal-result-body">
-                    <span class="chat-modal-result-name">${user.username}</span>
-                    ${user.full_name ? `<span class="chat-modal-result-meta">${user.full_name}</span>` : ''}
+                    <span class="chat-modal-result-name">${usernameHtml}</span>
+                    ${metaParts.join('')}
                 </div>
             </button>
         `;
 
-        item.querySelector('button').addEventListener('click', () => {
+        const button = item.querySelector('button');
+        button.addEventListener('click', () => {
+            list.querySelectorAll('.chat-modal-result').forEach((resultButton) => {
+                resultButton.classList.toggle('is-selected', resultButton === button);
+            });
             handleCreateConversation(user);
         });
 
@@ -169,13 +285,112 @@ async function handleUserSearch(event) {
         setModalError('');
         setModalLoading(true);
         const users = await api.searchUsers(query);
-        renderUserSearchResults(users);
+        renderUserSearchResults(users, query);
     } catch (error) {
         console.error('Failed to search users:', error);
         setModalError('جستجوی کاربر با خطا مواجه شد.');
     } finally {
         setModalLoading(false);
     }
+}
+
+function resetEditModal() {
+    pendingEditMessageId = null;
+    if (editInput) {
+        editInput.value = '';
+    }
+    if (editErrorEl) {
+        editErrorEl.textContent = '';
+        editErrorEl.classList.add('hidden');
+    }
+}
+
+function setEditModalError(message) {
+    if (!editErrorEl) {
+        return;
+    }
+    editErrorEl.textContent = message || '';
+    editErrorEl.classList.toggle('hidden', !message);
+}
+
+function showEditModal(messageId) {
+    if (!editModalElement) {
+        return;
+    }
+
+    const details = ui.getMessageDetails(messageId);
+    if (!details) {
+        alert('پیام مورد نظر یافت نشد.');
+        return;
+    }
+
+    if (details.is_deleted) {
+        alert('این پیام حذف شده است و قابل ویرایش نیست.');
+        return;
+    }
+
+    pendingEditMessageId = messageId;
+    if (editInput) {
+        editInput.value = details.content || '';
+        editInput.focus();
+        editInput.setSelectionRange(editInput.value.length, editInput.value.length);
+    }
+    setEditModalError('');
+    openModal(editModalElement);
+}
+
+function hideEditModal() {
+    if (!editModalElement) {
+        return;
+    }
+    closeModal(editModalElement);
+    resetEditModal();
+}
+
+function getMessagePreview(content) {
+    if (!content) {
+        return 'بدون متن';
+    }
+    const trimmed = content.trim();
+    if (!trimmed) {
+        return 'بدون متن';
+    }
+    return trimmed.length > 120 ? `${trimmed.slice(0, 117)}...` : trimmed;
+}
+
+function resetDeleteModal() {
+    pendingDeleteMessageId = null;
+    if (deleteModalDescription) {
+        deleteModalDescription.innerHTML = escapeHtml(deleteModalDefaultDescription);
+    }
+}
+
+function showDeleteModal(messageId) {
+    if (!deleteModalElement) {
+        return;
+    }
+
+    const details = ui.getMessageDetails(messageId);
+    if (!details) {
+        alert('پیام مورد نظر یافت نشد.');
+        return;
+    }
+
+    pendingDeleteMessageId = messageId;
+    if (deleteModalDescription) {
+        const preview = details.is_deleted ? 'این پیام پیش‌تر حذف شده است.' : getMessagePreview(details.content);
+        deleteModalDescription.innerHTML = `${escapeHtml(deleteModalDefaultDescription)}<br><span class="chat-modal-result-meta">${escapeHtml(preview)}</span>`;
+    }
+
+    openModal(deleteModalElement);
+}
+
+function hideDeleteModal() {
+    if (!deleteModalElement) {
+        return;
+    }
+    closeModal(deleteModalElement);
+    resetDeleteModal();
 }
 
 // --- HANDLERS ---
@@ -206,8 +421,8 @@ export async function openChat(conversationId) {
     }
 }
 
-async function handleFormSubmit(e) {
-    e.preventDefault();
+async function handleFormSubmit(event) {
+    event.preventDefault();
 
     if (!selectedConversationId) {
         alert('ابتدا یک گفتگو را انتخاب کنید.');
@@ -281,29 +496,17 @@ export async function deleteConversationHandler(conversationId) {
 }
 
 function editMessageHandler(messageId) {
-    const newContent = prompt('متن جدید پیام را وارد کنید:');
-    if (newContent) {
-        ws.sendWebSocketMessage({
-            type: 'edit_message',
-            message_id: messageId,
-            content: newContent,
-        });
-    }
+    showEditModal(messageId);
 }
 
 function deleteMessageHandler(messageId) {
-    if (confirm('آیا از حذف این پیام مطمئن هستید؟')) {
-        ws.sendWebSocketMessage({
-            type: 'delete_message',
-            message_id: messageId,
-        });
-    }
+    showDeleteModal(messageId);
 }
 
 async function loadConversations() {
     try {
         conversations = await api.getConversations();
-        ui.renderConversations(conversations, currentUser);
+        ui.renderConversations(conversations, currentUser, selectedConversationId);
         return conversations;
     } catch (error) {
         console.error('Could not load conversations:', error);
@@ -362,13 +565,41 @@ async function initialize() {
     }
 
     modalCloseButtons.forEach((btn) => {
-        btn.addEventListener('click', hideNewConversationModal);
+        btn.addEventListener('click', (event) => {
+            const modal = event.currentTarget.closest('.chat-modal');
+            if (!modal) {
+                return;
+            }
+            if (modal === newConversationModal) {
+                hideNewConversationModal();
+            } else if (modal === editModalElement) {
+                hideEditModal();
+            } else if (modal === deleteModalElement) {
+                hideDeleteModal();
+            }
+        });
     });
 
-    if (modalElement) {
-        modalElement.addEventListener('click', (event) => {
-            if (event.target === modalElement) {
+    if (newConversationModal) {
+        newConversationModal.addEventListener('click', (event) => {
+            if (event.target === newConversationModal) {
                 hideNewConversationModal();
+            }
+        });
+    }
+
+    if (editModalElement) {
+        editModalElement.addEventListener('click', (event) => {
+            if (event.target === editModalElement) {
+                hideEditModal();
+            }
+        });
+    }
+
+    if (deleteModalElement) {
+        deleteModalElement.addEventListener('click', (event) => {
+            if (event.target === deleteModalElement) {
+                hideDeleteModal();
             }
         });
     }
@@ -378,7 +609,18 @@ async function initialize() {
     }
 
     document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && modalElement?.classList.contains('open')) {
+        if (event.key !== 'Escape') {
+            return;
+        }
+        if (deleteModalElement?.classList.contains('open')) {
+            hideDeleteModal();
+            return;
+        }
+        if (editModalElement?.classList.contains('open')) {
+            hideEditModal();
+            return;
+        }
+        if (newConversationModal?.classList.contains('open')) {
             hideNewConversationModal();
         }
     });
@@ -411,9 +653,9 @@ async function initialize() {
             }, 1000);
         });
 
-        chatInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
+        chatInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter' && !event.shiftKey) {
+                event.preventDefault();
                 dataSenderForm?.dispatchEvent(new Event('submit', { cancelable: true }));
                 clearTimeout(typingTimeout);
                 if (!selectedConversationId) {
@@ -429,7 +671,50 @@ async function initialize() {
 
     if (backBtn) {
         backBtn.addEventListener('click', () => {
-            ui.toggleMobileChatView(false);
+            if (window.innerWidth <= 1000) {
+                ui.toggleMobileChatView(false);
+                return;
+            }
+            window.location.href = './index.html';
+        });
+    }
+
+    if (editForm) {
+        editForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            if (!pendingEditMessageId) {
+                hideEditModal();
+                return;
+            }
+
+            const content = editInput?.value?.trim();
+            if (!content) {
+                setEditModalError('متن پیام نمی‌تواند خالی باشد.');
+                return;
+            }
+
+            setEditModalError('');
+            ws.sendWebSocketMessage({
+                type: 'edit_message',
+                message_id: pendingEditMessageId,
+                content,
+            });
+            hideEditModal();
+        });
+    }
+
+    if (deleteConfirmBtn) {
+        deleteConfirmBtn.addEventListener('click', () => {
+            if (!pendingDeleteMessageId) {
+                hideDeleteModal();
+                return;
+            }
+
+            ws.sendWebSocketMessage({
+                type: 'delete_message',
+                message_id: pendingDeleteMessageId,
+            });
+            hideDeleteModal();
         });
     }
 }
