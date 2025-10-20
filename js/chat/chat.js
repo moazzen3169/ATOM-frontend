@@ -125,81 +125,6 @@ function buildAttachmentPlaceholder(files) {
     return `پیوست‌ها (${files.length} فایل)`;
 }
 
-function normalizeMessageId(candidate) {
-    if (candidate === undefined || candidate === null) {
-        return null;
-    }
-
-    if (typeof candidate === 'number') {
-        return Number.isNaN(candidate) ? null : candidate;
-    }
-
-    if (typeof candidate === 'string') {
-        const trimmed = candidate.trim();
-        if (!trimmed) {
-            return null;
-        }
-        const numeric = Number(trimmed);
-        return Number.isNaN(numeric) ? trimmed : numeric;
-    }
-
-    return null;
-}
-
-function resolveMessageIdFromResponse(response) {
-    if (!response) {
-        return null;
-    }
-
-    const visited = new Set();
-    const stack = [response];
-
-    while (stack.length) {
-        const current = stack.pop();
-        if (current === undefined || current === null) {
-            continue;
-        }
-
-        if (typeof current !== 'object') {
-            const normalized = normalizeMessageId(current);
-            if (normalized !== null) {
-                return normalized;
-            }
-            continue;
-        }
-
-        if (visited.has(current)) {
-            continue;
-        }
-        visited.add(current);
-
-        const directCandidate = normalizeMessageId(
-            current.id ??
-                current.pk ??
-                current.message_id ??
-                current.messageId ??
-                current.result_id ??
-                current.resultId,
-        );
-        if (directCandidate !== null) {
-            return directCandidate;
-        }
-
-        const values = Array.isArray(current) ? current : Object.values(current);
-        for (let index = 0; index < values.length; index += 1) {
-            const value = values[index];
-            if (value === undefined || value === null) {
-                continue;
-            }
-            if (typeof value === 'object' || typeof value === 'string' || typeof value === 'number') {
-                stack.push(value);
-            }
-        }
-    }
-
-    return null;
-}
-
 function setAttachmentError(message) {
     if (!attachmentErrorEl) {
         return;
@@ -796,49 +721,26 @@ async function handleFormSubmit(event) {
         const attachmentsToSend = pendingAttachments.slice();
         const messageText = content || buildAttachmentPlaceholder(attachmentsToSend.map((item) => item.file).filter(Boolean));
         const newMessage = await api.sendMessage(selectedConversationId, messageText);
-        const messageId = resolveMessageIdFromResponse(newMessage);
+        const messageId = newMessage?.id ?? newMessage?.pk;
 
         if (messageId === undefined || messageId === null) {
             throw new Error('شناسه پیام برای بارگذاری پیوست یافت نشد.');
         }
 
-        const failedUploads = [];
-
         for (const attachment of attachmentsToSend) {
             if (!attachment?.file) {
                 continue;
             }
-
             const formData = new FormData();
-            formData.append('file', attachment.file, attachment.file.name);
-
-            try {
-                await api.uploadAttachment(selectedConversationId, messageId, formData);
-                removePendingAttachment(attachment.id);
-            } catch (uploadError) {
-                console.error(`Failed to upload attachment ${attachment.file?.name || attachment.id}:`, uploadError);
-                failedUploads.push(attachment);
-            }
+            formData.append('file', attachment.file);
+            await api.uploadAttachment(selectedConversationId, messageId, formData);
         }
 
         if (chatInput) {
             chatInput.value = '';
         }
 
-        if (failedUploads.length === 0) {
-            setAttachmentError('');
-            clearPendingAttachments();
-        } else {
-            const failedNames = failedUploads
-                .map((item) => item?.file?.name)
-                .filter(Boolean);
-            if (failedNames.length) {
-                setAttachmentError(`بارگذاری فایل‌های ${failedNames.join('، ')} انجام نشد. لطفاً دوباره تلاش کنید.`);
-            } else {
-                setAttachmentError('بارگذاری برخی از پیوست‌ها انجام نشد. لطفاً دوباره تلاش کنید.');
-            }
-            renderAttachmentPreviews();
-        }
+        clearPendingAttachments();
 
         await openChat(selectedConversationId);
         await loadConversations();

@@ -303,8 +303,8 @@ body {
     flex: 1 1 auto;
     display: flex;
     flex-direction: column;
+    justify-content: space-between;
     min-height: 0;
-    background-color: var(--card-color);
     overflow: hidden;
 }
 .contact_messages_header{
@@ -313,9 +313,9 @@ body {
     justify-content: space-between;
     gap: 16px;
     background-color: var(--background-color);
-    padding: 20px 28px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 10px 20px 10px 40px;
     flex: 0 0 auto;
+
 }
 .logo{
     height: 44px;
@@ -386,8 +386,7 @@ body {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
-    overflow-x: hidden;
-    padding: 28px 32px;
+    padding: 20px;
     color: var(--white-color);
     display: flex;
     flex-direction: column;
@@ -459,6 +458,40 @@ body {
     background: rgba(0, 0, 0, 0.4);
 }
 
+.attachments{
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+.attachment-item{
+    position: relative;
+    border-radius: 10px;
+    overflow: hidden;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    flex-direction: column;
+    max-width: 220px;
+    margin: 0;
+}
+
+.attachment-item a{
+    color: var(--white-color);
+    text-decoration: none;
+}
+
+.attachment-item--image img,
+.attachment-item--video video{
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 200px;
+    object-fit: cover;
+    background: rgba(0, 0, 0, 0.4);
+}
+
 .attachment-item--video video{
     aspect-ratio: 16 / 9;
 }
@@ -471,11 +504,6 @@ body {
     background: rgba(0, 0, 0, 0.45);
     text-align: right;
     direction: rtl;
-}
-
-.message-content {
-    white-space: pre-wrap;
-    word-break: break-word;
 }
 
 .attachment-item--file{
@@ -640,17 +668,16 @@ body {
     align-items: center;
     justify-content: center;
     background-color: var(--background-color);
-    padding: 18px 28px;
+    padding: 10px 20px;
     width: 100%;          /* عرض کامل */
     box-sizing: border-box;
     flex: 0 0 auto;
-    border-top: 1px solid var(--border-color);
 }
 
 .data_sender_form{
-    display: grid;
-    grid-template-columns: auto 1fr auto;
-    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
     gap: 12px;
     width: 100%;
     padding: 14px 18px;
@@ -659,6 +686,11 @@ body {
     background-color: rgba(0, 0, 0, 0.15);
     backdrop-filter: blur(4px);
     direction: rtl;
+}
+
+.data_sender_form.is-loading {
+    opacity: 0.6;
+    pointer-events: none;
 }
 
 .data_sender_form.is-loading {
@@ -686,18 +718,11 @@ body {
     height: 22px;
 }
 
-.files:hover,
-.files:focus {
-    background: rgba(255, 255, 255, 0.08);
-    border-color: var(--border-color);
-}
-
 .attachment_inputs {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: 0;
-    grid-column: 1;
+    margin: 0 10px 0 0;
 }
 
 .attachment_previews {
@@ -705,7 +730,7 @@ body {
     flex-wrap: wrap;
     gap: 10px;
     padding: 10px;
-    margin: 0;
+    margin: 0 10px;
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.04);
     border: 1px solid rgba(255, 255, 255, 0.08);
@@ -713,7 +738,6 @@ body {
     overflow-y: auto;
     width: 100%;
     box-sizing: border-box;
-    grid-column: 1 / -1;
 }
 
 .attachment_previews[hidden] {
@@ -786,6 +810,32 @@ body {
 
 .attachment_preview_remove {
     flex: 0 0 auto;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.6);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.attachment_preview_remove:hover,
+.attachment_preview_remove:focus-visible {
+    color: var(--danger-text-strong);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.attachment_error {
+    width: 100%;
+    margin: 0 10px;
+    font-size: 0.85rem;
+    color: var(--danger-text-strong);
+}
+
+.chat_input {
+    flex: 1 1 auto;
+    height: 50px;
+    background-color: transparent;
     border: none;
     background: transparent;
     color: rgba(255, 255, 255, 0.6);
