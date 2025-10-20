@@ -1,0 +1,89 @@
+<div class="user_history_title">
+  <span>تاریخچه تورنومنت‌ها</span>
+  <div class="user_history_filter">
+    <button
+      class="filter"
+      type="button"
+      data-action="toggle-filter"
+      aria-expanded="false"
+      aria-controls="tournaments_filters_panel"
+    >
+      فیلتر
+    </button>
+    <button class="sort" type="button" data-action="cycle-sort">
+      <span class="sort_label_prefix">مرتب‌سازی:</span>
+      <span data-sort-label>جدیدترین</span>
+    </button>
+  </div>
+</div>
+<div class="tournament_filters_container">
+  <section
+    class="tournament_filters_panel"
+    id="tournaments_filters_panel"
+    hidden
+    aria-hidden="true"
+  >
+    <form class="tournament_filters_form" id="tournaments_filters_form">
+      <label class="tournament_filters_field" for="tournaments_search_input">
+        <span>جستجو</span>
+        <input
+          type="search"
+          id="tournaments_search_input"
+          placeholder="جستجو در نام تورنومنت، بازی یا تیم"
+          autocomplete="off"
+        >
+      </label>
+      <label class="tournament_filters_field" for="tournaments_filter_game">
+        <span>بازی</span>
+        <select id="tournaments_filter_game">
+          <option value="">همه بازی‌ها</option>
+        </select>
+      </label>
+      <label class="tournament_filters_field" for="tournaments_filter_team">
+        <span>تیم</span>
+        <select id="tournaments_filter_team">
+          <option value="">همه تیم‌ها</option>
+        </select>
+      </label>
+      <label class="tournament_filters_field" for="tournaments_filter_from">
+        <span>از تاریخ</span>
+        <input type="date" id="tournaments_filter_from">
+      </label>
+      <label class="tournament_filters_field" for="tournaments_filter_to">
+        <span>تا تاریخ</span>
+        <input type="date" id="tournaments_filter_to">
+      </label>
+    </form>
+    <div class="tournament_filters_actions">
+      <button
+        type="button"
+        class="tournament_filters_reset"
+        data-action="clear-tournament-filters"
+      >
+        حذف فیلترها
+      </button>
+    </div>
+  </section>
+</div>
+<div class="user_tournaments_history_table">
+  <p
+    class="tournaments_history_hint"
+    id="tournaments_history_hint"
+    aria-live="polite"
+  ></p>
+  <table>
+    <thead>
+      <tr>
+        <th>امتیاز</th>
+        <th>رتبه</th>
+        <th>تاریخ</th>
+        <th>تیم</th>
+        <th>بازی</th>
+        <th>تورنومنت</th>
+      </tr>
+    </thead>
+    <tbody id="tournaments_history_body">
+      <!-- تاریخچه تورنومنت‌ها اینجا با JS پر می‌شوند -->
+    </tbody>
+  </table>
+</div>

@@ -672,10 +672,10 @@ function fillSelect(select, items, { valueKey, labelKey }) {
   }
 }
 
-function autoInitializeHistoryModule() {
+function tryInitializeHistoryModule() {
   const table = dom.body();
   if (!table) {
-    return;
+    return false;
   }
 
   if (!historyUserId && window.dashboardUserId) {
@@ -683,10 +683,30 @@ function autoInitializeHistoryModule() {
   }
 
   initializeTournamentHistoryUI();
+  return true;
+}
+
+function autoInitializeHistoryModule() {
+  const initialized = tryInitializeHistoryModule();
+  if (initialized) {
+    return;
+  }
+
+  const handleReady = () => {
+    tryInitializeHistoryModule();
+  };
+
+  document.addEventListener(
+    "userTournamentsHistory:ready",
+    handleReady,
+    { once: true },
+  );
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", autoInitializeHistoryModule);
+  document.addEventListener("DOMContentLoaded", autoInitializeHistoryModule, {
+    once: true,
+  });
 } else {
   autoInitializeHistoryModule();
 }
