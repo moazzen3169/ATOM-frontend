@@ -1,5 +1,5 @@
 // This module will handle all DOM manipulation and UI updates.
-import { openChat, deleteConversationHandler } from './chat.js';
+import { openChat, deleteConversationHandler, updateConversationCache } from './chat.js';
 
 let editMessageHandler;
 let deleteMessageHandler;
@@ -29,6 +29,206 @@ const emptyStateTemplate = `
     </div>
 `;
 
+function getParticipant(conversation, currentUser = getCurrentUser()) {
+    return conversation?.participants?.find((p) => p.id !== currentUser?.id) || conversation?.participants?.[0] || null;
+}
+
+function getLastMessagePreview(conversation) {
+    const { last_message: lastMessage } = conversation || {};
+
+    if (!lastMessage) {
+        return '';
+    }
+
+    if (typeof lastMessage === 'string') {
+        return lastMessage;
+    }
+
+    if (typeof lastMessage === 'object') {
+        if (lastMessage.is_deleted) {
+            return 'این پیام حذف شده است.';
+        }
+        return lastMessage.content || '';
+    }
+
+    return '';
+}
+
+function formatTimestamp(timestamp) {
+    if (!timestamp) {
+        return '';
+    }
+
+    try {
+        return new Date(timestamp).toLocaleTimeString();
+    } catch (_error) {
+        return '';
+    }
+}
+
+function applyDeletedState(messageEl) {
+    if (!messageEl) {
+        return;
+    }
+
+    messageEl.classList.add('message-deleted');
+
+    const contentEl = messageEl.querySelector('.message-content');
+    if (contentEl) {
+        contentEl.textContent = 'این پیام حذف شده است.';
+    } else {
+        const newContent = document.createElement('span');
+        newContent.classList.add('message-content');
+        newContent.textContent = 'این پیام حذف شده است.';
+        messageEl.insertBefore(newContent, messageEl.firstChild);
+    }
+
+    messageEl.querySelector('.message-status')?.remove();
+    messageEl.querySelector('.attachments')?.remove();
+    messageEl.querySelector('.message-actions')?.remove();
+}
+
+function renderMessageContent(container, message, isSent) {
+    if (!container || !message) {
+        return;
+    }
+
+    const isDeleted = Boolean(message.is_deleted);
+    const isEdited = Boolean(message.is_edited);
+    const timestamp = formatTimestamp(message.timestamp);
+
+    const contentSpan = document.createElement('span');
+    contentSpan.classList.add('message-content');
+    contentSpan.textContent = isDeleted ? 'این پیام حذف شده است.' : message.content || '';
+    container.appendChild(contentSpan);
+
+    if (isEdited && !isDeleted) {
+        const status = document.createElement('span');
+        status.classList.add('message-status');
+        status.textContent = 'ویرایش شده';
+        container.appendChild(status);
+    }
+
+    if (timestamp) {
+        const timeEl = document.createElement('span');
+        timeEl.classList.add('timestamp');
+        timeEl.textContent = timestamp;
+        container.appendChild(timeEl);
+    }
+
+    if (!isDeleted && Array.isArray(message.attachments) && message.attachments.length > 0) {
+        const attachmentsWrapper = document.createElement('div');
+        attachmentsWrapper.classList.add('attachments');
+        message.attachments.forEach((att, index) => {
+            if (!att || !att.file) {
+                return;
+            }
+            const label = att.name || att.file || `Attachment ${index + 1}`;
+            const link = document.createElement('a');
+            link.href = att.file;
+            link.target = '_blank';
+            link.rel = 'noopener';
+            link.textContent = label;
+            attachmentsWrapper.appendChild(link);
+        });
+        if (attachmentsWrapper.childNodes.length) {
+            container.appendChild(attachmentsWrapper);
+        }
+    }
+
+    if (isSent && !isDeleted) {
+        const messageId = message.id ?? message.pk;
+        if (messageId === undefined || messageId === null) {
+            return;
+        }
+        const actions = document.createElement('div');
+        actions.classList.add('message-actions');
+
+        const editBtn = document.createElement('button');
+        editBtn.classList.add('edit_btn');
+        editBtn.dataset.messageId = String(messageId);
+        editBtn.textContent = 'ویرایش';
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.classList.add('delete_btn');
+        deleteBtn.dataset.messageId = String(messageId);
+        deleteBtn.textContent = 'حذف';
+
+        actions.appendChild(editBtn);
+        actions.appendChild(deleteBtn);
+        container.appendChild(actions);
+    }
+}
+
+function resolveConversationId(message) {
+    if (!message) {
+        return null;
+    }
+
+    if (typeof message.conversation === 'number') {
+        return message.conversation;
+    }
+
+    if (typeof message.conversation === 'string') {
+        const parsed = Number(message.conversation);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    if (message.conversation && typeof message.conversation === 'object') {
+        const id = message.conversation.id ?? message.conversation.pk;
+        if (typeof id === 'number') {
+            return id;
+        }
+        if (typeof id === 'string') {
+            const parsed = Number(id);
+            return Number.isNaN(parsed) ? null : parsed;
+        }
+        return null;
+    }
+
+    if (typeof message.conversation_id === 'number') {
+        return message.conversation_id;
+    }
+
+    if (typeof message.conversation_id === 'string') {
+        const parsed = Number(message.conversation_id);
+        return Number.isNaN(parsed) ? null : parsed;
+    }
+
+    return null;
+}
+
+function getMessagePreviewText(message) {
+    if (!message) {
+        return '';
+    }
+
+    if (message.is_deleted) {
+        return 'این پیام حذف شده است.';
+    }
+
+    return message.content || '';
+}
+
+function updateConversationPreview(conversationId, message) {
+    updateConversationCache(conversationId, message);
+    if (!contactsList || !conversationId) {
+        return;
+    }
+
+    const contactEl = contactsList.querySelector(`.contact[data-id="${conversationId}"]`);
+    if (!contactEl) {
+        return;
+    }
+
+    const previewEl = contactEl.querySelector('.last_message span');
+    if (!previewEl) {
+        return;
+    }
+
+    previewEl.textContent = getMessagePreviewText(message);
+}
+
 export function renderConversations(conversations, currentUser = getCurrentUser()) {
     if (!contactsList) {
         return;
@@ -42,7 +242,8 @@ export function renderConversations(conversations, currentUser = getCurrentUser(
     }
 
     conversations.forEach((conv) => {
-        const participant = conv.participants?.find((p) => p.id !== currentUser?.id) || conv.participants?.[0];
+        const participant = getParticipant(conv, currentUser);
+        const lastMessagePreview = getLastMessagePreview(conv);
         const div = document.createElement('div');
         div.classList.add('contact');
         div.dataset.id = conv.id;
@@ -54,7 +255,7 @@ export function renderConversations(conversations, currentUser = getCurrentUser(
                 <div class="contact_content">
                     <span>${participant?.username || conv.name || 'Unknown User'}</span>
                     <div class="last_message">
-                        <span>${conv.last_message || ''}</span>
+                        <span>${lastMessagePreview}</span>
                     </div>
                 </div>
             </div>
@@ -90,41 +291,29 @@ export function renderMessages(messages, append = false, currentUser = getCurren
     const userId = currentUser?.id;
 
     messages.forEach((msg) => {
+        if (!msg || typeof msg !== 'object') {
+            return;
+        }
         const isSent = userId !== undefined && msg.sender?.id === userId;
         const messageType = isSent ? 'messages_send' : 'messages_receive';
 
+        const messageId = msg.id ?? msg.pk;
+        if (messageId === undefined || messageId === null) {
+            return;
+        }
+
         const div = document.createElement('div');
         div.classList.add(messageType);
-        div.dataset.messageId = msg.id;
-
-        const timestamp = msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : '';
-
-        let messageHTML = `
-            <span class="message-content">${msg.content}</span>
-            <span class="timestamp">${timestamp}</span>`;
-
-        if (Array.isArray(msg.attachments) && msg.attachments.length > 0) {
-            messageHTML += '<div class="attachments">';
-            msg.attachments.forEach((att, index) => {
-                const label = att.name || att.file || `Attachment ${index + 1}`;
-                messageHTML += `<a href="${att.file}" target="_blank" rel="noopener">${label}</a>`;
-            });
-            messageHTML += '</div>';
+        div.dataset.messageId = messageId;
+        if (msg.is_deleted) {
+            div.classList.add('message-deleted');
         }
 
-        if (isSent) {
-            messageHTML += `
-                <div class="message-actions">
-                    <button class="edit_btn" data-message-id="${msg.id}">ویرایش</button>
-                    <button class="delete_btn" data-message-id="${msg.id}">حذف</button>
-                </div>`;
-        }
+        renderMessageContent(div, msg, isSent);
 
-        div.innerHTML = messageHTML;
-
-        if (isSent) {
-            div.querySelector('.edit_btn').addEventListener('click', () => editMessageHandler?.(msg.id));
-            div.querySelector('.delete_btn').addEventListener('click', () => deleteMessageHandler?.(msg.id));
+        if (isSent && !msg.is_deleted) {
+            div.querySelector('.edit_btn')?.addEventListener('click', () => editMessageHandler?.(messageId));
+            div.querySelector('.delete_btn')?.addEventListener('click', () => deleteMessageHandler?.(messageId));
         }
 
         messagesContainer.appendChild(div);
@@ -138,7 +327,7 @@ export function updateSelectedContact(conversation, currentUser = getCurrentUser
         return;
     }
 
-    const participant = conversation?.participants?.find((p) => p.id !== currentUser?.id) || conversation?.participants?.[0];
+    const participant = getParticipant(conversation, currentUser);
     selectedContactName.textContent = participant?.username || conversation?.name || 'Chat';
 }
 
@@ -153,28 +342,76 @@ export function clearChatWindow() {
 
 export function handleNewMessage(message) {
     renderMessages([message], true, getCurrentUser());
+    document.getElementById('typing-indicator')?.remove();
+    const conversationId = resolveConversationId(message);
+    if (conversationId) {
+        updateConversationPreview(conversationId, message);
+    }
 }
 
 export function handleEditedMessage(message) {
-    if (!messagesContainer) {
+    if (!messagesContainer || !message) {
         return;
     }
-    const messageEl = messagesContainer.querySelector(`[data-message-id="${message.id}"]`);
-    if (messageEl) {
-        const contentEl = messageEl.querySelector('.message-content');
-        if (contentEl) {
-            contentEl.textContent = `${message.content} (Edited)`;
+    const targetId = message.id ?? message.pk;
+    if (targetId === undefined || targetId === null) {
+        return;
+    }
+    const messageEl = messagesContainer.querySelector(`[data-message-id="${targetId}"]`);
+    if (!messageEl) {
+        return;
+    }
+
+    messageEl.classList.toggle('message-deleted', Boolean(message.is_deleted));
+
+    const hasAttachmentsInfo = Array.isArray(message.attachments);
+    const shouldPreserveAttachments = !message.is_deleted && !hasAttachmentsInfo;
+    const preservedAttachments = shouldPreserveAttachments
+        ? messageEl.querySelector('.attachments')
+        : null;
+
+    messageEl.querySelector('.message-actions')?.remove();
+    messageEl.querySelector('.message-status')?.remove();
+    messageEl.querySelector('.timestamp')?.remove();
+    messageEl.querySelector('.message-content')?.remove();
+    messageEl.querySelector('.attachments')?.remove();
+
+    renderMessageContent(messageEl, message, messageEl.classList.contains('messages_send'));
+
+    if (preservedAttachments && !message.is_deleted) {
+        const actionsEl = messageEl.querySelector('.message-actions');
+        if (actionsEl) {
+            messageEl.insertBefore(preservedAttachments, actionsEl);
+        } else {
+            messageEl.appendChild(preservedAttachments);
         }
+    }
+
+    if (!message.is_deleted && messageEl.classList.contains('messages_send')) {
+        messageEl.querySelector('.edit_btn')?.addEventListener('click', () => editMessageHandler?.(targetId));
+        messageEl.querySelector('.delete_btn')?.addEventListener('click', () => deleteMessageHandler?.(targetId));
+    }
+
+    const conversationId = resolveConversationId(message);
+    if (conversationId) {
+        updateConversationPreview(conversationId, message);
     }
 }
 
-export function handleDeletedMessage(messageId) {
+export function handleDeletedMessage(messageId, conversationId) {
     if (!messagesContainer) {
+        return;
+    }
+    if (messageId === undefined || messageId === null) {
         return;
     }
     const messageEl = messagesContainer.querySelector(`[data-message-id="${messageId}"]`);
     if (messageEl) {
-        messageEl.remove();
+        applyDeletedState(messageEl);
+    }
+
+    if (conversationId) {
+        updateConversationPreview(conversationId, { id: messageId, is_deleted: true, content: '' });
     }
 }
 
