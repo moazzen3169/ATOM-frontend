@@ -596,8 +596,16 @@ async function handleProfileSubmit(event) {
 
   toggleButtonLoadingState(submitButton, true, "در حال ذخیره...");
 
-  const endpoint = API_ENDPOINTS.auth.profile;
   const formData = new FormData(form);
+
+  const resolvedUserId =
+    dashboardUserId ||
+    resolveUserIdValue(dashboardSnapshot?.data?.user_profile) ||
+    resolveUserIdValue(formData.get("id"));
+
+  const endpoint = resolvedUserId
+    ? API_ENDPOINTS.users.detail(resolvedUserId)
+    : API_ENDPOINTS.auth.profile;
 
   [
     "username",
