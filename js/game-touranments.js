@@ -12,7 +12,21 @@ const showAppNotification = notifier.showAppNotification || (() => {});
 const urlParams = new URLSearchParams(window.location.search);
 const gameId = urlParams.get("id");
 
-let allTournaments = [];
+const HIGHLIGHT_COUNT = 2;
+
+const tournamentCache = new Map();
+const paginationState = {
+  upcoming: { page: 1, pageSize: 6, totalCount: 0 },
+  ongoing: { page: 1, pageSize: 6, totalCount: 0 },
+  finished: { page: 1, pageSize: 9, totalCount: 0 }
+};
+
+const activeControllers = {
+  upcoming: null,
+  ongoing: null,
+  finished: null,
+  finishedPreview: null
+};
 
 // ---------------------- توابع کمکی ----------------------
 function safeNumber(value, defaultValue = 0) {
@@ -40,6 +54,140 @@ function escapeHTML(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+function createController(key) {
+  if (activeControllers[key]) {
+    activeControllers[key].abort();
+  }
+  const controller = new AbortController();
+  activeControllers[key] = controller;
+  return controller;
+}
+
+async function fetchTournamentsData({ status = "all", page = 1, pageSize = 6, ordering = "start_date", signal }) {
+  const url = new URL(`${API_BASE_URL}/api/tournaments/tournaments/`);
+  url.searchParams.set("page", page);
+  url.searchParams.set("page_size", pageSize);
+  url.searchParams.set("ordering", ordering);
+  if (status && status !== "all") {
+    url.searchParams.set("status", status);
+  }
+  if (gameId) {
+    url.searchParams.set("game", gameId);
+  }
+
+  const response = await fetch(url.toString(), {
+    headers: getAuthHeaders(),
+    signal
+  });
+
+  if (!response.ok) {
+    const error = new Error("خطا در دریافت اطلاعات تورنومنت‌ها");
+    error.status = response.status;
+    throw error;
+  }
+
+  const data = await response.json();
+  return {
+    results: Array.isArray(data) ? data : data.results || [],
+    count: Array.isArray(data) ? data.length : data.count || 0
+  };
+}
+
+function renderSectionMessage(containerId, message) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = `<div class="section-message">${message}</div>`;
+}
+
+function cacheTournament(tournament) {
+  if (!tournament || !tournament.id) return;
+  tournamentCache.set(tournament.id, tournament);
+}
+
+function renderPaginationControls({ containerId, totalCount, pageSize, currentPage, onPageChange }) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const totalPages = Math.ceil(totalCount / pageSize);
+  if (!totalPages || totalPages <= 1) {
+    container.style.display = "none";
+    return;
+  }
+
+  container.style.display = "flex";
+
+  const prevBtn = document.createElement("button");
+  prevBtn.className = "Previous";
+  prevBtn.textContent = "قبلی";
+  if (currentPage <= 1) {
+    prevBtn.classList.add("disabled");
+  } else {
+    prevBtn.addEventListener("click", () => onPageChange(currentPage - 1));
+  }
+  container.appendChild(prevBtn);
+
+  const maxVisible = 5;
+  let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+  let end = start + maxVisible - 1;
+
+  if (end > totalPages) {
+    end = totalPages;
+    start = Math.max(1, end - maxVisible + 1);
+  }
+
+  for (let page = start; page <= end; page++) {
+    const pageLink = document.createElement("a");
+    pageLink.className = "page_number";
+    pageLink.textContent = page;
+    pageLink.href = "#";
+    if (page === currentPage) {
+      pageLink.classList.add("filter-active");
+    }
+    pageLink.addEventListener("click", event => {
+      event.preventDefault();
+      if (page === currentPage) return;
+      onPageChange(page);
+    });
+    container.appendChild(pageLink);
+  }
+
+  const nextBtn = document.createElement("button");
+  nextBtn.className = "next";
+  nextBtn.textContent = "بعدی";
+  if (currentPage >= totalPages) {
+    nextBtn.classList.add("disabled");
+  } else {
+    nextBtn.addEventListener("click", () => onPageChange(currentPage + 1));
+  }
+  container.appendChild(nextBtn);
+}
+
+function hidePagination(containerId) {
+  const container = document.getElementById(containerId);
+  if (container) {
+    container.style.display = "none";
+    container.innerHTML = "";
+  }
+}
+
+function renderTournamentList(containerId, tournaments, emptyMessage) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+  if (!Array.isArray(tournaments) || tournaments.length === 0) {
+    renderSectionMessage(containerId, emptyMessage);
+    return;
+  }
+
+  tournaments.forEach(tournament => {
+    cacheTournament(tournament);
+    renderTournamentCard(tournament, containerId);
+  });
 }
 
 // ---------------------- عناصر UI خطا و لودینگ ----------------------
@@ -83,34 +231,21 @@ async function loadGameTournaments() {
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
   try {
-    const [gameRes, tournamentsRes] = await Promise.all([
-      fetch(`${API_BASE_URL}/api/tournaments/games/${gameId}/`, {
-        headers: getAuthHeaders(),
-        signal: controller.signal
-      }),
-      fetch(`${API_BASE_URL}/api/tournaments/tournaments/?game=${gameId}`, {
-        headers: getAuthHeaders(),
-        signal: controller.signal
-      })
-    ]);
+    const gameRes = await fetch(`${API_BASE_URL}/api/tournaments/games/${gameId}/`, {
+      headers: getAuthHeaders(),
+      signal: controller.signal
+    });
 
     clearTimeout(timeoutId);
 
     if (!gameRes.ok) throw new Error("خطا در دریافت اطلاعات بازی");
-    if (!tournamentsRes.ok) throw new Error("خطا در دریافت اطلاعات تورنومنت‌ها");
 
     const gameData = await gameRes.json();
-    let tournamentsData = await tournamentsRes.json();
-    tournamentsData = Array.isArray(tournamentsData)
-      ? tournamentsData
-      : tournamentsData.results || tournamentsData.data || [];
-
-    allTournaments = tournamentsData;
-
     renderGameInfo(gameData);
-    renderTournamentsByCategory(categorizeTournaments(tournamentsData));
 
-    hideLoading();
+    loadOngoingTournaments(1, { updateHighlights: true });
+    loadUpcomingTournaments(1);
+    loadFinishedPreview();
   } catch (err) {
     clearTimeout(timeoutId);
     hideLoading();
@@ -120,7 +255,10 @@ async function loadGameTournaments() {
       showError("gameTournamentsLoadFailed");
     }
     console.error("loadGameTournaments error:", err);
+    return;
   }
+
+  hideLoading();
 }
 
 // ---------------------- 3. نمایش بنر و توضیحات بازی ----------------------
@@ -140,28 +278,260 @@ function renderGameInfo(gameData) {
   if (descSpan) descSpan.textContent = gameData.description || "توضیحی موجود نیست";
 }
 
-// ---------------------- 4. دسته‌بندی تورنومنت‌ها ----------------------
-function categorizeTournaments(tournaments) {
-  const now = new Date();
-  const live = [], upcoming = [], running = [], finished = [];
+// ---------------------- 4. دریافت و نمایش تورنومنت‌ها ----------------------
+async function loadOngoingTournaments(page = 1, { updateHighlights = false } = {}) {
+  const controller = createController("ongoing");
+  paginationState.ongoing.page = page;
 
-  tournaments.forEach(t => {
-    const start = new Date(t.start_date);
-    const end = new Date(t.end_date);
-    const countdownStart = t.countdown_start_time ? new Date(t.countdown_start_time) : start;
+  if (page === 1 || updateHighlights) {
+    renderSectionMessage("live_tournaments", "در حال بارگذاری...");
+  }
+  renderSectionMessage("running_tournaments", "در حال بارگذاری...");
 
-    if (!isValidDate(start) || !isValidDate(end)) {
-      finished.push(t);
+  try {
+    const { results, count } = await fetchTournamentsData({
+      status: "ongoing",
+      page,
+      pageSize: paginationState.ongoing.pageSize,
+      signal: controller.signal
+    });
+
+    if (controller.signal.aborted) return;
+
+    paginationState.ongoing.totalCount = count;
+
+    if (page === 1 || updateHighlights) {
+      renderLiveHighlights(results);
+    }
+
+    renderRunningTournaments(results, page);
+
+    renderPaginationControls({
+      containerId: "ongoing_pagination",
+      totalCount: count,
+      pageSize: paginationState.ongoing.pageSize,
+      currentPage: page,
+      onPageChange: newPage => loadOngoingTournaments(newPage)
+    });
+  } catch (error) {
+    if (error.name === "AbortError") return;
+    console.error("loadOngoingTournaments error:", error);
+    renderSectionMessage("running_tournaments", "خطایی در دریافت تورنومنت‌های فعال رخ داد.");
+    renderSectionMessage("live_tournaments", "خطایی در دریافت تورنومنت‌های فعال رخ داد.");
+    hidePagination("ongoing_pagination");
+  }
+}
+
+async function loadUpcomingTournaments(page = 1) {
+  const controller = createController("upcoming");
+  paginationState.upcoming.page = page;
+
+  renderSectionMessage("upcoming_tournaments", "در حال بارگذاری...");
+
+  try {
+    const { results, count } = await fetchTournamentsData({
+      status: "upcoming",
+      page,
+      pageSize: paginationState.upcoming.pageSize,
+      signal: controller.signal
+    });
+
+    if (controller.signal.aborted) return;
+
+    paginationState.upcoming.totalCount = count;
+
+    renderTournamentList("upcoming_tournaments", results, "تورنامنتی برای نمایش وجود ندارد.");
+
+    renderPaginationControls({
+      containerId: "upcoming_pagination",
+      totalCount: count,
+      pageSize: paginationState.upcoming.pageSize,
+      currentPage: page,
+      onPageChange: newPage => loadUpcomingTournaments(newPage)
+    });
+  } catch (error) {
+    if (error.name === "AbortError") return;
+    console.error("loadUpcomingTournaments error:", error);
+    renderSectionMessage("upcoming_tournaments", "خطایی در دریافت تورنومنت‌های بزودی رخ داد.");
+    hidePagination("upcoming_pagination");
+  }
+}
+
+async function loadFinishedPreview() {
+  const controller = createController("finishedPreview");
+  renderSectionMessage("recent_finished_tournaments", "در حال بارگذاری...");
+
+  try {
+    const { results, count } = await fetchTournamentsData({
+      status: "finished",
+      page: 1,
+      pageSize: 3,
+      ordering: "-start_date",
+      signal: controller.signal
+    });
+
+    if (controller.signal.aborted) return;
+
+    const previewContainer = document.getElementById("recent_finished_tournaments");
+    const showMoreBtn = document.getElementById("show_all_finished_btn");
+    const finishedWrapper = document.getElementById("all_finished_wrapper");
+
+    paginationState.finished.totalCount = count;
+
+    if (!Array.isArray(results) || results.length === 0) {
+      if (previewContainer) {
+        previewContainer.innerHTML = "";
+        renderSectionMessage("recent_finished_tournaments", "تورنامنت پایان‌یافته‌ای ثبت نشده است.");
+      }
+      if (showMoreBtn) {
+        showMoreBtn.classList.add("hidden");
+        if (showMoreBtn.parentElement) {
+          showMoreBtn.parentElement.classList.add("hidden");
+        }
+      }
+      if (finishedWrapper) {
+        finishedWrapper.classList.add("hidden");
+      }
       return;
     }
 
-    if (end <= now) finished.push(t);
-    else if (start <= now && end > now) live.push(t);
-    else if (countdownStart <= now && start > now) running.push(t);
-    else upcoming.push(t);
-  });
+    if (previewContainer) {
+      previewContainer.innerHTML = "";
+      results.forEach(tournament => {
+        cacheTournament(tournament);
+        renderTournamentCard(tournament, "recent_finished_tournaments");
+      });
+    }
 
-  return { live, upcoming, running, finished };
+    if (showMoreBtn) {
+      const actionsContainer = showMoreBtn.parentElement;
+      if (count > results.length) {
+        showMoreBtn.classList.remove("hidden");
+        showMoreBtn.disabled = false;
+        if (actionsContainer) {
+          actionsContainer.classList.remove("hidden");
+        }
+      } else {
+        showMoreBtn.classList.add("hidden");
+        if (actionsContainer) {
+          actionsContainer.classList.add("hidden");
+        }
+      }
+    }
+
+    if (finishedWrapper) {
+      finishedWrapper.classList.add("hidden");
+    }
+  } catch (error) {
+    if (error.name === "AbortError") return;
+    console.error("loadFinishedPreview error:", error);
+    renderSectionMessage("recent_finished_tournaments", "خطایی در دریافت تورنومنت‌های پایان یافته رخ داد.");
+  }
+}
+
+async function loadFinishedTournaments(page = 1) {
+  const controller = createController("finished");
+  paginationState.finished.page = page;
+
+  renderSectionMessage("finished_tournaments", "در حال بارگذاری...");
+
+  try {
+    const { results, count } = await fetchTournamentsData({
+      status: "finished",
+      page,
+      pageSize: paginationState.finished.pageSize,
+      ordering: "-start_date",
+      signal: controller.signal
+    });
+
+    if (controller.signal.aborted) return;
+
+    paginationState.finished.totalCount = count;
+
+    renderTournamentList("finished_tournaments", results, "تورنامنت پایان‌یافته‌ای موجود نیست.");
+
+    renderPaginationControls({
+      containerId: "finished_pagination",
+      totalCount: count,
+      pageSize: paginationState.finished.pageSize,
+      currentPage: page,
+      onPageChange: newPage => loadFinishedTournaments(newPage)
+    });
+  } catch (error) {
+    if (error.name === "AbortError") return;
+    console.error("loadFinishedTournaments error:", error);
+    renderSectionMessage("finished_tournaments", "خطایی در دریافت لیست تورنومنت‌های پایان یافته رخ داد.");
+    hidePagination("finished_pagination");
+  }
+}
+
+function renderLiveHighlights(tournaments = []) {
+  const container = document.getElementById("live_tournaments");
+  if (!container) return;
+
+  container.innerHTML = "";
+  const highlights = tournaments.slice(0, HIGHLIGHT_COUNT);
+
+  if (!highlights.length) {
+    renderSectionMessage("live_tournaments", "تورنامنت فعالی برای نمایش وجود ندارد.");
+    return;
+  }
+
+  highlights.forEach(tournament => {
+    cacheTournament(tournament);
+    renderTournamentCard(tournament, "live_tournaments");
+  });
+}
+
+function renderRunningTournaments(tournaments = [], page = 1) {
+  const containerId = "running_tournaments";
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+
+  const items = page === 1 ? tournaments.slice(HIGHLIGHT_COUNT) : tournaments;
+
+  if (!items.length) {
+    renderSectionMessage(containerId, page === 1
+      ? "تمام تورنومنت‌های فعال در بخش بالا نمایش داده شده‌اند."
+      : "تورنامنت دیگری برای این صفحه موجود نیست.");
+    return;
+  }
+
+  items.forEach(tournament => {
+    cacheTournament(tournament);
+    renderTournamentCard(tournament, containerId);
+  });
+}
+
+function setupFinishedSectionToggle() {
+  const button = document.getElementById("show_all_finished_btn");
+  if (!button) return;
+
+  button.addEventListener("click", () => {
+    button.classList.add("hidden");
+    const wrapper = document.getElementById("all_finished_wrapper");
+    if (wrapper) {
+      wrapper.classList.remove("hidden");
+    }
+    if (button.parentElement) {
+      button.parentElement.classList.add("hidden");
+    }
+    loadFinishedTournaments(1);
+  });
+}
+
+function setupScrollShortcuts() {
+  const showButton = document.querySelector(".show_tournaments");
+  if (showButton) {
+    showButton.addEventListener("click", () => {
+      const target = document.getElementById("running") || document.getElementById("upcoming") || document.getElementById("finished");
+      if (target && typeof target.scrollIntoView === "function") {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+  }
 }
 
 // ---------------------- 5. نمایش کارت تورنومنت ----------------------
@@ -333,52 +703,16 @@ function timeRemaining(startCountdown, startDate, endDate) {
   return "-";
 }
 
-// ---------------------- 7. رندر بر اساس دسته ----------------------
-function renderTournamentsByCategory(categories) {
-  const { live, upcoming, running, finished } = categories;
-  const containers = {
-    live: document.getElementById("live_tournaments"),
-    upcoming: document.getElementById("upcoming_tournaments"),
-    running: document.getElementById("running_tournaments"),
-    finished: document.getElementById("finished_tournaments")
-  };
-  const titrs = {
-    live: document.getElementById("live"),
-    upcoming: document.getElementById("upcoming"),
-    running: document.getElementById("running"),
-    finished: document.getElementById("finished")
-  };
-
-  Object.values(containers).forEach(c => { if (c) c.innerHTML = ""; });
-
-  if (live?.length) live.forEach(t => renderTournamentCard(t, "live_tournaments"));
-  if (upcoming?.length) upcoming.forEach(t => renderTournamentCard(t, "upcoming_tournaments"));
-  if (running?.length) running.forEach(t => renderTournamentCard(t, "running_tournaments"));
-  if (finished?.length) finished.forEach(t => renderTournamentCard(t, "finished_tournaments"));
-
-  Object.keys(containers).forEach(key => {
-    const container = containers[key];
-    const titr = titrs[key];
-    if (!container || container.children.length === 0) {
-      if (container) container.style.display = "none";
-      if (titr) titr.style.display = "none";
-    } else {
-      if (container) container.style.display = key === "live" ? "block" : "grid";
-      if (titr) titr.style.display = "flex";
-    }
-  });
-}
-
-// ---------------------- 8. نمایش نتایج ----------------------
+// ---------------------- 7. نمایش نتایج ----------------------
 function showResultPopup(tournament) {
   if (tournament.id) {
     window.location.href = `results.html?id=${tournament.id}`;
   }
 }
 
-// ---------------------- 9. بروزرسانی تایمر ----------------------
+// ---------------------- 8. بروزرسانی تایمر ----------------------
 setInterval(() => {
-  allTournaments.forEach(t => {
+  tournamentCache.forEach(t => {
     const span = document.getElementById(`countdown-${t.id}`);
     if (span) {
       span.textContent = timeRemaining(t.countdown_start_time, t.start_date, t.end_date);
@@ -386,5 +720,9 @@ setInterval(() => {
   });
 }, 1000);
 
-// ---------------------- 10. شروع ----------------------
-document.addEventListener("DOMContentLoaded", loadGameTournaments);
+// ---------------------- 9. شروع ----------------------
+document.addEventListener("DOMContentLoaded", () => {
+  setupFinishedSectionToggle();
+  setupScrollShortcuts();
+  loadGameTournaments();
+});

@@ -79,7 +79,7 @@ body{
     gap: 30px;
   }
   
-  .buttons button {
+.buttons button {
     width: 300px;
     height: 70px;
     border-radius: 10px;
@@ -90,7 +90,16 @@ body{
     font-size: 20px;
     cursor: pointer;
   }
-  
+
+.section-message {
+  text-align: center;
+  color: var(--white-color);
+  font-size: 16px;
+  font-weight: 300;
+  opacity: 0.8;
+  margin: 0 auto;
+}
+
 .games_link{
     border: 2px solid var(--white-color) ;
     background-color: transparent;
@@ -178,6 +187,87 @@ body{
   direction: rtl;
   padding: 0px 25px;
   justify-content: center;
+}
+
+.grid-container .section-message {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--white-color);
+  font-size: 16px;
+  font-weight: 300;
+  opacity: 0.8;
+}
+
+.Pagination {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 30px auto;
+  flex-wrap: wrap;
+  max-width: 1400px;
+  padding: 0 25px;
+}
+
+.Pagination button,
+.Pagination .page_number {
+  background-color: transparent;
+  border: 1px solid var(--color-primary);
+  color: var(--white-color);
+  border-radius: 8px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  text-decoration: none;
+}
+
+.Pagination button.disabled,
+.Pagination .page_number.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+.Pagination .page_number.filter-active,
+.Pagination button:hover,
+.Pagination .page_number:hover {
+  background-color: var(--color-primary);
+  color: var(--black-color);
+}
+
+.finished_preview_section {
+  margin-top: 60px;
+}
+
+.finished-actions {
+  display: flex;
+  justify-content: center;
+  margin: 20px auto 0;
+}
+
+.show-more-finished {
+  background-color: var(--color-primary);
+  border: none;
+  color: var(--black-color);
+  padding: 12px 32px;
+  border-radius: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.show-more-finished:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.finished_all {
+  margin-top: 30px;
+}
+
+.hidden {
+  display: none !important;
 }
 
 
