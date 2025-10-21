@@ -99,6 +99,25 @@ function normaliseId(value) {
   return stringValue.length ? stringValue : null;
 }
 
+function stableStringify(value) {
+  if (value === null || value === undefined) {
+    return "null";
+  }
+
+  if (typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+
+  const entries = Object.keys(value)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`);
+  return `{${entries.join(",")}}`;
+}
+
 function decodeJwtPayload(token) {
   if (!token || typeof token !== "string") {
     return null;
@@ -645,6 +664,15 @@ async function apiFetch(url, options = {}) {
     },
   };
 
+  if (config.body instanceof FormData) {
+    if (config.headers && "Content-Type" in config.headers) {
+      delete config.headers["Content-Type"];
+    }
+    if (config.headers && "content-type" in config.headers) {
+      delete config.headers["content-type"];
+    }
+  }
+
   let response;
   try {
     response = await fetch(url, config);
@@ -1160,6 +1188,13 @@ async function loadTournament() {
       "status",
       "status_display",
       "status_label",
+      "team_join_field",
+      "join_payload_template",
+      "join_payload",
+      "registration_payload_template",
+      "registration_payload",
+      "registration",
+      "registration_settings",
     ];
     detailUrl.searchParams.set("fields", detailFields.join(","));
     detailUrl.searchParams.set("expand", "creator,image,participants,teams");
