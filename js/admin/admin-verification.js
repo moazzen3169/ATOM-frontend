@@ -610,7 +610,9 @@ function createVerificationCard(item) {
     updatedAt ? `<span>آخرین به‌روزرسانی: ${escapeHtml(updatedAt)}</span>` : "",
     reviewer ? `<span>بررسی توسط: ${escapeHtml(reviewer)}</span>` : "",
     reviewDate ? `<span>تاریخ بررسی: ${escapeHtml(reviewDate)}</span>` : "",
-  ].filter(Boolean).join("");
+  ]
+    .filter(Boolean)
+    .join("");
 
   const userDisplayName = getUserDisplayName(item);
   const userDetails = formatUserDetails(item);
@@ -627,6 +629,14 @@ function createVerificationCard(item) {
   const rawDataSection = createRawDataBlock(item);
   const approveDisabledAttr = statusKey === "approved" ? 'disabled data-static-disabled="true"' : "";
   const rejectDisabledAttr = statusKey === "rejected" ? 'disabled data-static-disabled="true"' : "";
+  const isPending = statusKey === "pending";
+  const statusChangeDate = reviewDate || updatedAt || createdAt;
+
+  const processedDetails = buildDetailsGrid([
+    { label: "نوع درخواست", value: formatLevel(item?.level) },
+    { label: "وضعیت", value: STATUS_METADATA[statusKey]?.label || "" },
+    { label: "تاریخ تغییر وضعیت", value: statusChangeDate },
+  ]);
 
   return `
     <article class="verification-card ${statusKey !== 'pending' ? 'verification-card--processed' : ''}" data-verification-id="${escapeHtml(item?.id || '')}">
@@ -638,6 +648,9 @@ function createVerificationCard(item) {
         <div class="verification-card__meta">${headerMeta || ""}</div>
       </header>
       <div class="verification-card__body">
+        ${
+          isPending
+            ? `
         <div class="verification-card__section">
           <h3>اطلاعات کاربر</h3>
           ${userDetails}
@@ -650,6 +663,14 @@ function createVerificationCard(item) {
         ${documentsSection}
         ${notes}
         ${rawDataSection}
+      `
+            : `
+        <div class="verification-card__section">
+          <h3>وضعیت درخواست</h3>
+          ${processedDetails}
+        </div>
+      `
+        }
       </div>
       <div class="verification-card__actions">
         <button type="button" class="approve-action" data-action="approve" data-id="${escapeHtml(item?.id || '')}" ${approveDisabledAttr}>تایید</button>
