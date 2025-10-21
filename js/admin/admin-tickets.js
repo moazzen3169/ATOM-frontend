@@ -266,7 +266,31 @@ function normalizeTicketMessage(message = {}, ticketOwnerId = null, userInfo = {
     author = "admin";
   }
 
-  const authorName = author === "admin" ? "admin" : userInfo?.name || "کاربر";
+  const nameCandidates = [];
+  if (author === "admin") {
+    nameCandidates.push("admin");
+  }
+
+  [
+    message.author_name,
+    message.authorName,
+    message.user_name,
+    message.username,
+    message.sender_name,
+    message.sender?.name,
+    message.sender?.username,
+    userInfo?.name,
+    userInfo?.username,
+  ].forEach((candidate) => {
+    if (typeof candidate === "string" && candidate.trim()) {
+      nameCandidates.push(candidate.trim());
+    }
+  });
+
+  const authorName =
+    author === "admin"
+      ? "admin"
+      : nameCandidates.find((value) => value && value !== "admin") || "کاربر";
 
   return {
     author,
@@ -786,6 +810,22 @@ function markTicketAsRead(ticketId) {
   }
 }
 
+function markGroupTicketsAsRead(groupKey) {
+  if (!groupKey) {
+    return false;
+  }
+
+  let updated = false;
+  state.tickets.forEach((ticket) => {
+    if (String(resolveTicketGroupKey(ticket)) === String(groupKey) && ticket.unread) {
+      ticket.unread = false;
+      updated = true;
+    }
+  });
+
+  return updated;
+}
+
 function renderLoadingState() {
   if (!elements.list) return;
   elements.list.innerHTML = `
@@ -857,23 +897,34 @@ function renderTicketItem(ticket) {
   `;
 }
 
+function resolveTicketGroupKey(ticket = {}) {
+  const user = ticket.user || {};
+  const idCandidate = normalizeIdForComparison(user.id);
+  if (idCandidate) {
+    return idCandidate;
+  }
+
+  const stringCandidates = [user.username, user.email, user.phone, user.name]
+    .filter((value) => typeof value === "string" && value.trim())
+    .map((value) => value.trim());
+
+  if (stringCandidates.length) {
+    return stringCandidates[0];
+  }
+
+  const fallback = ticket.id ?? ticket.subject ?? ticket.createdAt ?? "unknown";
+  return `ticket-${fallback}`;
+}
+
 function groupTicketsByUser(tickets) {
   const groups = new Map();
 
   tickets.forEach((ticket) => {
+    const key = String(resolveTicketGroupKey(ticket));
     const user = ticket.user || {};
-    const keyCandidate =
-      normalizeIdForComparison(user.id) ||
-      (typeof user.username === "string" && user.username.trim()) ||
-      (typeof user.email === "string" && user.email.trim()) ||
-      (typeof user.phone === "string" && user.phone.trim()) ||
-      (typeof user.name === "string" && user.name.trim()) ||
-      `ticket-${ticket.id}`;
-
-    const key = String(keyCandidate);
 
     if (!groups.has(key)) {
-      groups.set(key, { key, user: user, tickets: [] });
+      groups.set(key, { key, user, tickets: [] });
     }
 
     const group = groups.get(key);
@@ -890,23 +941,47 @@ function groupTicketsByUser(tickets) {
   });
 }
 
-function renderTicketGroup(group) {
+function renderTicketGroup(group, index) {
   const groupName = getUserDisplayName(group.user);
   const groupInitials = getInitials(groupName);
   const items = group.tickets.map(renderTicketItem).join("");
+  const hasActiveTicket = group.tickets.some((ticket) => ticket.id === state.activeTicketId);
+  const unreadCount = group.tickets.filter((ticket) => ticket.unread).length;
+  const sectionId = `ticket-group-items-${index}`;
 
   return `
-    <section class="ticket-group" data-ticket-group="${group.key}" role="group" aria-label="${groupName}">
-      <header class="ticket-group__header">
-        <div class="ticket-group__identity">
-          <span class="ticket-group__avatar" aria-hidden="true">${groupInitials}</span>
-          <div class="ticket-group__meta">
-            <span class="ticket-group__name">${groupName}</span>
-            <span class="ticket-group__caption">${group.tickets.length} تیکت فعال</span>
+    <section class="ticket-group ${hasActiveTicket ? "is-open" : ""}" data-ticket-group="${
+      group.key
+    }" role="group" aria-label="${groupName}">
+      <div class="ticket-group__header">
+        <button type="button" class="ticket-group__toggle" data-group-toggle data-group="${
+          group.key
+        }" aria-expanded="${hasActiveTicket}" aria-controls="${sectionId}">
+          <div class="ticket-group__identity">
+            <span class="ticket-group__avatar" aria-hidden="true">${groupInitials}</span>
+            <div class="ticket-group__meta">
+              <span class="ticket-group__name">${groupName}</span>
+              <span class="ticket-group__caption">${group.tickets.length} تیکت فعال</span>
+            </div>
           </div>
-        </div>
-      </header>
-      <div class="ticket-items" role="list">
+          <div class="ticket-group__indicators">
+            ${
+              unreadCount
+                ? `<span class="ticket-group__badge" aria-label="${unreadCount} تیکت خوانده نشده">${unreadCount}</span>`
+                : ""
+            }
+            <span class="ticket-group__chevron" aria-hidden="true"></span>
+          </div>
+        </button>
+        <button type="button" class="ticket-group__action" data-action="mark-group-read" data-group="${
+          group.key
+        }" ${unreadCount ? "" : "disabled"}>
+          علامت خوانده شده
+        </button>
+      </div>
+      <div class="ticket-items" id="${sectionId}" role="list" ${
+        hasActiveTicket ? "" : "hidden"
+      }>
         ${items}
       </div>
     </section>
@@ -918,7 +993,9 @@ function renderTicketsList(tickets) {
   state.replyMode = "reply";
 
   const groupedTickets = groupTicketsByUser(tickets);
-  const groupsMarkup = groupedTickets.map(renderTicketGroup).join("");
+  const groupsMarkup = groupedTickets
+    .map((group, index) => renderTicketGroup(group, index))
+    .join("");
 
   elements.list.innerHTML = `
     <div class="tickets-list__header">
@@ -933,6 +1010,53 @@ function renderTicketsList(tickets) {
     button.addEventListener("click", () => {
       state.activeTicketId = button.dataset.ticketId;
       markTicketAsRead(state.activeTicketId);
+      renderTicketList();
+    });
+  });
+
+  elements.list.querySelectorAll("[data-group-toggle]").forEach((toggle) => {
+    toggle.addEventListener("click", () => {
+      const section = toggle.closest("[data-ticket-group]");
+      if (!section) return;
+
+      const isOpen = !section.classList.contains("is-open");
+      const items = section.querySelector(".ticket-items");
+
+      if (isOpen) {
+        elements.list.querySelectorAll("[data-ticket-group]").forEach((other) => {
+          if (other === section) return;
+          other.classList.remove("is-open");
+          const otherToggle = other.querySelector("[data-group-toggle]");
+          if (otherToggle) {
+            otherToggle.setAttribute("aria-expanded", "false");
+          }
+          other.querySelector(".ticket-items")?.setAttribute("hidden", "");
+        });
+
+        section.classList.add("is-open");
+        toggle.setAttribute("aria-expanded", "true");
+        items?.removeAttribute("hidden");
+      } else {
+        section.classList.remove("is-open");
+        toggle.setAttribute("aria-expanded", "false");
+        items?.setAttribute("hidden", "");
+      }
+    });
+  });
+
+  elements.list.querySelectorAll("[data-action=mark-group-read]").forEach((button) => {
+    button.addEventListener("click", (event) => {
+      event.stopPropagation();
+      const groupKey = button.dataset.group;
+      if (!groupKey) {
+        return;
+      }
+      const unreadCleared = markGroupTicketsAsRead(groupKey);
+      if (unreadCleared) {
+        showFeedback("همه تیکت‌های این کاربر به عنوان خوانده شده علامت خوردند.");
+      } else {
+        showFeedback("تیکت خوانده‌نشده‌ای برای این کاربر وجود نداشت.", "warning");
+      }
       renderTicketList();
     });
   });
@@ -1153,6 +1277,13 @@ function renderMessage(message) {
     admin: "message message--admin",
     note: "message message--note",
   };
+  const additionalClasses = [];
+  if (message.author === "admin") {
+    additionalClasses.push("message--from-admin");
+  }
+  if (message.author === "note") {
+    additionalClasses.push("message--internal-note");
+  }
   const roleLabel =
     message.author === "note"
       ? "یادداشت داخلی"
@@ -1168,8 +1299,12 @@ function renderMessage(message) {
         .join("")
     : "";
 
+  const classList = [classes[message.author] || classes.user, ...additionalClasses]
+    .filter(Boolean)
+    .join(" ");
+
   return `
-    <article class="${classes[message.author] || classes.user}">
+    <article class="${classList}">
       <header class="message__header">
         <span>${roleLabel} • ${message.authorName}</span>
         <time>${formatDateTime(message.timestamp)}</time>
@@ -1189,10 +1324,27 @@ function bindDetailEvents(ticket) {
   const replyForm = elements.detail.querySelector("[data-ticket-reply]");
   const closeAfterSend = elements.detail.querySelector("[data-close-after-send]");
 
-  statusSelect?.addEventListener("change", (event) => {
-    updateTicketStatus(ticket.id, event.target.value);
-    showFeedback("وضعیت تیکت به‌روزرسانی شد.");
-    renderTicketList();
+  statusSelect?.addEventListener("change", async (event) => {
+    const select = event.target;
+    const nextStatus = select.value;
+    const previousValue = ticket.status;
+
+    if (nextStatus === previousValue) {
+      select.value = previousValue;
+      return;
+    }
+
+    select.disabled = true;
+    const { success, error } = await updateTicketStatus(ticket.id, nextStatus);
+    select.disabled = false;
+
+    if (success) {
+      showFeedback("وضعیت تیکت به‌روزرسانی شد.");
+      renderTicketList();
+    } else {
+      showFeedback(error || "ذخیره وضعیت تیکت با خطا روبه‌رو شد.", "error");
+      select.value = ticket.status || previousValue;
+    }
   });
 
   prioritySelect?.addEventListener("change", (event) => {
@@ -1205,17 +1357,29 @@ function bindDetailEvents(ticket) {
   elements.detail
     .querySelector("[data-action=mark-resolved]")
     ?.addEventListener("click", () => {
-      updateTicketStatus(ticket.id, "resolved");
-      showFeedback("تیکت در وضعیت حل شده قرار گرفت.");
-      renderTicketList();
+      void (async () => {
+        const { success, error } = await updateTicketStatus(ticket.id, "resolved");
+        if (success) {
+          showFeedback("تیکت در وضعیت حل شده قرار گرفت.");
+          renderTicketList();
+        } else {
+          showFeedback(error || "تغییر وضعیت به حل شده با مشکل مواجه شد.", "error");
+        }
+      })();
     });
 
   elements.detail
     .querySelector("[data-action=reopen]")
     ?.addEventListener("click", () => {
-      updateTicketStatus(ticket.id, "waiting");
-      showFeedback("تیکت مجدداً برای پیگیری باز شد.", "warning");
-      renderTicketList();
+      void (async () => {
+        const { success, error } = await updateTicketStatus(ticket.id, "waiting");
+        if (success) {
+          showFeedback("تیکت مجدداً برای پیگیری باز شد.", "warning");
+          renderTicketList();
+        } else {
+          showFeedback(error || "بازگشایی تیکت با مشکل مواجه شد.", "error");
+        }
+      })();
     });
 
   elements.detail
@@ -1373,12 +1537,42 @@ function getTemplateText(templateId, ticket) {
   }
 }
 
-function updateTicketStatus(ticketId, status) {
-  if (!statusDictionary[status]) return;
+async function updateTicketStatus(ticketId, status) {
+  if (!statusDictionary[status]) {
+    return { success: false, error: "وضعیت انتخابی معتبر نیست." };
+  }
+
   const ticket = findTicketById(ticketId);
-  if (!ticket) return;
+  if (!ticket) {
+    return { success: false, error: "تیکت موردنظر یافت نشد." };
+  }
+
+  if (ticket.status === status) {
+    return { success: true };
+  }
+
+  const previousStatus = ticket.status;
+  const previousUpdatedAt = ticket.updatedAt;
   ticket.status = status;
   ticket.updatedAt = new Date().toISOString();
+
+  try {
+    const persisted = await persistTicketUpdate(ticketId, { status });
+    const persistedStatus = persisted?.status || persisted?.state;
+    if (persistedStatus && typeof persistedStatus === "string") {
+      const normalized = persistedStatus.toLowerCase();
+      if (statusDictionary[normalized]) {
+        ticket.status = normalized;
+      }
+    }
+    ticket.updatedAt = new Date().toISOString();
+    return { success: true };
+  } catch (error) {
+    ticket.status = previousStatus;
+    ticket.updatedAt = previousUpdatedAt;
+    console.error("Failed to persist ticket status", error);
+    return { success: false, error: error.message || "ذخیره وضعیت تیکت انجام نشد." };
+  }
 }
 
 function updateStatistics() {
