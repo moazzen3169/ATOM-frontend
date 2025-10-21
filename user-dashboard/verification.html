@@ -47,21 +47,21 @@
                             <span class="progress-step__badge" aria-hidden="true">۱</span>
                             <div class="progress-step__content">
                                 <h3 class="progress-step__title">سطح ۱</h3>
-                                <p class="progress-step__description">ایجاد حساب و تایید ایمیل برای دسترسی اولیه.</p>
+                                <p class="progress-step__description">پس از ثبت‌نام، به عنوان کاربر پایه فعال می‌شوید و به امکانات عمومی دسترسی دارید.</p>
                             </div>
                         </li>
                         <li class="progress-step" data-progress-step="2">
                             <span class="progress-step__badge" aria-hidden="true">۲</span>
                             <div class="progress-step__content">
                                 <h3 class="progress-step__title">سطح ۲</h3>
-                                <p class="progress-step__description">ارسال عکس سلفی و کارت ملی برای افزایش سقف برداشت.</p>
+                                <p class="progress-step__description">با بارگذاری تصویر کارت ملی و سلفی، درخواست شما برای تایید تیم پشتیبانی ثبت می‌شود.</p>
                             </div>
                         </li>
                         <li class="progress-step" data-progress-step="3">
                             <span class="progress-step__badge" aria-hidden="true">۳</span>
                             <div class="progress-step__content">
                                 <h3 class="progress-step__title">سطح ۳</h3>
-                                <p class="progress-step__description">ارسال ویدیوی سلفی جهت دسترسی به برداشت‌های ویژه.</p>
+                                <p class="progress-step__description">پس از تایید سطح ۲، ویدیو سلفی کوتاه ارسال کنید تا تایید نهایی و سقف‌های بالاتر فعال شوند.</p>
                             </div>
                         </li>
                     </ul>
@@ -76,8 +76,14 @@
                             </svg>
                         </span>
                         <div class="verification_info__text">
-                            <h3>لطفا اطلاعات خود را با دقت کامل ارسال کنید</h3>
-                            <p>مدارک شما پس از ارسال توسط تیم پشتیبانی بررسی خواهد شد. در صورت بروز خطا، امکان اصلاح و ارسال مجدد وجود دارد.</p>
+                            <h3>فرآیند احراز هویت در سه مرحله</h3>
+                            <p>تمام کاربران پس از ثبت‌نام در سطح ۱ قرار می‌گیرند و می‌توانند با ارسال مدارک، دسترسی‌های بیشتری دریافت کنند.</p>
+                            <ul class="verification_info__list">
+                                <li><strong>سطح ۱:</strong> فعال‌سازی خودکار با ایجاد حساب کاربری (is_verified = False).</li>
+                                <li><strong>سطح ۲:</strong> ارسال کارت ملی و عکس سلفی؛ وضعیت در انتظار تایید ادمین قرار می‌گیرد.</li>
+                                <li><strong>سطح ۳:</strong> پس از تایید سطح ۲، ویدیو سلفی ارسال کنید تا تایید نهایی انجام شود.</li>
+                            </ul>
+                            <p>در صورت نیاز به اصلاح، امکان ویرایش و ارسال مجدد مدارک برای شما فراهم است.</p>
                         </div>
                     </div>
                     <button type="button" class="nemuneh">مشاهده راهنما</button>
@@ -93,11 +99,11 @@
                             <!-- pending - accepted - not_accepted -->
                             <span class="level_status not_accepted">تکمیل نشد</span>
                         </header>
-                        <p class="user-verification-card__description">برای فعال‌سازی امکانات مالی بیشتر، تصویر سلفی و کارت ملی خود را ارسال کنید.</p>
+                        <p class="user-verification-card__description">با ارسال تصویر کارت ملی و یک سلفی واضح، احراز هویت شما به سطح ۲ ارتقا یافته و پس از تایید، امکانات مالی فعال می‌شود.</p>
                         <ul class="Property" aria-label="مزایای سطح ۲">
-                            <li>افزایش سقف برداشت روزانه تا ۵ میلیون تومان</li>
-                            <li>فعال‌سازی برداشت آنی به حساب بانکی ثبت‌شده</li>
-                            <li>امکان شرکت در تورنمنت‌های پولی با جوایز بالاتر</li>
+                            <li>امکان برداشت وجه و انتقال جوایز به حساب بانکی</li>
+                            <li>دسترسی به ایجاد یا شرکت در تورنمنت‌های مالی</li>
+                            <li>برداشته شدن محدودیت‌های پایه برای تراکنش‌ها</li>
                         </ul>
                         <div class="user-verification-card__actions">
                             <button class="verificatin_btn" id="level-2-btn">تکمیل کردن اطلاعات</button>
@@ -114,11 +120,11 @@
                             <!-- pending - accepted - not_accepted -->
                             <span class="level_status not_accepted">تکمیل نشد</span>
                         </header>
-                        <p class="user-verification-card__description">برای دسترسی به برداشت‌های ویژه و سقف‌های نامحدود، یک ویدیوی کوتاه از خود ارسال کنید.</p>
+                        <p class="user-verification-card__description">پس از تایید سطح ۲، یک ویدیوی کوتاه از خود ضبط و ارسال کنید تا هویت شما به صورت نهایی تایید شود.</p>
                         <ul class="Property" aria-label="مزایای سطح ۳">
-                            <li>برداشت ویژه روزانه تا سقف ۲۰ میلیون تومان</li>
-                            <li>فعال شدن پشتیبانی اختصاصی و سریع</li>
-                            <li>اولویت در بررسی درخواست‌های مالی و تیکت‌ها</li>
+                            <li>افزایش سقف تراکنش و برداشت‌های روزانه</li>
+                            <li>دریافت پشتیبانی اختصاصی و سریع‌تر</li>
+                            <li>اولویت در پردازش درخواست‌های مالی و ویژه</li>
                         </ul>
                         <div class="user-verification-card__actions">
                             <button class="verificatin_btn" id="level-3-btn">تکمیل کردن اطلاعات</button>
@@ -137,7 +143,7 @@
 
         <form class="level_2_modal_form" method="post" novalidate>
             <h2 class="modal-title" id="level-2-title">احراز هویت سطح ۲</h2>
-            <p class="modal-description">برای تایید سطح ۲ تصویر سلفی و کارت ملی خود را بارگذاری نمایید.</p>
+            <p class="modal-description">تصویر کارت ملی و سلفی خود را بارگذاری کنید تا درخواست شما برای بررسی تیم پشتیبانی ثبت شود. تا زمان تایید، وضعیت حساب در حالت «در انتظار تایید» می‌ماند.</p>
             <h3 class="steps">انتخاب عکس سلفی</h3>
             <label class="lable" for="selfy_picture_level2">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="var(--white-color)" class="size-6">
@@ -169,7 +175,7 @@
 
         <form class="level_3_modal_form" method="post" novalidate>
             <h2 class="modal-title" id="level-3-title">احراز هویت سطح ۳</h2>
-            <p class="modal-description">ویدیوی سلفی خود را با متن اعلامی ضبط و بارگذاری کنید.</p>
+            <p class="modal-description">بعد از تایید شدن سطح ۲، یک ویدیوی سلفی کوتاه ضبط و آپلود کنید تا تایید نهایی حساب و امکانات ویژه برای شما فعال شود.</p>
             <h3 class="steps">ویدیوی خود را انتخاب کنید</h3>
             <label class="lable" for="selfy_video_level3">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1" stroke="var(--white-color)" class="size-6">
@@ -187,7 +193,7 @@
     <div class="modal nemuneh_modal hidden" role="dialog" aria-modal="true" aria-labelledby="guide-modal-title">
         <button class="modal-close-btn" type="button" aria-label="بستن" data-close-modal>×</button>
         <h2 class="modal-title" id="guide-modal-title">راهنمای تکمیل مدارک</h2>
-        <p class="guide-intro">برای افزایش سطح امنیتی حساب خود، مراحل زیر را دنبال کنید. هر سطح مزایای بیشتری به شما می‌دهد.</p>
+        <p class="guide-intro">پس از ثبت‌نام در سطح ۱ قرار می‌گیرید. برای فعال‌سازی امکانات مالی و ویژه، مراحل زیر را قدم‌به‌قدم انجام دهید.</p>
 
         <div class="guide-section level-2">
             <div class="section-header">
@@ -197,7 +203,7 @@
                 </svg>
                 <h3>سطح ۲: ارسال عکس سلفی و کارت ملی</h3>
             </div>
-            <p>برای تکمیل سطح ۲ احراز هویت، لطفا عکس سلفی واضح از خودتان همراه با عکس کارت ملی یا شناسنامه ارسال کنید. عکس‌ها باید با کیفیت بالا و خوانا باشند. حداکثر اندازه هر عکس ۵ مگابایت است.</p>
+            <p>برای تکمیل سطح ۲، یک عکس سلفی واضح و تصویر کارت ملی یا شناسنامه خود را بارگذاری کنید. مدارک باید خوانا باشند و حداکثر اندازه هر فایل ۵ مگابایت است. پس از ارسال، درخواست شما برای تایید ادمین در صف بررسی قرار می‌گیرد.</p>
             <div class="samples">
                 <div class="sample-item">
                     <h4>نمونه عکس سلفی:</h4>
@@ -217,7 +223,7 @@
                 </svg>
                 <h3>سطح ۳: ارسال ویدیو سلفی با متن تنظیم شده</h3>
             </div>
-            <p>برای تکمیل سطح ۳ احراز هویت، لطفا یک ویدیو سلفی ارسال کنید که در آن متن زیر را به صورت واضح بخوانید: <strong>"من [نام شما] هستم و این ویدیو برای احراز هویت در سایت است."</strong></p>
+            <p>برای تکمیل سطح ۳، ابتدا مطمئن شوید سطح ۲ شما تایید شده است. سپس یک ویدیو سلفی ضبط کنید و متن زیر را به صورت واضح بخوانید: <strong>"من [نام شما] هستم و این ویدیو برای احراز هویت در سایت است."</strong> پس از ارسال، وضعیت حساب تا زمان تایید نهایی به حالت انتظار برمی‌گردد.</p>
             <div class="samples">
                 <div class="sample-item">
                     <h4>نمونه ویدیو:</h4>
