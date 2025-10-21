@@ -119,10 +119,78 @@
       </div>
     </div>
   </div>
+  <!-- 🔹 مودال احراز هویت مورد نیاز -->
+  <div
+    id="authRequiredModal"
+    class="modal"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="authRequiredModalTitle"
+    aria-describedby="authRequiredModalMessage"
+    aria-hidden="true"
+  >
+    <div class="modal_content modal_content--compact">
+      <div class="modal_header">
+        <div>
+          <h2 id="authRequiredModalTitle" class="modal_title">ورود به حساب کاربری</h2>
+          <p id="authRequiredModalMessage" class="modal_desc">
+            برای ثبت‌نام در تورنومنت باید ابتدا وارد حساب کاربری خود شوید.
+          </p>
+        </div>
+        <button
+          type="button"
+          class="modal_close"
+          onclick="closeAuthRequiredModal()"
+          aria-label="بستن"
+        >
+          &times;
+        </button>
+      </div>
+      <div class="modal_actions">
+        <a href="/login.html" class="modal_button modal_button--primary">ورود</a>
+        <a href="/signup.html" class="modal_button modal_button--secondary">ثبت‌نام</a>
+      </div>
+    </div>
+  </div>
 
-
-
-
+  <!-- 🔹 مودال محدودیت ثبت‌نام -->
+  <div
+    id="joinEligibilityModal"
+    class="modal"
+    role="alertdialog"
+    aria-modal="true"
+    aria-labelledby="joinEligibilityModalTitle"
+    aria-describedby="joinEligibilityModalMessage"
+    aria-hidden="true"
+  >
+    <div class="modal_content modal_content--compact">
+      <div class="modal_header">
+        <div>
+          <h2 id="joinEligibilityModalTitle" class="modal_title">امکان ثبت‌نام وجود ندارد</h2>
+        </div>
+        <button
+          type="button"
+          class="modal_close"
+          onclick="closeJoinEligibilityModal()"
+          aria-label="بستن"
+        >
+          &times;
+        </button>
+      </div>
+      <div class="modal_body">
+        <p id="joinEligibilityModalMessage" class="modal_desc"></p>
+      </div>
+      <div id="joinEligibilityModalActions" class="modal_actions">
+        <button
+          type="button"
+          class="modal_button modal_button--primary"
+          onclick="closeJoinEligibilityModal()"
+        >
+          متوجه شدم
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- 🔹 مودال ثبت‌نام انفرادی -->
   <div id="individualJoinModal" class="modal" role="dialog" aria-modal="true" aria-labelledby="individualJoinModalTitle">
