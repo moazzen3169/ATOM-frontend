@@ -15,7 +15,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // ---- 2. گرفتن نسخه جدید در پس‌زمینه ----
   try {
-    const response = await fetch("header.html", { cache: "reload" });
+    const fetchOptions = {
+      cache: cachedHeader ? "default" : "force-cache",
+      credentials: "same-origin",
+    };
+    const response = await fetch("header.html", fetchOptions);
     if (response.ok) {
       const html = await response.text();
       if (html && html !== cachedHeader) {

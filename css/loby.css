@@ -1010,6 +1010,30 @@ hr{
   .alert-success { border-right: 4px solid #2ecc71; }
   .alert-info    { border-right: 4px solid #3498db; }
 
+  .participants_load_more {
+    margin: 16px auto 0;
+    padding: 10px 18px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--white-color);
+    cursor: pointer;
+    transition: background 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+    display: block;
+    font-size: 14px;
+    min-width: 180px;
+  }
+
+  .participants_load_more[disabled] {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+
+  .participants_load_more:not([disabled]):hover {
+    background: rgba(255, 255, 255, 0.08);
+    transform: translateY(-1px);
+  }
+
   .participants_meta {
     margin-top: 16px;
     text-align: center;
