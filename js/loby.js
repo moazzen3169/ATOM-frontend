@@ -29,6 +29,10 @@ const state = {
   lastUsedInGameId: "",
   userId: null,
   userIdPromise: null,
+  userProfile: null,
+  userProfilePromise: null,
+  userWallet: null,
+  userWalletPromise: null,
   teamsById: new Map(),
   teamDetailPromises: new Map(),
   tournamentTeamIds: new Set(),
@@ -250,6 +254,822 @@ async function ensureUserId() {
     });
 
   return state.userIdPromise;
+}
+
+async function fetchUserProfile() {
+  const url = buildApiUrl(API_ENDPOINTS.users.me);
+  return apiFetch(url.toString());
+}
+
+async function ensureUserProfile() {
+  if (state.userProfile) {
+    return state.userProfile;
+  }
+
+  if (state.userProfilePromise) {
+    return state.userProfilePromise;
+  }
+
+  state.userProfilePromise = fetchUserProfile()
+    .then((profile) => {
+      state.userProfile = profile || null;
+      return state.userProfile;
+    })
+    .catch((error) => {
+      console.error("Failed to load user profile", error);
+      throw error;
+    })
+    .finally(() => {
+      state.userProfilePromise = null;
+    });
+
+  return state.userProfilePromise;
+}
+
+async function fetchUserWallet() {
+  const url = buildApiUrl(API_ENDPOINTS.wallet.list);
+  const payload = await apiFetch(url.toString());
+
+  if (Array.isArray(payload) && payload.length) {
+    return payload[0];
+  }
+
+  if (payload && typeof payload === "object") {
+    if (Array.isArray(payload.results) && payload.results.length) {
+      return payload.results[0];
+    }
+
+    if (payload.wallet && typeof payload.wallet === "object") {
+      return payload.wallet;
+    }
+  }
+
+  return null;
+}
+
+async function ensureUserWallet() {
+  if (state.userWallet) {
+    return state.userWallet;
+  }
+
+  if (state.userWalletPromise) {
+    return state.userWalletPromise;
+  }
+
+  state.userWalletPromise = fetchUserWallet()
+    .then((wallet) => {
+      state.userWallet = wallet || null;
+      return state.userWallet;
+    })
+    .catch((error) => {
+      console.error("Failed to load user wallet", error);
+      throw error;
+    })
+    .finally(() => {
+      state.userWalletPromise = null;
+    });
+
+  return state.userWalletPromise;
+}
+
+function parseNumericValue(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    return Number.isFinite(value) ? value : null;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const normalised = trimmed.replace(/[^\d.,+-]/g, "").replace(/,/g, "");
+    if (!normalised) {
+      return null;
+    }
+    const numeric = Number.parseFloat(normalised);
+    return Number.isNaN(numeric) ? null : numeric;
+  }
+
+  return null;
+}
+
+function parseIntegerValue(value) {
+  if (value === null || value === undefined) {
+    return null;
+  }
+
+  if (typeof value === "number") {
+    if (!Number.isFinite(value)) {
+      return null;
+    }
+    return Math.trunc(value);
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return null;
+    }
+    const normalised = trimmed.replace(/[^\d+-]/g, "");
+    if (!normalised) {
+      return null;
+    }
+    const parsed = Number.parseInt(normalised, 10);
+    return Number.isNaN(parsed) ? null : parsed;
+  }
+
+  return null;
+}
+
+function parseCurrencyValue(value) {
+  const numeric = parseNumericValue(value);
+  if (numeric === null) {
+    return null;
+  }
+  return Number.isFinite(numeric) ? numeric : null;
+}
+
+function formatCurrencyValue(value) {
+  const numeric = parseCurrencyValue(value);
+  if (numeric === null) {
+    return "";
+  }
+
+  try {
+    return new Intl.NumberFormat("fa-IR").format(Math.round(numeric));
+  } catch (error) {
+    console.warn("Failed to format currency", error);
+    return String(Math.round(numeric));
+  }
+}
+
+function resolveWalletBalance(wallet) {
+  if (!wallet || typeof wallet !== "object") {
+    return { amount: null, display: null };
+  }
+
+  const amountCandidates = [
+    wallet.total_balance,
+    wallet.totalBalance,
+    wallet.balance,
+    wallet.available_balance,
+    wallet.availableBalance,
+    wallet.withdrawable_balance,
+    wallet.withdrawableBalance,
+  ];
+
+  for (const candidate of amountCandidates) {
+    const parsed = parseCurrencyValue(candidate);
+    if (parsed !== null) {
+      return { amount: parsed, display: formatCurrencyValue(parsed) };
+    }
+  }
+
+  const displayCandidates = [
+    wallet.total_balance_display,
+    wallet.display_total_balance,
+    wallet.balance_display,
+    wallet.display_balance,
+    wallet.available_balance_display,
+    wallet.display_available_balance,
+  ];
+
+  for (const candidate of displayCandidates) {
+    if (typeof candidate === "string" && candidate.trim().length) {
+      return {
+        amount: parseCurrencyValue(candidate),
+        display: candidate.trim(),
+      };
+    }
+  }
+
+  return { amount: null, display: null };
+}
+
+function resolveUserVerificationLevel(profile) {
+  if (!profile || typeof profile !== "object") {
+    return null;
+  }
+
+  const candidates = [
+    profile.verification_level,
+    profile.verificationLevel,
+    profile.level,
+    profile.user_level,
+    profile.userLevel,
+    profile.account_level,
+    profile.accountLevel,
+    profile.verification?.level,
+    profile.verification?.level_id,
+    profile.verification?.levelId,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = parseIntegerValue(candidate);
+    if (parsed !== null) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function resolveUserRank(profile) {
+  if (!profile || typeof profile !== "object") {
+    return null;
+  }
+
+  const candidates = [
+    profile.rank,
+    profile.rank_value,
+    profile.rankValue,
+    profile.rank_level,
+    profile.rankLevel,
+    profile.score_rank,
+    profile.scoreRank,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = parseIntegerValue(candidate);
+    if (parsed !== null) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function resolveColorIdentifier(value) {
+  if (!value) {
+    return null;
+  }
+
+  if (typeof value === "object") {
+    const candidates = [
+      value.id,
+      value.color_id,
+      value.colorId,
+      value.identifier,
+      value.slug,
+      value.value,
+    ];
+    for (const candidate of candidates) {
+      const resolved = normaliseId(candidate);
+      if (resolved) {
+        return resolved;
+      }
+    }
+  }
+
+  return normaliseId(value);
+}
+
+function resolveColorName(value) {
+  if (!value) {
+    return "";
+  }
+
+  if (typeof value === "string") {
+    return value;
+  }
+
+  if (typeof value === "object") {
+    const candidates = [
+      value.name,
+      value.title,
+      value.label,
+      value.display_name,
+      value.displayName,
+    ];
+    for (const candidate of candidates) {
+      if (typeof candidate === "string" && candidate.trim().length) {
+        return candidate.trim();
+      }
+    }
+  }
+
+  return "";
+}
+
+function resolveUserColorIdentifier(profile) {
+  if (!profile || typeof profile !== "object") {
+    return null;
+  }
+
+  const candidates = [
+    profile.tournament_color,
+    profile.color,
+    profile.rank_color,
+    profile.rankColor,
+    profile.tier,
+    profile.level_color,
+    profile.levelColor,
+  ];
+
+  for (const candidate of candidates) {
+    const resolved = resolveColorIdentifier(candidate);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  return null;
+}
+
+function resolveTournamentColorIdentifier(tournament) {
+  if (!tournament || typeof tournament !== "object") {
+    return null;
+  }
+
+  const candidates = [
+    tournament.required_color,
+    tournament.requiredColor,
+    tournament.color_requirement,
+    tournament.colorRequirement,
+    tournament.color,
+  ];
+
+  for (const candidate of candidates) {
+    const resolved = resolveColorIdentifier(candidate);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  return null;
+}
+
+function resolveTournamentColorName(tournament) {
+  if (!tournament || typeof tournament !== "object") {
+    return "";
+  }
+
+  const candidates = [
+    tournament.required_color,
+    tournament.requiredColor,
+    tournament.color_requirement,
+    tournament.colorRequirement,
+    tournament.color,
+  ];
+
+  for (const candidate of candidates) {
+    const name = resolveColorName(candidate);
+    if (name) {
+      return name;
+    }
+  }
+
+  return "";
+}
+
+function interpretTruthyFlag(value) {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  if (typeof value === "boolean") {
+    return value;
+  }
+
+  if (typeof value === "number") {
+    return value !== 0;
+  }
+
+  if (typeof value === "string") {
+    const normalised = value.trim().toLowerCase();
+    if (!normalised) {
+      return false;
+    }
+    return ["true", "1", "yes", "registered", "joined", "y"].includes(normalised);
+  }
+
+  return false;
+}
+
+function matchesUserIdentity(record, userId, depth = 0) {
+  if (!userId) {
+    return false;
+  }
+
+  if (record === null || record === undefined) {
+    return false;
+  }
+
+  if (depth > 4) {
+    return false;
+  }
+
+  const direct = normaliseId(record);
+  if (direct && direct === userId) {
+    return true;
+  }
+
+  if (typeof record !== "object") {
+    return false;
+  }
+
+  const directKeys = [
+    "id",
+    "user_id",
+    "userId",
+    "member_id",
+    "memberId",
+    "player_id",
+    "playerId",
+    "participant_id",
+    "participantId",
+    "pk",
+    "uuid",
+    "slug",
+  ];
+
+  for (const key of directKeys) {
+    if (!(key in record)) {
+      continue;
+    }
+    const value = record[key];
+    const resolved = normaliseId(value);
+    if (resolved && resolved === userId) {
+      return true;
+    }
+  }
+
+  const nestedKeys = [
+    "user",
+    "member",
+    "player",
+    "account",
+    "profile",
+    "identity",
+    "owner",
+    "participant",
+    "member_user",
+    "memberUser",
+  ];
+
+  for (const key of nestedKeys) {
+    if (record[key] && matchesUserIdentity(record[key], userId, depth + 1)) {
+      return true;
+    }
+  }
+
+  const arrayKeys = [
+    "members",
+    "users",
+    "players",
+    "participants",
+    "memberships",
+    "team_members",
+    "teamMembers",
+    "entries",
+    "items",
+  ];
+
+  for (const key of arrayKeys) {
+    const collection = record[key];
+    if (!Array.isArray(collection)) {
+      continue;
+    }
+    for (const item of collection) {
+      if (matchesUserIdentity(item, userId, depth + 1)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function hasUserAlreadyJoinedTournament() {
+  const userId = normaliseId(state.userId);
+  if (!userId) {
+    return false;
+  }
+
+  const flagSources = [
+    state.tournament?.has_joined,
+    state.tournament?.hasJoined,
+    state.tournament?.user_has_joined,
+    state.tournament?.userHasJoined,
+    state.tournament?.already_joined,
+    state.tournament?.alreadyJoined,
+    state.tournament?.is_registered,
+    state.tournament?.isRegistered,
+    state.tournament?.registration?.has_joined,
+    state.tournament?.registration?.hasJoined,
+    state.tournament?.registration?.user_has_joined,
+    state.tournament?.registration?.userHasJoined,
+    state.tournament?.registration?.is_registered,
+    state.tournament?.registration?.isRegistered,
+    state.tournament?.registration_settings?.has_joined,
+    state.tournament?.registration_settings?.hasJoined,
+  ];
+
+  if (flagSources.some(interpretTruthyFlag)) {
+    return true;
+  }
+
+  const participantCollections = [
+    state.tournament?.participants,
+    state.participants,
+    state.tournament?.teams,
+    state.tournament?.registration?.participants,
+  ];
+
+  for (const collection of participantCollections) {
+    if (!Array.isArray(collection)) {
+      continue;
+    }
+    for (const participant of collection) {
+      if (matchesUserIdentity(participant, userId)) {
+        return true;
+      }
+      const members = getTeamMembersList(participant);
+      if (members.some((member) => matchesUserIdentity(member, userId))) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+function getTournamentEntryFee(tournament) {
+  if (!tournament || typeof tournament !== "object") {
+    return null;
+  }
+
+  const candidates = [
+    tournament.entry_fee,
+    tournament.entryFee,
+    tournament.registration?.entry_fee,
+    tournament.registration?.entryFee,
+    tournament.registration_settings?.entry_fee,
+    tournament.registration_settings?.entryFee,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = parseCurrencyValue(candidate);
+    if (parsed !== null) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function getTournamentEntryFeeDisplay(tournament) {
+  if (!tournament || typeof tournament !== "object") {
+    return "";
+  }
+
+  const displayCandidates = [
+    tournament.entry_fee_display,
+    tournament.entryFeeDisplay,
+    tournament.registration?.entry_fee_display,
+    tournament.registration?.entryFeeDisplay,
+    tournament.registration_settings?.entry_fee_display,
+    tournament.registration_settings?.entryFeeDisplay,
+  ];
+
+  for (const candidate of displayCandidates) {
+    if (typeof candidate === "string" && candidate.trim().length) {
+      return candidate.trim();
+    }
+  }
+
+  const numeric = getTournamentEntryFee(tournament);
+  return numeric !== null ? `${formatCurrencyValue(numeric)} تومان` : "";
+}
+
+function isTournamentFree(tournament) {
+  if (!tournament || typeof tournament !== "object") {
+    return true;
+  }
+
+  const freeCandidates = [
+    tournament.is_free,
+    tournament.isFree,
+    tournament.registration?.is_free,
+    tournament.registration?.isFree,
+    tournament.registration_settings?.is_free,
+    tournament.registration_settings?.isFree,
+  ];
+
+  for (const candidate of freeCandidates) {
+    if (candidate !== undefined && candidate !== null) {
+      return interpretTruthyFlag(candidate);
+    }
+  }
+
+  const entryFee = getTournamentEntryFee(tournament);
+  return entryFee === null || entryFee <= 0;
+}
+
+function resolveTournamentVerificationRequirement(tournament) {
+  if (!tournament || typeof tournament !== "object") {
+    return null;
+  }
+
+  const candidates = [
+    tournament.required_verification_level,
+    tournament.requiredVerificationLevel,
+    tournament.registration?.required_verification_level,
+    tournament.registration?.requiredVerificationLevel,
+    tournament.registration_settings?.required_verification_level,
+    tournament.registration_settings?.requiredVerificationLevel,
+  ];
+
+  for (const candidate of candidates) {
+    const parsed = parseIntegerValue(candidate);
+    if (parsed !== null) {
+      return parsed;
+    }
+  }
+
+  return null;
+}
+
+function resolveTournamentRankBounds(tournament) {
+  if (!tournament || typeof tournament !== "object") {
+    return { min: null, max: null };
+  }
+
+  const minCandidates = [
+    tournament.min_rank,
+    tournament.minRank,
+    tournament.registration?.min_rank,
+    tournament.registration?.minRank,
+    tournament.registration_settings?.min_rank,
+    tournament.registration_settings?.minRank,
+  ];
+
+  const maxCandidates = [
+    tournament.max_rank,
+    tournament.maxRank,
+    tournament.registration?.max_rank,
+    tournament.registration?.maxRank,
+    tournament.registration_settings?.max_rank,
+    tournament.registration_settings?.maxRank,
+  ];
+
+  let min = null;
+  let max = null;
+
+  for (const candidate of minCandidates) {
+    const parsed = parseIntegerValue(candidate);
+    if (parsed !== null) {
+      min = parsed;
+      break;
+    }
+  }
+
+  for (const candidate of maxCandidates) {
+    const parsed = parseIntegerValue(candidate);
+    if (parsed !== null) {
+      max = parsed;
+      break;
+    }
+  }
+
+  return { min, max };
+}
+
+function evaluateTournamentEligibility({ requireWalletCheck = false } = {}) {
+  const defaultTitle = "امکان ثبت‌نام وجود ندارد";
+
+  if (!state.tournament) {
+    return {
+      allowed: false,
+      title: defaultTitle,
+      message: "اطلاعات تورنومنت در دسترس نیست. لطفاً صفحه را بازنشانی کنید.",
+    };
+  }
+
+  if (hasUserAlreadyJoinedTournament()) {
+    return {
+      allowed: false,
+      title: defaultTitle,
+      message: "شما قبلاً در این تورنومنت ثبت‌نام کرده‌اید.",
+      reason: "already_joined",
+    };
+  }
+
+  const requiredLevel = resolveTournamentVerificationRequirement(state.tournament);
+  if (requiredLevel !== null) {
+    const userLevel = resolveUserVerificationLevel(state.userProfile);
+    if (userLevel === null) {
+      return {
+        allowed: false,
+        title: defaultTitle,
+        message: "برای ثبت‌نام در این تورنومنت ابتدا سطح احراز هویت حساب خود را تکمیل کنید.",
+        reason: "level_unknown",
+      };
+    }
+
+    if (userLevel < requiredLevel) {
+      return {
+        allowed: false,
+        title: defaultTitle,
+        message: `برای شرکت در این تورنومنت حداقل سطح احراز ${requiredLevel} مورد نیاز است؛ سطح فعلی حساب شما ${userLevel} است.`,
+        reason: "level_insufficient",
+      };
+    }
+  }
+
+  const { min: minRank, max: maxRank } = resolveTournamentRankBounds(state.tournament);
+  if (minRank !== null || maxRank !== null) {
+    const userRank = resolveUserRank(state.userProfile);
+    if (userRank === null) {
+      return {
+        allowed: false,
+        title: defaultTitle,
+        message: "برای ثبت‌نام، رتبه شما باید مشخص باشد. لطفاً پروفایل خود را کامل کنید.",
+        reason: "rank_unknown",
+      };
+    }
+
+    if (minRank !== null && userRank < minRank) {
+      return {
+        allowed: false,
+        title: defaultTitle,
+        message: `حداقل رتبه مجاز برای این تورنومنت ${minRank} است؛ رتبه فعلی شما ${userRank} می‌باشد.`,
+        reason: "rank_too_low",
+      };
+    }
+
+    if (maxRank !== null && userRank > maxRank) {
+      return {
+        allowed: false,
+        title: defaultTitle,
+        message: `حداکثر رتبه مجاز برای این تورنومنت ${maxRank} است؛ رتبه فعلی شما ${userRank} می‌باشد.`,
+        reason: "rank_too_high",
+      };
+    }
+  }
+
+  const requiredColorId = resolveTournamentColorIdentifier(state.tournament);
+  if (requiredColorId) {
+    const userColorId = resolveUserColorIdentifier(state.userProfile);
+    if (userColorId && userColorId !== requiredColorId) {
+      const colorName = resolveTournamentColorName(state.tournament) || "ویژه";
+      return {
+        allowed: false,
+        title: defaultTitle,
+        message: `برای شرکت در این تورنومنت نیاز به رنگ ${colorName} دارید.`,
+        reason: "color_mismatch",
+      };
+    }
+  }
+
+  if (requireWalletCheck && !isTournamentFree(state.tournament)) {
+    const entryFee = getTournamentEntryFee(state.tournament);
+    if (entryFee !== null && entryFee > 0) {
+      const walletInfo = resolveWalletBalance(state.userWallet || {});
+      const balance = walletInfo.amount !== null ? walletInfo.amount : null;
+      const balanceDisplay =
+        walletInfo.display || (balance !== null ? `${formatCurrencyValue(balance)} تومان` : "");
+
+      if (balance === null || balance < entryFee) {
+        const shortage = balance === null ? entryFee : entryFee - balance;
+        const formattedEntry =
+          getTournamentEntryFeeDisplay(state.tournament) || `${formatCurrencyValue(entryFee)} تومان`;
+        const shortageText = shortage > 0 ? `${formatCurrencyValue(shortage)} تومان` : "";
+        const messageParts = [`هزینه ورود به این تورنومنت ${formattedEntry} است.`];
+        if (balanceDisplay) {
+          messageParts.push(`موجودی فعلی شما ${balanceDisplay} می‌باشد.`);
+        }
+        if (shortageText) {
+          messageParts.push(`برای ثبت‌نام به ${shortageText} دیگر نیاز دارید.`);
+        }
+
+        return {
+          allowed: false,
+          title: defaultTitle,
+          message: messageParts.join(" "),
+          reason: "balance_insufficient",
+          actions: [
+            {
+              label: "شارژ حساب",
+              href: "/user-dashboard/wallet.html",
+              variant: "primary",
+            },
+            {
+              label: "بازگشت",
+              close: true,
+              variant: "secondary",
+            },
+          ],
+        };
+      }
+    }
+  }
+
+  return { allowed: true };
 }
 
 function debounce(fn, delay = 300) {
@@ -741,6 +1561,120 @@ function showLobbyPage() {
   const lobbyPage = document.getElementById("lobby_page");
   if (loginBox) loginBox.style.display = "none";
   if (lobbyPage) lobbyPage.style.display = "grid";
+}
+
+function openModalElement(modal) {
+  if (!modal) {
+    return;
+  }
+  modal.style.display = "flex";
+  modal.setAttribute("aria-hidden", "false");
+}
+
+function closeModalElement(modal) {
+  if (!modal) {
+    return;
+  }
+  modal.style.display = "none";
+  modal.setAttribute("aria-hidden", "true");
+}
+
+function showAuthRequiredModal() {
+  const modal = document.getElementById("authRequiredModal");
+  openModalElement(modal);
+}
+
+function closeAuthRequiredModal() {
+  const modal = document.getElementById("authRequiredModal");
+  closeModalElement(modal);
+}
+
+function resolveModalButtonClass(variant) {
+  switch (variant) {
+    case "secondary":
+      return "modal_button modal_button--secondary";
+    case "ghost":
+      return "modal_button modal_button--ghost";
+    case "primary":
+    default:
+      return "modal_button modal_button--primary";
+  }
+}
+
+function renderJoinEligibilityActions(actions = []) {
+  const container = document.getElementById("joinEligibilityModalActions");
+  if (!container) {
+    return;
+  }
+
+  const effectiveActions = Array.isArray(actions) && actions.length
+    ? actions
+    : [
+        {
+          label: "متوجه شدم",
+          close: true,
+          variant: "primary",
+        },
+      ];
+
+  container.innerHTML = "";
+
+  effectiveActions.forEach((action) => {
+    const label = action?.label || "متوجه شدم";
+    const variantClass = resolveModalButtonClass(action?.variant);
+    let element;
+
+    if (action?.href) {
+      element = document.createElement("a");
+      element.href = action.href;
+      if (action?.target) {
+        element.target = action.target;
+      }
+      element.rel = action.rel || "noopener";
+    } else {
+      element = document.createElement("button");
+      element.type = "button";
+    }
+
+    element.className = variantClass;
+    element.textContent = label;
+
+    const shouldClose = Boolean(action?.close || !action?.href);
+    if (typeof action?.onClick === "function") {
+      element.addEventListener("click", (event) => {
+        action.onClick(event);
+        if (shouldClose) {
+          closeJoinEligibilityModal();
+        }
+      });
+    } else if (shouldClose) {
+      element.addEventListener("click", () => closeJoinEligibilityModal());
+    }
+
+    container.appendChild(element);
+  });
+}
+
+function showJoinEligibilityModal(options = {}) {
+  const modal = document.getElementById("joinEligibilityModal");
+  const titleEl = document.getElementById("joinEligibilityModalTitle");
+  const messageEl = document.getElementById("joinEligibilityModalMessage");
+
+  if (titleEl) {
+    titleEl.textContent = options.title || "امکان ثبت‌نام وجود ندارد";
+  }
+
+  if (messageEl) {
+    messageEl.textContent = options.message || "";
+  }
+
+  renderJoinEligibilityActions(options.actions);
+  openModalElement(modal);
+}
+
+function closeJoinEligibilityModal() {
+  const modal = document.getElementById("joinEligibilityModal");
+  closeModalElement(modal);
 }
 
 function formatDateTime(value) {
@@ -2207,11 +3141,80 @@ async function fetchTeamOptions(searchTerm = "") {
     if (loading) loading.classList.add("is-hidden");
   }
 }
-  
+
+
+async function ensureJoinEligibilityPreconditions() {
+  if (!state.tournamentId) {
+    showJoinEligibilityModal({
+      title: "امکان ثبت‌نام وجود ندارد",
+      message: "شناسه تورنومنت معتبر نیست.",
+    });
+    return false;
+  }
+
+  if (!isAuthenticated()) {
+    showAuthRequiredModal();
+    return false;
+  }
+
+  try {
+    await ensureUserId();
+  } catch (error) {
+    console.error("Failed to resolve user identifier", error);
+    showJoinEligibilityModal({
+      title: "خطا در دریافت اطلاعات کاربری",
+      message: error?.message || "امکان بررسی حساب کاربری وجود ندارد. لطفاً دوباره تلاش کنید.",
+    });
+    return false;
+  }
+
+  if (!state.tournament) {
+    showJoinEligibilityModal({
+      title: "امکان ثبت‌نام وجود ندارد",
+      message: "اطلاعات تورنومنت هنوز بارگذاری نشده است. لطفاً کمی صبر کنید و دوباره تلاش نمایید.",
+    });
+    return false;
+  }
+
+  const requireWalletCheck = !isTournamentFree(state.tournament);
+  const tasks = [];
+  if (!state.userProfile) {
+    tasks.push(ensureUserProfile());
+  }
+  if (requireWalletCheck && !state.userWallet) {
+    tasks.push(ensureUserWallet());
+  }
+
+  if (tasks.length) {
+    try {
+      await Promise.all(tasks);
+    } catch (error) {
+      console.error("Failed to prepare join prerequisites", error);
+      if (error?.status === 401) {
+        showAuthRequiredModal();
+      } else {
+        showJoinEligibilityModal({
+          title: "خطا در بررسی شرایط",
+          message:
+            error?.message || "امکان بررسی شرایط حساب شما وجود ندارد. لطفاً بعداً دوباره تلاش کنید.",
+        });
+      }
+      return false;
+    }
+  }
+
+  const evaluation = evaluateTournamentEligibility({ requireWalletCheck });
+  if (!evaluation.allowed) {
+    showJoinEligibilityModal(evaluation);
+    return false;
+  }
+
+  return true;
+}
 
 async function openIndividualJoinModal() {
-  if (!isAuthenticated()) {
-    showLoginRequired();
+  const canProceed = await ensureJoinEligibilityPreconditions();
+  if (!canProceed) {
     return;
   }
 
@@ -2224,8 +3227,8 @@ async function openIndividualJoinModal() {
 }
 
 async function openTeamJoinModal() {
-  if (!isAuthenticated()) {
-    showLoginRequired();
+  const canProceed = await ensureJoinEligibilityPreconditions();
+  if (!canProceed) {
     return;
   }
 
@@ -2286,6 +3289,14 @@ async function joinIndividualTournament(event) {
   }
 
   if (submitBtn) submitBtn.disabled = true;
+
+  const eligibility = evaluateTournamentEligibility({ requireWalletCheck: true });
+  if (!eligibility.allowed) {
+    if (submitBtn) submitBtn.disabled = false;
+    closeIndividualJoinModal();
+    showJoinEligibilityModal(eligibility);
+    return;
+  }
 
   try {
     const payload = { in_game_id: inGameId };
@@ -2434,6 +3445,14 @@ async function joinTeamTournament() {
   const confirmBtn = document.getElementById("teamJoinConfirmButton");
   if (confirmBtn) confirmBtn.disabled = true;
 
+  const eligibility = evaluateTournamentEligibility({ requireWalletCheck: true });
+  if (!eligibility.allowed) {
+    if (confirmBtn) confirmBtn.disabled = false;
+    closeTeamJoinModal();
+    showJoinEligibilityModal(eligibility);
+    return;
+  }
+
   try {
     const hydratedTeam = await hydrateTeamIfNeeded(state.selectedTeamId);
     const validation = validateTeamEligibility(hydratedTeam);
@@ -2536,6 +3555,24 @@ function setupModalDismiss() {
       }
     });
   }
+
+  const authModal = document.getElementById("authRequiredModal");
+  if (authModal) {
+    authModal.addEventListener("click", (event) => {
+      if (event.target === authModal) {
+        closeAuthRequiredModal();
+      }
+    });
+  }
+
+  const eligibilityModal = document.getElementById("joinEligibilityModal");
+  if (eligibilityModal) {
+    eligibilityModal.addEventListener("click", (event) => {
+      if (event.target === eligibilityModal) {
+        closeJoinEligibilityModal();
+      }
+    });
+  }
 }
 
 function setupTeamSearch() {
@@ -2608,6 +3645,8 @@ window.openTeamJoinModal = openTeamJoinModal;
 window.closeIndividualJoinModal = closeIndividualJoinModal;
 window.closeTeamJoinModal = closeTeamJoinModal;
 window.closeJoinSuccessModal = closeJoinSuccessModal;
+window.closeAuthRequiredModal = closeAuthRequiredModal;
+window.closeJoinEligibilityModal = closeJoinEligibilityModal;
 window.joinIndividualTournament = joinIndividualTournament;
 window.joinTeamTournament = joinTeamTournament;
 window.useSavedInGameId = useSavedInGameId;
