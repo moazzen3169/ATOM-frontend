@@ -18,6 +18,9 @@ const TEAM_VALIDATION_NOTIFICATION_KEYS = {
   TEAM_SIZE_UNKNOWN: "teamSizeUnknown",
 };
 
+const PARTICIPANT_PAGE_SIZE = 24;
+const PARTICIPANT_RENDER_BATCH = 16;
+
 const state = {
   tournamentId: null,
   tournament: null,
@@ -30,6 +33,14 @@ const state = {
   teamDetailPromises: new Map(),
   tournamentTeamIds: new Set(),
   teamAbortController: null,
+  participants: [],
+  participantIds: new Set(),
+  participantNextUrl: null,
+  participantLoading: false,
+  participantRenderedCount: 0,
+  participantTotalCount: null,
+  participantsInitialised: false,
+  participantError: null,
 };
 
 function cacheUserId(identifier) {
@@ -301,7 +312,11 @@ function markTournamentTeamsCache(tournament) {
     return;
   }
 
-  const teams = Array.isArray(tournament.teams) ? tournament.teams : [];
+  const teams = Array.isArray(tournament.teams)
+    ? tournament.teams
+    : state.tournament?.type === "team" && Array.isArray(state.participants)
+    ? state.participants
+    : [];
   teams.forEach((team) => {
     const identifier = resolveTeamId(team);
     if (identifier) {
@@ -891,6 +906,37 @@ function createEmptyButton(label, handler) {
   return button;
 }
 
+function getKnownParticipantCount(tournament) {
+  const countCandidates = [
+    state.participantTotalCount,
+    state.participants?.length,
+    tournament?.current_participants,
+    tournament?.registration?.current_participants,
+    tournament?.registration?.currentParticipants,
+    tournament?.participants?.length,
+    tournament?.teams?.length,
+  ];
+
+  for (const candidate of countCandidates) {
+    if (candidate === undefined || candidate === null) {
+      continue;
+    }
+
+    if (typeof candidate === "number" && Number.isFinite(candidate)) {
+      return candidate;
+    }
+
+    if (typeof candidate === "string") {
+      const parsed = Number.parseInt(candidate.replace(/[^\d-]/g, ""), 10);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+  }
+
+  return null;
+}
+
 function parseSpotsLeftValue(tournament) {
   if (!tournament) {
     return null;
@@ -916,14 +962,10 @@ function parseSpotsLeftValue(tournament) {
     return null;
   }
 
-  const currentCount =
-    tournament.type === "team"
-      ? Array.isArray(tournament.teams)
-        ? tournament.teams.length
-        : 0
-      : Array.isArray(tournament.participants)
-      ? tournament.participants.length
-      : 0;
+  const currentCount = getKnownParticipantCount(tournament);
+  if (!Number.isFinite(currentCount)) {
+    return null;
+  }
 
   return Math.max(maxSlots - currentCount, 0);
 }
@@ -951,48 +993,416 @@ function describeSpotsLeft(tournament) {
     : `${remaining} جای خالی باقی مانده است.`;
 }
 
-function renderParticipants(tournament) {
+function getParticipantsSection() {
   const section = document.getElementById("participants_section");
-  if (!section) return;
+  if (!section) {
+    return null;
+  }
+
+  let list = section.querySelector("[data-participants-list]");
+  let loadMore = section.querySelector("[data-participants-load-more]");
+  let meta = section.querySelector("[data-participants-meta]");
+
+  if (!list) {
+    list = document.createElement("div");
+    list.dataset.participantsList = "true";
+    section.appendChild(list);
+  }
+
+  if (!loadMore) {
+    loadMore = document.createElement("button");
+    loadMore.type = "button";
+    loadMore.dataset.participantsLoadMore = "true";
+    loadMore.className = "participants_load_more";
+    loadMore.addEventListener("click", handleParticipantsLoadMore);
+    section.appendChild(loadMore);
+  }
+
+  if (!meta) {
+    meta = document.createElement("div");
+    meta.dataset.participantsMeta = "true";
+    meta.className = "participants_meta";
+    section.appendChild(meta);
+  }
+
+  return { section, list, loadMore, meta };
+}
+
+function resetParticipantsSection(tournament) {
+  const section = document.getElementById("participants_section");
+  if (!section) {
+    return null;
+  }
 
   section.innerHTML = "";
+  const refs = getParticipantsSection();
+  if (!refs) {
+    return null;
+  }
 
-  const container = document.createElement("div");
-  container.className = tournament.type === "team" ? "teams_grid" : "players_grid";
+  refs.list.innerHTML = "";
+  refs.list.className = tournament.type === "team" ? "teams_grid" : "players_grid";
 
-  if (tournament.type === "team") {
-    const teams = Array.isArray(tournament.teams) ? tournament.teams : [];
-    teams.forEach((team) => {
-      container.appendChild(renderTeamSlot(team));
-    });
+  refs.loadMore.textContent = "";
+  refs.loadMore.disabled = true;
+  refs.loadMore.hidden = true;
+
+  refs.meta.textContent = "";
+  refs.meta.classList.add("is-hidden");
+
+  state.participants = [];
+  state.participantIds.clear();
+  state.participantRenderedCount = 0;
+  state.participantNextUrl = null;
+  state.participantLoading = false;
+  state.participantError = null;
+  state.participantsInitialised = true;
+
+  return refs;
+}
+
+function updateParticipantsMeta(tournament) {
+  const refs = getParticipantsSection();
+  if (!refs) {
+    return;
+  }
+
+  const message = describeSpotsLeft(tournament);
+  if (message) {
+    refs.meta.textContent = message;
+    refs.meta.classList.remove("is-hidden");
   } else {
-    const players = Array.isArray(tournament.participants) ? tournament.participants : [];
-    players.forEach((player) => {
-      container.appendChild(createPlayerSlot(player));
-    });
+    refs.meta.textContent = "";
+    refs.meta.classList.add("is-hidden");
+  }
+}
+
+function updateJoinCta(tournament) {
+  const refs = getParticipantsSection();
+  if (!refs) {
+    return;
+  }
+
+  const existing = refs.list.querySelector(".participants_cta");
+  if (existing) {
+    existing.remove();
   }
 
   const availableSpots = parseSpotsLeftValue(tournament);
   const hasCapacity = availableSpots === null ? true : availableSpots > 0;
-
-  if (hasCapacity) {
-    const ctaLabel =
-      tournament.type === "team"
-        ? "همین الان تیمت رو اضافه کن"
-        : "همین الان اضافه شو!";
-    const handler =
-      tournament.type === "team" ? openTeamJoinModal : openIndividualJoinModal;
-    container.appendChild(createEmptyButton(ctaLabel, handler));
+  if (!hasCapacity) {
+    return;
   }
 
-  section.appendChild(container);
+  const ctaLabel =
+    tournament.type === "team"
+      ? "همین الان تیمت رو اضافه کن"
+      : "همین الان اضافه شو!";
+  const handler = tournament.type === "team" ? openTeamJoinModal : openIndividualJoinModal;
+  const cta = createEmptyButton(ctaLabel, handler);
+  cta.classList.add("participants_cta");
+  refs.list.appendChild(cta);
+}
 
-  const spotsMessage = describeSpotsLeft(tournament);
-  if (spotsMessage) {
-    const meta = document.createElement("div");
-    meta.className = "participants_meta";
-    meta.textContent = spotsMessage;
-    section.appendChild(meta);
+function updateParticipantsLoadMoreButton() {
+  const refs = getParticipantsSection();
+  if (!refs) {
+    return;
+  }
+
+  const hasBuffered = state.participantRenderedCount < state.participants.length;
+  const canFetchMore = Boolean(state.participantNextUrl);
+  const loading = state.participantLoading;
+
+  if (!hasBuffered && !canFetchMore) {
+    refs.loadMore.hidden = true;
+    refs.loadMore.disabled = true;
+    return;
+  }
+
+  refs.loadMore.hidden = false;
+  refs.loadMore.disabled = loading;
+  refs.loadMore.textContent = loading
+    ? "در حال بارگیری..."
+    : hasBuffered
+    ? "نمایش بیشتر"
+    : "بارگیری بیشتر";
+}
+
+function handleParticipantsLoadMore() {
+  if (state.participantLoading) {
+    return;
+  }
+
+  if (state.participantRenderedCount < state.participants.length) {
+    renderParticipantBatch();
+    return;
+  }
+
+  if (state.participantNextUrl) {
+    fetchParticipantsPage(state.participantNextUrl);
+  }
+}
+
+function normaliseParticipantKey(participant) {
+  if (participant === null || participant === undefined) {
+    return null;
+  }
+
+  if (typeof participant !== "object") {
+    return String(participant);
+  }
+
+  const directCandidates = [
+    participant.identifier,
+    participant.id,
+    participant.user_id,
+    participant.userId,
+    participant.pk,
+    participant.uuid,
+    participant.slug,
+    participant.team_id,
+    participant.teamId,
+    participant.username,
+    participant.name,
+  ];
+
+  for (const candidate of directCandidates) {
+    const resolved = normaliseId(candidate);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  const nestedCandidates = [participant.user, participant.profile, participant.account];
+  for (const nested of nestedCandidates) {
+    const resolved = normaliseId(nested?.id) || normaliseId(nested?.username);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  return stableStringify(participant);
+}
+
+function mergeParticipants(participants, { replace = false } = {}) {
+  if (!Array.isArray(participants) || !participants.length) {
+    return;
+  }
+
+  if (replace) {
+    state.participants = [];
+    state.participantIds.clear();
+    state.participantRenderedCount = 0;
+  }
+
+  participants.forEach((participant) => {
+    const key = normaliseParticipantKey(participant);
+    if (key && state.participantIds.has(key)) {
+      return;
+    }
+    state.participants.push(participant);
+    if (key) {
+      state.participantIds.add(key);
+      if (state.tournament?.type === "team") {
+        state.tournamentTeamIds.add(String(key));
+      }
+    }
+  });
+}
+
+function renderParticipantBatch() {
+  const refs = getParticipantsSection();
+  if (!refs) {
+    return;
+  }
+
+  const startIndex = state.participantRenderedCount;
+  const nextTarget = Math.min(
+    state.participants.length,
+    state.participantRenderedCount + PARTICIPANT_RENDER_BATCH,
+  );
+
+  if (nextTarget <= startIndex) {
+    updateParticipantsLoadMoreButton();
+    return;
+  }
+
+  const existingCta = refs.list.querySelector(".participants_cta");
+  if (existingCta) {
+    existingCta.remove();
+  }
+
+  const fragment = document.createDocumentFragment();
+  for (let index = startIndex; index < nextTarget; index += 1) {
+    const item = state.participants[index];
+    const node = state.tournament?.type === "team"
+      ? renderTeamSlot(item)
+      : createPlayerSlot(item);
+    fragment.appendChild(node);
+  }
+
+  refs.list.appendChild(fragment);
+  state.participantRenderedCount = nextTarget;
+  updateJoinCta(state.tournament);
+  updateParticipantsLoadMoreButton();
+}
+
+function normaliseParticipantPage(payload) {
+  if (Array.isArray(payload)) {
+    return { results: payload, next: null, count: payload.length };
+  }
+
+  if (payload && typeof payload === "object") {
+    const results = Array.isArray(payload.results)
+      ? payload.results
+      : Array.isArray(payload.items)
+      ? payload.items
+      : [];
+    const count =
+      typeof payload.count === "number"
+        ? payload.count
+        : typeof payload.total === "number"
+        ? payload.total
+        : null;
+    const next = payload.next || payload.next_page || null;
+    return { results, next, count };
+  }
+
+  return { results: [], next: null, count: null };
+}
+
+function buildParticipantsRequestUrl(rawUrl) {
+  if (rawUrl) {
+    try {
+      return new URL(rawUrl, window.location.origin);
+    } catch (error) {
+      console.warn("Failed to parse participant next URL", error);
+    }
+  }
+
+  if (!state.tournamentId) {
+    return null;
+  }
+
+  const basePath = API_ENDPOINTS.tournaments.detail(state.tournamentId);
+  const normalisedBase = basePath.endsWith("/") ? basePath : `${basePath}/`;
+  const url = buildApiUrl(`${normalisedBase}participants/`);
+  url.searchParams.set("page_size", PARTICIPANT_PAGE_SIZE);
+  return url;
+}
+
+async function fetchParticipantsPage(rawUrl) {
+  if (state.participantLoading) {
+    return;
+  }
+
+  const requestUrl = buildParticipantsRequestUrl(rawUrl);
+  if (!requestUrl) {
+    return;
+  }
+
+  state.participantLoading = true;
+  updateParticipantsLoadMoreButton();
+
+  try {
+    const payload = await apiFetch(requestUrl.toString());
+    const page = normaliseParticipantPage(payload);
+    if (typeof page.count === "number") {
+      state.participantTotalCount = page.count;
+    }
+    state.participantNextUrl = page.next || null;
+    mergeParticipants(page.results);
+    renderParticipantBatch();
+  } catch (error) {
+    console.warn("Failed to load tournament participants", error);
+    state.participantNextUrl = null;
+    state.participantError = error;
+    if (!state.participants.length && Array.isArray(state.tournament?.participants)) {
+      mergeParticipants(state.tournament.participants, { replace: true });
+      renderParticipantBatch();
+    } else if (!state.participants.length) {
+      const refs = getParticipantsSection();
+      if (refs) {
+        refs.meta.textContent = "امکان دریافت لیست شرکت‌کنندگان وجود ندارد.";
+        refs.meta.classList.remove("is-hidden");
+      }
+    }
+  } finally {
+    state.participantLoading = false;
+    updateParticipantsLoadMoreButton();
+    updateParticipantsMeta(state.tournament);
+  }
+}
+
+function renderParticipants(tournament, options = {}) {
+  const refs = resetParticipantsSection(tournament);
+  if (!refs) {
+    return;
+  }
+
+  const initialParticipants = Array.isArray(options.participants)
+    ? options.participants
+    : Array.isArray(tournament.participants)
+    ? tournament.participants
+    : [];
+
+  if (typeof options.totalCount === "number") {
+    state.participantTotalCount = options.totalCount;
+  } else if (typeof tournament.participants_count === "number") {
+    state.participantTotalCount = tournament.participants_count;
+  }
+
+  state.participantNextUrl = options.nextUrl || null;
+
+  if (initialParticipants.length) {
+    mergeParticipants(initialParticipants, { replace: true });
+    renderParticipantBatch();
+  } else {
+    updateJoinCta(tournament);
+    updateParticipantsLoadMoreButton();
+  }
+
+  updateParticipantsMeta(tournament);
+}
+
+function applyTournamentPayload(tournament, options = {}) {
+  if (!tournament) {
+    return;
+  }
+
+  const mergedTournament = { ...(state.tournament || {}), ...tournament };
+  state.tournament = mergedTournament;
+
+  markTournamentTeamsCache(mergedTournament);
+  renderTournamentSummary(mergedTournament);
+  renderAdminInfo(mergedTournament);
+
+  const participantOptions = {};
+  if (options.participants !== undefined) {
+    participantOptions.participants = options.participants;
+  } else if (Array.isArray(tournament.participants)) {
+    participantOptions.participants = tournament.participants;
+  }
+
+  if (options.participantsNext !== undefined) {
+    participantOptions.nextUrl = options.participantsNext;
+  }
+
+  if (options.participantsTotal !== undefined) {
+    participantOptions.totalCount = options.participantsTotal;
+  } else if (typeof tournament.participants_count === "number") {
+    participantOptions.totalCount = tournament.participants_count;
+  }
+
+  renderParticipants(mergedTournament, participantOptions);
+
+  if (options.fetchParticipants) {
+    if (!state.participants.length) {
+      fetchParticipantsPage();
+    } else {
+      updateParticipantsLoadMoreButton();
+    }
   }
 }
 
@@ -1182,8 +1592,6 @@ async function loadTournament() {
       "team_size",
       "prize_pool",
       "spots_left",
-      "participants",
-      "teams",
       "creator",
       "status",
       "status_display",
@@ -1197,15 +1605,11 @@ async function loadTournament() {
       "registration_settings",
     ];
     detailUrl.searchParams.set("fields", detailFields.join(","));
-    detailUrl.searchParams.set("expand", "creator,image,participants,teams");
+    detailUrl.searchParams.set("expand", "creator,image");
 
     const tournament = await apiFetch(detailUrl.toString());
 
-    state.tournament = tournament;
-    markTournamentTeamsCache(tournament);
-    renderTournamentSummary(tournament);
-    renderAdminInfo(tournament);
-    renderParticipants(tournament);
+    applyTournamentPayload(tournament, { fetchParticipants: true });
     showLobbyPage();
   } catch (error) {
     console.error("Failed to load tournament", error);
@@ -1573,11 +1977,11 @@ async function submitTeamJoinRequest(joinUrl, team, identifier) {
 
   for (const payload of payloadCandidates) {
     try {
-      await apiFetch(joinUrl, {
+      const response = await apiFetch(joinUrl, {
         method: "POST",
         body: JSON.stringify(payload),
       });
-      return;
+      return response;
     } catch (error) {
       if (!shouldRetryTeamJoinRequest(error)) {
         throw error;
@@ -1889,7 +2293,7 @@ async function joinIndividualTournament(event) {
     const joinUrl = buildApiUrl(
       API_ENDPOINTS.tournaments.join(state.tournamentId),
     );
-    await apiFetch(joinUrl.toString(), {
+    const updatedTournament = await apiFetch(joinUrl.toString(), {
       method: "POST",
       body: JSON.stringify(payload),
     });
@@ -1898,7 +2302,19 @@ async function joinIndividualTournament(event) {
     rememberInGameId(inGameId);
     closeIndividualJoinModal();
     showJoinSuccessFeedback({ isTeam: false });
-    await loadTournament();
+    applyTournamentPayload(updatedTournament, {
+      participants: Array.isArray(updatedTournament?.participants)
+        ? updatedTournament.participants
+        : undefined,
+      participantsNext:
+        updatedTournament?.participants_next || updatedTournament?.participantsNext || null,
+      participantsTotal:
+        typeof updatedTournament?.participants_count === "number"
+          ? updatedTournament.participants_count
+          : Array.isArray(updatedTournament?.participants)
+          ? updatedTournament.participants.length
+          : undefined,
+    });
   } catch (error) {
     console.error("Failed to join tournament", error);
     const message =
@@ -2046,12 +2462,37 @@ async function joinTeamTournament() {
       API_ENDPOINTS.tournaments.join(state.tournamentId),
     );
 
-    await submitTeamJoinRequest(joinUrl.toString(), hydratedTeam, payloadIdentifier);
+    const updatedTournament = await submitTeamJoinRequest(
+      joinUrl.toString(),
+      hydratedTeam,
+      payloadIdentifier,
+    );
 
     notify("teamJoinSuccess", null, "success");
     closeTeamJoinModal();
     showJoinSuccessFeedback({ isTeam: true });
-    await loadTournament();
+    applyTournamentPayload(updatedTournament, {
+      participants: Array.isArray(updatedTournament?.teams)
+        ? updatedTournament.teams
+        : Array.isArray(updatedTournament?.participants)
+        ? updatedTournament.participants
+        : undefined,
+      participantsNext:
+        updatedTournament?.participants_next ||
+        updatedTournament?.participantsNext ||
+        updatedTournament?.teams_next ||
+        null,
+      participantsTotal:
+        typeof updatedTournament?.participants_count === "number"
+          ? updatedTournament.participants_count
+          : typeof updatedTournament?.teams_count === "number"
+          ? updatedTournament.teams_count
+          : Array.isArray(updatedTournament?.teams)
+          ? updatedTournament.teams.length
+          : Array.isArray(updatedTournament?.participants)
+          ? updatedTournament.participants.length
+          : undefined,
+    });
   } catch (error) {
     console.error("Failed to join team tournament:", error);
 
@@ -2142,7 +2583,12 @@ function initialise() {
     return;
   }
 
-  if (!isAuthenticated()) {
+  const authenticated = isAuthenticated();
+  if (authenticated) {
+    ensureUserId().catch(() => {});
+  }
+
+  if (!authenticated) {
     showLoginRequired();
   } else {
     showLobbyPage();
