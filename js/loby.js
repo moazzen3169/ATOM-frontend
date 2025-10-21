@@ -2,6 +2,7 @@ import { API_ENDPOINTS, buildApiUrl } from "/js/services/api-client.js";
 
 const STORAGE_KEYS = {
   inGameIds: "atom_in_game_ids",
+  userId: "atom_cached_user_id",
 };
 
 const MAX_SAVED_INGAME_IDS = 10;
@@ -31,6 +32,53 @@ const state = {
   teamAbortController: null,
 };
 
+function cacheUserId(identifier) {
+  const normalised = normaliseId(identifier);
+  if (!normalised) {
+    return;
+  }
+
+  const storages = [];
+  if (typeof sessionStorage !== "undefined") {
+    storages.push(sessionStorage);
+  }
+  if (typeof localStorage !== "undefined") {
+    storages.push(localStorage);
+  }
+
+  storages.forEach((storage) => {
+    try {
+      storage.setItem(STORAGE_KEYS.userId, normalised);
+    } catch (error) {
+      console.warn("Failed to persist user id", error);
+    }
+  });
+}
+
+function restoreCachedUserId() {
+  const storages = [];
+  if (typeof sessionStorage !== "undefined") {
+    storages.push(sessionStorage);
+  }
+  if (typeof localStorage !== "undefined") {
+    storages.push(localStorage);
+  }
+
+  for (const storage of storages) {
+    try {
+      const stored = storage.getItem(STORAGE_KEYS.userId);
+      const identifier = normaliseId(stored);
+      if (identifier) {
+        return identifier;
+      }
+    } catch (error) {
+      console.warn("Failed to read cached user id", error);
+    }
+  }
+
+  return null;
+}
+
 function normaliseId(value) {
   if (value === null || value === undefined) {
     return null;
@@ -49,6 +97,25 @@ function normaliseId(value) {
 
   const stringValue = String(value).trim();
   return stringValue.length ? stringValue : null;
+}
+
+function stableStringify(value) {
+  if (value === null || value === undefined) {
+    return "null";
+  }
+
+  if (typeof value !== "object") {
+    return JSON.stringify(value);
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => stableStringify(item)).join(",")}]`;
+  }
+
+  const entries = Object.keys(value)
+    .sort()
+    .map((key) => `${JSON.stringify(key)}:${stableStringify(value[key])}`);
+  return `{${entries.join(",")}}`;
 }
 
 function decodeJwtPayload(token) {
@@ -78,16 +145,34 @@ function extractUserIdFromPayload(payload) {
     return null;
   }
 
-  const candidates = [
+  const directCandidates = [
     payload.user_id,
     payload.userId,
     payload.sub,
     payload.id,
     payload.pk,
     payload.uuid,
+    payload.uid,
   ];
 
-  for (const candidate of candidates) {
+  for (const candidate of directCandidates) {
+    const resolved = normaliseId(candidate);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  const nestedCandidates = [
+    payload.user,
+    payload.profile,
+    payload.account,
+    payload.member,
+    payload.owner,
+    payload.identity,
+    payload.details,
+  ];
+
+  for (const candidate of nestedCandidates) {
     const resolved = normaliseId(candidate);
     if (resolved) {
       return resolved;
@@ -127,18 +212,26 @@ async function ensureUserId() {
     return state.userIdPromise;
   }
 
+  const cachedIdentifier = restoreCachedUserId();
+  if (cachedIdentifier) {
+    state.userId = cachedIdentifier;
+    return cachedIdentifier;
+  }
+
   const token = getAuthToken();
   const payload = decodeJwtPayload(token);
   const decodedId = extractUserIdFromPayload(payload);
 
   if (decodedId) {
     state.userId = decodedId;
+    cacheUserId(decodedId);
     return decodedId;
   }
 
   state.userIdPromise = resolveUserIdFromProfile()
     .then((identifier) => {
       state.userId = identifier;
+      cacheUserId(identifier);
       return identifier;
     })
     .finally(() => {
@@ -570,6 +663,15 @@ async function apiFetch(url, options = {}) {
       ...(options.headers || {}),
     },
   };
+
+  if (config.body instanceof FormData) {
+    if (config.headers && "Content-Type" in config.headers) {
+      delete config.headers["Content-Type"];
+    }
+    if (config.headers && "content-type" in config.headers) {
+      delete config.headers["content-type"];
+    }
+  }
 
   let response;
   try {
@@ -1086,6 +1188,13 @@ async function loadTournament() {
       "status",
       "status_display",
       "status_label",
+      "team_join_field",
+      "join_payload_template",
+      "join_payload",
+      "registration_payload_template",
+      "registration_payload",
+      "registration",
+      "registration_settings",
     ];
     detailUrl.searchParams.set("fields", detailFields.join(","));
     detailUrl.searchParams.set("expand", "creator,image,participants,teams");
@@ -1255,6 +1364,429 @@ function resolveTeamJoinPayloadIdentifier(teamId) {
   return stringValue;
 }
 
+function buildTeamJoinContextVariants() {
+  const variants = [];
+  const seen = new Set();
+
+  const baseContext = {};
+  const tournamentType = state.tournament?.type;
+  const tournamentMode = state.tournament?.mode;
+
+  if (typeof tournamentType === "string" && tournamentType.trim().length) {
+    baseContext.type = tournamentType;
+  }
+  if (typeof tournamentMode === "string" && tournamentMode.trim().length) {
+    baseContext.mode = tournamentMode;
+  }
+
+  const idCandidates = new Set();
+  [
+    state.tournament?.id,
+    state.tournament?.pk,
+    state.tournament?.uuid,
+    state.tournament?.slug,
+    state.tournamentId,
+  ].forEach((value) => {
+    const normalised = normaliseId(value);
+    if (normalised) {
+      idCandidates.add(normalised);
+    }
+  });
+
+  const pushVariant = (variant) => {
+    const serialised = stableStringify(variant);
+    if (!seen.has(serialised)) {
+      seen.add(serialised);
+      variants.push(variant);
+    }
+  };
+
+  pushVariant({});
+  if (Object.keys(baseContext).length) {
+    pushVariant({ ...baseContext });
+  }
+
+  idCandidates.forEach((value) => {
+    const stringValue = String(value).trim();
+    if (!stringValue) {
+      return;
+    }
+
+    const baseTournamentVariant = {
+      tournament: stringValue,
+      tournament_id: stringValue,
+      tournamentId: stringValue,
+    };
+    pushVariant(baseTournamentVariant);
+
+    const stringVariant = {
+      ...baseContext,
+      ...baseTournamentVariant,
+    };
+    pushVariant(stringVariant);
+
+    if (/^\d+$/.test(stringValue)) {
+      const numericValue = Number.parseInt(stringValue, 10);
+      if (!Number.isNaN(numericValue)) {
+        const numericBaseVariant = {
+          tournament: numericValue,
+          tournament_id: numericValue,
+          tournamentId: numericValue,
+        };
+        pushVariant(numericBaseVariant);
+
+        const numericVariant = {
+          ...baseContext,
+          ...numericBaseVariant,
+        };
+        pushVariant(numericVariant);
+      }
+    }
+  });
+
+  return variants;
+}
+
+function appendFormDataValue(formData, key, value) {
+  if (value === null || value === undefined || !key) {
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => appendFormDataValue(formData, key, item));
+    return;
+  }
+
+  if (typeof Blob !== "undefined" && value instanceof Blob) {
+    formData.append(key, value);
+    return;
+  }
+
+  if (value instanceof Date) {
+    formData.append(key, value.toISOString());
+    return;
+  }
+
+  if (typeof value === "object") {
+    formData.append(key, JSON.stringify(value));
+    return;
+  }
+
+  formData.append(key, String(value));
+}
+
+function appendSearchParamValue(params, key, value) {
+  if (value === null || value === undefined || !key) {
+    return;
+  }
+
+  if (Array.isArray(value)) {
+    value.forEach((item) => appendSearchParamValue(params, key, item));
+    return;
+  }
+
+  if (typeof value === "object") {
+    params.append(key, JSON.stringify(value));
+    return;
+  }
+
+  params.append(key, String(value));
+}
+
+function createTeamJoinRequestStrategies(payload) {
+  const strategies = [];
+
+  if (payload && typeof payload === "object") {
+    try {
+      strategies.push({ body: JSON.stringify(payload) });
+    } catch (error) {
+      if (typeof console !== "undefined" && console.warn) {
+        console.warn("Failed to serialise join payload to JSON", error);
+      }
+    }
+
+    if (typeof FormData !== "undefined") {
+      const formData = new FormData();
+      Object.entries(payload).forEach(([key, value]) => {
+        appendFormDataValue(formData, key, value);
+      });
+      strategies.push({ body: formData });
+    }
+
+    const params = new URLSearchParams();
+    Object.entries(payload).forEach(([key, value]) => {
+      appendSearchParamValue(params, key, value);
+    });
+    strategies.push({
+      body: params.toString(),
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    });
+  }
+
+  if (strategies.length) {
+    return strategies;
+  }
+
+  try {
+    return [{ body: JSON.stringify(payload || {}) }];
+  } catch (_error) {
+    return [{ body: "{}" }];
+  }
+}
+
+function getPreferredTeamJoinField() {
+  const modal = document.getElementById("teamJoinModal");
+  const modalField = modal?.dataset?.teamJoinField;
+  if (typeof modalField === "string" && modalField.trim().length) {
+    return modalField.trim();
+  }
+
+  const bodyField = document.body?.dataset?.teamJoinField;
+  if (typeof bodyField === "string" && bodyField.trim().length) {
+    return bodyField.trim();
+  }
+
+  const tournamentFieldCandidates = [
+    state.tournament?.team_join_field,
+    state.tournament?.teamJoinField,
+    state.tournament?.registration?.team_field,
+    state.tournament?.registration?.teamField,
+    state.tournament?.registration_settings?.team_field,
+    state.tournament?.registration_settings?.teamField,
+  ];
+
+  for (const candidate of tournamentFieldCandidates) {
+    if (typeof candidate === "string" && candidate.trim().length) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
+function createTeamJoinPayloadCandidates(team, identifier) {
+  const candidates = [];
+  const seen = new Set();
+  const contextVariants = buildTeamJoinContextVariants();
+  const effectiveContexts = contextVariants.length ? contextVariants : [{}];
+
+  const addCandidate = (payload) => {
+    if (!payload || typeof payload !== "object") {
+      return;
+    }
+    effectiveContexts.forEach((context) => {
+      const candidate = { ...context, ...payload };
+      const serialized = stableStringify(candidate);
+      if (seen.has(serialized)) {
+        return;
+      }
+      seen.add(serialized);
+      candidates.push(candidate);
+    });
+  };
+
+  const preferredField = getPreferredTeamJoinField();
+  if (preferredField) {
+    addCandidate({ [preferredField]: identifier });
+    addCandidate({ [preferredField]: identifier, team: identifier });
+  }
+
+  const knownIdentifiers = new Set();
+  if (hasTeamSelectionValue(identifier)) {
+    knownIdentifiers.add(identifier);
+  }
+
+  if (team && typeof team === "object") {
+    const identifierFields = [
+      team.identifier,
+      team.id,
+      team.team_id,
+      team.teamId,
+      team.slug,
+      team.uuid,
+    ];
+    identifierFields.forEach((value) => {
+      const normalised = normaliseId(value);
+      if (normalised) {
+        knownIdentifiers.add(normalised);
+      }
+    });
+  }
+
+  knownIdentifiers.forEach((value) => {
+    addCandidate({ team: value });
+
+    const numericId =
+      typeof value === "number"
+        ? value
+        : /^\d+$/.test(String(value))
+        ? Number.parseInt(String(value), 10)
+        : null;
+
+    if (numericId !== null && !Number.isNaN(numericId)) {
+      addCandidate({ team_id: numericId });
+      addCandidate({ teamId: numericId });
+      addCandidate({ team: numericId, team_id: numericId, teamId: numericId });
+    } else if (typeof value === "string" && value.trim().length) {
+      addCandidate({ team_slug: value });
+      addCandidate({ teamSlug: value });
+      addCandidate({
+        team: value,
+        team_slug: value,
+        teamSlug: value,
+      });
+    }
+  });
+
+  const templateSources = [
+    state.tournament?.registration_payload_template,
+    state.tournament?.registration_payload,
+    state.tournament?.join_payload_template,
+    state.tournament?.join_payload,
+  ];
+
+  templateSources.forEach((template) => {
+    if (!template || typeof template !== "object") {
+      return;
+    }
+    const cloned = { ...template };
+    const hasTeamKey = Object.keys(cloned).some((key) =>
+      typeof key === "string" && key.toLowerCase().startsWith("team"),
+    );
+    if (!hasTeamKey) {
+      cloned.team = identifier;
+    }
+    if (preferredField && cloned[preferredField] === undefined) {
+      cloned[preferredField] = identifier;
+    }
+    addCandidate(cloned);
+  });
+
+  if (!candidates.length) {
+    addCandidate({ team: identifier });
+  }
+
+  return candidates;
+}
+
+function shouldRetryTeamJoinRequest(error) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  if (![400, 422].includes(error.status)) {
+    return false;
+  }
+
+  const messages = [];
+
+  if (error.payload) {
+    const stack = [error.payload];
+    while (stack.length) {
+      const value = stack.pop();
+      if (value === null || value === undefined) {
+        continue;
+      }
+      if (typeof value === "string" || typeof value === "number") {
+        messages.push(String(value));
+        continue;
+      }
+      if (Array.isArray(value)) {
+        stack.push(...value);
+        continue;
+      }
+      if (typeof value === "object") {
+        stack.push(...Object.values(value));
+      }
+    }
+  }
+
+  if (typeof error.message === "string") {
+    messages.push(error.message);
+  }
+
+  const combined = messages.map((text) => text.toLowerCase()).join(" ");
+
+  const stopKeywords = [
+    "captain",
+    "کاپیتان",
+    "already",
+    "قبلا",
+    "ثبت",
+    "member",
+    "عضو",
+    "اعضا",
+    "ظرفیت",
+    "full",
+    "size",
+    "limit",
+    "حداکثر",
+    "حداقل",
+    "تعداد",
+  ];
+
+  if (combined && stopKeywords.some((keyword) => combined.includes(keyword))) {
+    return false;
+  }
+
+  const retryKeywords = [
+    "field",
+    "payload",
+    "body",
+    "json",
+    "required",
+    "missing",
+    "invalid",
+    "team_id",
+    "team id",
+    "team",
+    "شناسه",
+    "اجباری",
+    "الزامی",
+  ];
+
+  if (!combined) {
+    return true;
+  }
+
+  return retryKeywords.some((keyword) => combined.includes(keyword));
+}
+
+async function submitTeamJoinRequest(joinUrl, team, identifier) {
+  const payloadCandidates = createTeamJoinPayloadCandidates(team, identifier);
+  let lastError = null;
+
+  for (const payload of payloadCandidates) {
+    const strategies = createTeamJoinRequestStrategies(payload);
+    for (const strategy of strategies) {
+      try {
+        const requestOptions = {
+          method: "POST",
+          body: strategy.body,
+        };
+
+        if (strategy.headers) {
+          requestOptions.headers = strategy.headers;
+        }
+
+        await apiFetch(joinUrl, requestOptions);
+        return;
+      } catch (error) {
+        if (!shouldRetryTeamJoinRequest(error)) {
+          throw error;
+        }
+        lastError = error;
+      }
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  throw new Error("ارسال اطلاعات ثبت‌نام تیم با خطا مواجه شد.");
+}
+
 function renderTeamOptions(teams, meta = {}) {
   const list = document.getElementById("teamModalList");
   const selectEl = document.getElementById("teamSelect");
@@ -1417,9 +1949,6 @@ async function fetchTeamOptions(searchTerm = "") {
     }
 
     const url = buildApiUrl(API_ENDPOINTS.users.teams);
-    if (state.tournamentId) {
-      url.searchParams.set("for_registration", state.tournamentId);
-    }
     url.searchParams.set("captain", userId);
     if (trimmedSearch) {
       url.searchParams.set("name", trimmedSearch);
@@ -1707,15 +2236,11 @@ async function joinTeamTournament() {
 
     clearModalError("teamJoinError");
 
-    const payload = { team: payloadIdentifier };
     const joinUrl = buildApiUrl(
       API_ENDPOINTS.tournaments.join(state.tournamentId),
     );
 
-    await apiFetch(joinUrl.toString(), {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    await submitTeamJoinRequest(joinUrl.toString(), hydratedTeam, payloadIdentifier);
 
     notify("teamJoinSuccess", null, "success");
     closeTeamJoinModal();
