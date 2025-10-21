@@ -2,6 +2,7 @@ import { API_ENDPOINTS, buildApiUrl } from "/js/services/api-client.js";
 
 const STORAGE_KEYS = {
   inGameIds: "atom_in_game_ids",
+  userId: "atom_cached_user_id",
 };
 
 const MAX_SAVED_INGAME_IDS = 10;
@@ -30,6 +31,53 @@ const state = {
   tournamentTeamIds: new Set(),
   teamAbortController: null,
 };
+
+function cacheUserId(identifier) {
+  const normalised = normaliseId(identifier);
+  if (!normalised) {
+    return;
+  }
+
+  const storages = [];
+  if (typeof sessionStorage !== "undefined") {
+    storages.push(sessionStorage);
+  }
+  if (typeof localStorage !== "undefined") {
+    storages.push(localStorage);
+  }
+
+  storages.forEach((storage) => {
+    try {
+      storage.setItem(STORAGE_KEYS.userId, normalised);
+    } catch (error) {
+      console.warn("Failed to persist user id", error);
+    }
+  });
+}
+
+function restoreCachedUserId() {
+  const storages = [];
+  if (typeof sessionStorage !== "undefined") {
+    storages.push(sessionStorage);
+  }
+  if (typeof localStorage !== "undefined") {
+    storages.push(localStorage);
+  }
+
+  for (const storage of storages) {
+    try {
+      const stored = storage.getItem(STORAGE_KEYS.userId);
+      const identifier = normaliseId(stored);
+      if (identifier) {
+        return identifier;
+      }
+    } catch (error) {
+      console.warn("Failed to read cached user id", error);
+    }
+  }
+
+  return null;
+}
 
 function normaliseId(value) {
   if (value === null || value === undefined) {
@@ -78,16 +126,34 @@ function extractUserIdFromPayload(payload) {
     return null;
   }
 
-  const candidates = [
+  const directCandidates = [
     payload.user_id,
     payload.userId,
     payload.sub,
     payload.id,
     payload.pk,
     payload.uuid,
+    payload.uid,
   ];
 
-  for (const candidate of candidates) {
+  for (const candidate of directCandidates) {
+    const resolved = normaliseId(candidate);
+    if (resolved) {
+      return resolved;
+    }
+  }
+
+  const nestedCandidates = [
+    payload.user,
+    payload.profile,
+    payload.account,
+    payload.member,
+    payload.owner,
+    payload.identity,
+    payload.details,
+  ];
+
+  for (const candidate of nestedCandidates) {
     const resolved = normaliseId(candidate);
     if (resolved) {
       return resolved;
@@ -127,18 +193,26 @@ async function ensureUserId() {
     return state.userIdPromise;
   }
 
+  const cachedIdentifier = restoreCachedUserId();
+  if (cachedIdentifier) {
+    state.userId = cachedIdentifier;
+    return cachedIdentifier;
+  }
+
   const token = getAuthToken();
   const payload = decodeJwtPayload(token);
   const decodedId = extractUserIdFromPayload(payload);
 
   if (decodedId) {
     state.userId = decodedId;
+    cacheUserId(decodedId);
     return decodedId;
   }
 
   state.userIdPromise = resolveUserIdFromProfile()
     .then((identifier) => {
       state.userId = identifier;
+      cacheUserId(identifier);
       return identifier;
     })
     .finally(() => {
@@ -1255,6 +1329,235 @@ function resolveTeamJoinPayloadIdentifier(teamId) {
   return stringValue;
 }
 
+function getPreferredTeamJoinField() {
+  const modal = document.getElementById("teamJoinModal");
+  const modalField = modal?.dataset?.teamJoinField;
+  if (typeof modalField === "string" && modalField.trim().length) {
+    return modalField.trim();
+  }
+
+  const bodyField = document.body?.dataset?.teamJoinField;
+  if (typeof bodyField === "string" && bodyField.trim().length) {
+    return bodyField.trim();
+  }
+
+  const tournamentFieldCandidates = [
+    state.tournament?.team_join_field,
+    state.tournament?.teamJoinField,
+    state.tournament?.registration?.team_field,
+    state.tournament?.registration?.teamField,
+    state.tournament?.registration_settings?.team_field,
+    state.tournament?.registration_settings?.teamField,
+  ];
+
+  for (const candidate of tournamentFieldCandidates) {
+    if (typeof candidate === "string" && candidate.trim().length) {
+      return candidate.trim();
+    }
+  }
+
+  return null;
+}
+
+function createTeamJoinPayloadCandidates(team, identifier) {
+  const candidates = [];
+  const seen = new Set();
+
+  const addCandidate = (payload) => {
+    if (!payload || typeof payload !== "object") {
+      return;
+    }
+    const serialized = JSON.stringify(payload);
+    if (seen.has(serialized)) {
+      return;
+    }
+    seen.add(serialized);
+    candidates.push(payload);
+  };
+
+  const preferredField = getPreferredTeamJoinField();
+  if (preferredField) {
+    addCandidate({ [preferredField]: identifier });
+  }
+
+  const knownIdentifiers = new Set();
+  if (hasTeamSelectionValue(identifier)) {
+    knownIdentifiers.add(identifier);
+  }
+
+  if (team && typeof team === "object") {
+    const identifierFields = [
+      team.identifier,
+      team.id,
+      team.team_id,
+      team.teamId,
+      team.slug,
+      team.uuid,
+    ];
+    identifierFields.forEach((value) => {
+      const normalised = normaliseId(value);
+      if (normalised) {
+        knownIdentifiers.add(normalised);
+      }
+    });
+  }
+
+  knownIdentifiers.forEach((value) => {
+    addCandidate({ team: value });
+
+    const numericId =
+      typeof value === "number"
+        ? value
+        : /^\d+$/.test(String(value))
+        ? Number.parseInt(String(value), 10)
+        : null;
+
+    if (numericId !== null && !Number.isNaN(numericId)) {
+      addCandidate({ team_id: numericId });
+      addCandidate({ teamId: numericId });
+    } else if (typeof value === "string" && value.trim().length) {
+      addCandidate({ team_slug: value });
+      addCandidate({ teamSlug: value });
+    }
+  });
+
+  const templateSources = [
+    state.tournament?.registration_payload_template,
+    state.tournament?.registration_payload,
+    state.tournament?.join_payload_template,
+    state.tournament?.join_payload,
+  ];
+
+  templateSources.forEach((template) => {
+    if (!template || typeof template !== "object") {
+      return;
+    }
+    const cloned = { ...template };
+    const hasTeamKey = Object.keys(cloned).some((key) =>
+      typeof key === "string" && key.toLowerCase().startsWith("team"),
+    );
+    if (!hasTeamKey) {
+      cloned.team = identifier;
+    }
+    addCandidate(cloned);
+  });
+
+  if (!candidates.length) {
+    addCandidate({ team: identifier });
+  }
+
+  return candidates;
+}
+
+function shouldRetryTeamJoinRequest(error) {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  if (![400, 422].includes(error.status)) {
+    return false;
+  }
+
+  const messages = [];
+
+  if (error.payload) {
+    const stack = [error.payload];
+    while (stack.length) {
+      const value = stack.pop();
+      if (value === null || value === undefined) {
+        continue;
+      }
+      if (typeof value === "string" || typeof value === "number") {
+        messages.push(String(value));
+        continue;
+      }
+      if (Array.isArray(value)) {
+        stack.push(...value);
+        continue;
+      }
+      if (typeof value === "object") {
+        stack.push(...Object.values(value));
+      }
+    }
+  }
+
+  if (typeof error.message === "string") {
+    messages.push(error.message);
+  }
+
+  const combined = messages.map((text) => text.toLowerCase()).join(" ");
+
+  const stopKeywords = [
+    "captain",
+    "کاپیتان",
+    "already",
+    "قبلا",
+    "ثبت",
+    "member",
+    "عضو",
+    "اعضا",
+    "ظرفیت",
+    "full",
+    "size",
+    "limit",
+    "حداکثر",
+    "حداقل",
+    "تعداد",
+  ];
+
+  if (combined && stopKeywords.some((keyword) => combined.includes(keyword))) {
+    return false;
+  }
+
+  const retryKeywords = [
+    "field",
+    "payload",
+    "body",
+    "json",
+    "required",
+    "missing",
+    "invalid",
+    "team_id",
+    "team id",
+    "team",
+    "شناسه",
+    "اجباری",
+    "الزامی",
+  ];
+
+  if (!combined) {
+    return true;
+  }
+
+  return retryKeywords.some((keyword) => combined.includes(keyword));
+}
+
+async function submitTeamJoinRequest(joinUrl, team, identifier) {
+  const payloadCandidates = createTeamJoinPayloadCandidates(team, identifier);
+  let lastError = null;
+
+  for (const payload of payloadCandidates) {
+    try {
+      await apiFetch(joinUrl, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      return;
+    } catch (error) {
+      if (!shouldRetryTeamJoinRequest(error)) {
+        throw error;
+      }
+      lastError = error;
+    }
+  }
+
+  if (lastError) {
+    throw lastError;
+  }
+
+  throw new Error("ارسال اطلاعات ثبت‌نام تیم با خطا مواجه شد.");
+}
+
 function renderTeamOptions(teams, meta = {}) {
   const list = document.getElementById("teamModalList");
   const selectEl = document.getElementById("teamSelect");
@@ -1417,9 +1720,6 @@ async function fetchTeamOptions(searchTerm = "") {
     }
 
     const url = buildApiUrl(API_ENDPOINTS.users.teams);
-    if (state.tournamentId) {
-      url.searchParams.set("for_registration", state.tournamentId);
-    }
     url.searchParams.set("captain", userId);
     if (trimmedSearch) {
       url.searchParams.set("name", trimmedSearch);
@@ -1707,15 +2007,11 @@ async function joinTeamTournament() {
 
     clearModalError("teamJoinError");
 
-    const payload = { team: payloadIdentifier };
     const joinUrl = buildApiUrl(
       API_ENDPOINTS.tournaments.join(state.tournamentId),
     );
 
-    await apiFetch(joinUrl.toString(), {
-      method: "POST",
-      body: JSON.stringify(payload),
-    });
+    await submitTeamJoinRequest(joinUrl.toString(), hydratedTeam, payloadIdentifier);
 
     notify("teamJoinSuccess", null, "success");
     closeTeamJoinModal();
