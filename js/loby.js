@@ -1364,176 +1364,6 @@ function resolveTeamJoinPayloadIdentifier(teamId) {
   return stringValue;
 }
 
-function buildTeamJoinContextVariants() {
-  const variants = [];
-  const seen = new Set();
-
-  const baseContext = {};
-  const tournamentType = state.tournament?.type;
-  const tournamentMode = state.tournament?.mode;
-
-  if (typeof tournamentType === "string" && tournamentType.trim().length) {
-    baseContext.type = tournamentType;
-  }
-  if (typeof tournamentMode === "string" && tournamentMode.trim().length) {
-    baseContext.mode = tournamentMode;
-  }
-
-  const idCandidates = new Set();
-  [
-    state.tournament?.id,
-    state.tournament?.pk,
-    state.tournament?.uuid,
-    state.tournament?.slug,
-    state.tournamentId,
-  ].forEach((value) => {
-    const normalised = normaliseId(value);
-    if (normalised) {
-      idCandidates.add(normalised);
-    }
-  });
-
-  const pushVariant = (variant) => {
-    const serialised = stableStringify(variant);
-    if (!seen.has(serialised)) {
-      seen.add(serialised);
-      variants.push(variant);
-    }
-  };
-
-  pushVariant({});
-  if (Object.keys(baseContext).length) {
-    pushVariant({ ...baseContext });
-  }
-
-  idCandidates.forEach((value) => {
-    const stringValue = String(value).trim();
-    if (!stringValue) {
-      return;
-    }
-
-    const baseTournamentVariant = {
-      tournament: stringValue,
-      tournament_id: stringValue,
-      tournamentId: stringValue,
-    };
-    pushVariant(baseTournamentVariant);
-
-    const stringVariant = {
-      ...baseContext,
-      ...baseTournamentVariant,
-    };
-    pushVariant(stringVariant);
-
-    if (/^\d+$/.test(stringValue)) {
-      const numericValue = Number.parseInt(stringValue, 10);
-      if (!Number.isNaN(numericValue)) {
-        const numericBaseVariant = {
-          tournament: numericValue,
-          tournament_id: numericValue,
-          tournamentId: numericValue,
-        };
-        pushVariant(numericBaseVariant);
-
-        const numericVariant = {
-          ...baseContext,
-          ...numericBaseVariant,
-        };
-        pushVariant(numericVariant);
-      }
-    }
-  });
-
-  return variants;
-}
-
-function appendFormDataValue(formData, key, value) {
-  if (value === null || value === undefined || !key) {
-    return;
-  }
-
-  if (Array.isArray(value)) {
-    value.forEach((item) => appendFormDataValue(formData, key, item));
-    return;
-  }
-
-  if (typeof Blob !== "undefined" && value instanceof Blob) {
-    formData.append(key, value);
-    return;
-  }
-
-  if (value instanceof Date) {
-    formData.append(key, value.toISOString());
-    return;
-  }
-
-  if (typeof value === "object") {
-    formData.append(key, JSON.stringify(value));
-    return;
-  }
-
-  formData.append(key, String(value));
-}
-
-function appendSearchParamValue(params, key, value) {
-  if (value === null || value === undefined || !key) {
-    return;
-  }
-
-  if (Array.isArray(value)) {
-    value.forEach((item) => appendSearchParamValue(params, key, item));
-    return;
-  }
-
-  if (typeof value === "object") {
-    params.append(key, JSON.stringify(value));
-    return;
-  }
-
-  params.append(key, String(value));
-}
-
-function createTeamJoinRequestStrategies(payload) {
-  const strategies = [];
-
-  if (payload && typeof payload === "object") {
-    try {
-      strategies.push({ body: JSON.stringify(payload) });
-    } catch (error) {
-      if (typeof console !== "undefined" && console.warn) {
-        console.warn("Failed to serialise join payload to JSON", error);
-      }
-    }
-
-    if (typeof FormData !== "undefined") {
-      const formData = new FormData();
-      Object.entries(payload).forEach(([key, value]) => {
-        appendFormDataValue(formData, key, value);
-      });
-      strategies.push({ body: formData });
-    }
-
-    const params = new URLSearchParams();
-    Object.entries(payload).forEach(([key, value]) => {
-      appendSearchParamValue(params, key, value);
-    });
-    strategies.push({
-      body: params.toString(),
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    });
-  }
-
-  if (strategies.length) {
-    return strategies;
-  }
-
-  try {
-    return [{ body: JSON.stringify(payload || {}) }];
-  } catch (_error) {
-    return [{ body: "{}" }];
-  }
-}
-
 function getPreferredTeamJoinField() {
   const modal = document.getElementById("teamJoinModal");
   const modalField = modal?.dataset?.teamJoinField;
@@ -1567,28 +1397,22 @@ function getPreferredTeamJoinField() {
 function createTeamJoinPayloadCandidates(team, identifier) {
   const candidates = [];
   const seen = new Set();
-  const contextVariants = buildTeamJoinContextVariants();
-  const effectiveContexts = contextVariants.length ? contextVariants : [{}];
 
   const addCandidate = (payload) => {
     if (!payload || typeof payload !== "object") {
       return;
     }
-    effectiveContexts.forEach((context) => {
-      const candidate = { ...context, ...payload };
-      const serialized = stableStringify(candidate);
-      if (seen.has(serialized)) {
-        return;
-      }
-      seen.add(serialized);
-      candidates.push(candidate);
-    });
+    const serialized = JSON.stringify(payload);
+    if (seen.has(serialized)) {
+      return;
+    }
+    seen.add(serialized);
+    candidates.push(payload);
   };
 
   const preferredField = getPreferredTeamJoinField();
   if (preferredField) {
     addCandidate({ [preferredField]: identifier });
-    addCandidate({ [preferredField]: identifier, team: identifier });
   }
 
   const knownIdentifiers = new Set();
@@ -1626,15 +1450,9 @@ function createTeamJoinPayloadCandidates(team, identifier) {
     if (numericId !== null && !Number.isNaN(numericId)) {
       addCandidate({ team_id: numericId });
       addCandidate({ teamId: numericId });
-      addCandidate({ team: numericId, team_id: numericId, teamId: numericId });
     } else if (typeof value === "string" && value.trim().length) {
       addCandidate({ team_slug: value });
       addCandidate({ teamSlug: value });
-      addCandidate({
-        team: value,
-        team_slug: value,
-        teamSlug: value,
-      });
     }
   });
 
@@ -1655,9 +1473,6 @@ function createTeamJoinPayloadCandidates(team, identifier) {
     );
     if (!hasTeamKey) {
       cloned.team = identifier;
-    }
-    if (preferredField && cloned[preferredField] === undefined) {
-      cloned[preferredField] = identifier;
     }
     addCandidate(cloned);
   });
@@ -1757,26 +1572,17 @@ async function submitTeamJoinRequest(joinUrl, team, identifier) {
   let lastError = null;
 
   for (const payload of payloadCandidates) {
-    const strategies = createTeamJoinRequestStrategies(payload);
-    for (const strategy of strategies) {
-      try {
-        const requestOptions = {
-          method: "POST",
-          body: strategy.body,
-        };
-
-        if (strategy.headers) {
-          requestOptions.headers = strategy.headers;
-        }
-
-        await apiFetch(joinUrl, requestOptions);
-        return;
-      } catch (error) {
-        if (!shouldRetryTeamJoinRequest(error)) {
-          throw error;
-        }
-        lastError = error;
+    try {
+      await apiFetch(joinUrl, {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+      return;
+    } catch (error) {
+      if (!shouldRetryTeamJoinRequest(error)) {
+        throw error;
       }
+      lastError = error;
     }
   }
 
