@@ -68,29 +68,38 @@
     </div>
     <div class="live_tournaments_container" id="live_tournaments"></div>
 
-    <!-- 🟢 بزودی -->
-    <div class="titr" id="upcoming">
-        <div class="dote"></div>
-        <h2>تورنومنت‌هایی که بزودی برگزار می‌شوند</h2>
-    </div>
-    <div class="grid-container" id="upcoming_tournaments"></div>
-
     <!-- 🟢 در حال برگزاری -->
     <div class="titr" id="running">
         <div class="dote"></div>
-        <h2>تورنومنت‌های در حال برگزاری</h2>
+        <h2>تورنامنت‌های در حال برگزاری</h2>
     </div>
     <div class="grid-container" id="running_tournaments"></div>
+    <div class="Pagination" id="ongoing_pagination"></div>
+
+    <!-- 🟢 بزودی -->
+    <div class="titr" id="upcoming">
+        <div class="dote"></div>
+        <h2>تورنامنت‌هایی که بزودی برگزار می‌شوند</h2>
+    </div>
+    <div class="grid-container" id="upcoming_tournaments"></div>
+    <div class="Pagination" id="upcoming_pagination"></div>
 
     <!-- 🟢 تمام شده -->
-    <div class="titr" id="finished">
-        <div class="dote"></div>
-        <h2>تورنومنت‌های تمام شده</h2>
-    </div>
-    <div class="grid-container" id="finished_tournaments"></div>
+    <section class="finished_preview_section" id="finished">
+        <div class="titr">
+            <div class="dote"></div>
+            <h2>تورنومنت‌های پایان یافته</h2>
+        </div>
+        <div class="grid-container" id="recent_finished_tournaments"></div>
+        <div class="finished-actions">
+            <button class="show-more-finished" id="show_all_finished_btn">مشاهده بیشتر</button>
+        </div>
+        <div class="finished_all hidden" id="all_finished_wrapper">
+            <div class="grid-container" id="finished_tournaments"></div>
+            <div class="Pagination" id="finished_pagination"></div>
+        </div>
+    </section>
 
-
-    
 
 </div>
 
