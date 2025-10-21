@@ -54,6 +54,9 @@ export const API_ENDPOINTS = {
     teamMatchHistory: (teamId) => `/api/users/teams/${encodeURIComponent(String(teamId))}/match-history/`,
     search: "/api/users/users/",
   },
+  wallet: {
+    list: "/api/wallet/wallets/",
+  },
   tournaments: {
     myTournaments: "/api/tournaments/my-tournaments/",
     list: "/api/tournaments/tournaments/",
