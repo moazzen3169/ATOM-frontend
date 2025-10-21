@@ -1015,7 +1015,17 @@ function evaluateTournamentEligibility({ requireWalletCheck = false } = {}) {
   const requiredColorId = resolveTournamentColorIdentifier(state.tournament);
   if (requiredColorId) {
     const userColorId = resolveUserColorIdentifier(state.userProfile);
-    if (userColorId && userColorId !== requiredColorId) {
+    if (!userColorId) {
+      const colorName = resolveTournamentColorName(state.tournament) || "ویژه";
+      return {
+        allowed: false,
+        title: defaultTitle,
+        message: `برای ثبت‌نام در این تورنومنت باید رنگ ${colorName} را داشته باشید. لطفاً پروفایل خود را تکمیل کنید.`,
+        reason: "color_unknown",
+      };
+    }
+
+    if (userColorId !== requiredColorId) {
       const colorName = resolveTournamentColorName(state.tournament) || "ویژه";
       return {
         allowed: false,
