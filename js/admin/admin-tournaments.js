@@ -42,6 +42,7 @@ init().catch((error) => console.error("Failed to initialise tournaments page", e
 async function init() {
   bindFilterEvents();
   bindModalTriggers();
+  initJalaliPickers();
   await Promise.all([loadGames(), loadTournaments()]);
 }
 
@@ -378,7 +379,13 @@ async function handleCreateSubmit(event) {
   if (!elements.createForm) return;
   const feedback = elements.createForm.querySelector('[data-role="create-feedback"]');
   setFeedback(feedback, "", false);
-  const payload = buildTournamentPayload(new FormData(elements.createForm));
+  let payload;
+  try {
+    payload = buildTournamentPayload(new FormData(elements.createForm));
+  } catch (error) {
+    setFeedback(feedback, error.message || "ثبت تورنومنت با مشکل مواجه شد.");
+    return;
+  }
   try {
     await fetchWithAuth("/api/tournaments/tournaments/", {
       method: "POST",
@@ -404,7 +411,13 @@ async function handleEditSubmit(event) {
     setFeedback(feedback, "شناسه تورنومنت نامعتبر است");
     return;
   }
-  const payload = buildTournamentPayload(formData, true);
+  let payload;
+  try {
+    payload = buildTournamentPayload(formData, true);
+  } catch (error) {
+    setFeedback(feedback, error.message || "ذخیره تغییرات با خطا مواجه شد.");
+    return;
+  }
   try {
     await fetchWithAuth(`/api/tournaments/tournaments/${id}/`, {
       method: "PATCH",
@@ -471,37 +484,340 @@ function handleExportClick(event) {
 
 function buildTournamentPayload(formData, isPartial = false) {
   const payload = {};
-  const assign = (key, value) => {
-    if (value === null || value === undefined || value === "") {
-      if (!isPartial) payload[key] = value;
+
+  const assignValue = (key, value, hasField = true) => {
+    if (!hasField) {
+      if (!isPartial) payload[key] = null;
       return;
     }
-    payload[key] = value;
+    if (value === undefined) {
+      if (!isPartial) payload[key] = null;
+      return;
+    }
+    if (typeof value === "string") {
+      const trimmed = value.trim();
+      payload[key] = trimmed === "" ? null : trimmed;
+      return;
+    }
+    payload[key] = value === "" ? null : value;
   };
 
-  assign("name", formData.get("name"));
-  assign("game", Number(formData.get("game")) || null);
-  assign("type", formData.get("type"));
-  assign("mode", formData.get("mode"));
+  if (formData.has("name")) {
+    const name = (formData.get("name") || "").toString().trim();
+    if (!name && !isPartial) {
+      throw new Error("نام تورنومنت را وارد کنید.");
+    }
+    assignValue("name", name || null, true);
+  }
 
-  const startDate = toIsoString(formData.get("start_date"));
-  const endDate = toIsoString(formData.get("end_date"));
-  if (startDate || !isPartial) assign("start_date", startDate);
-  if (endDate || !isPartial) assign("end_date", endDate);
+  if (formData.has("game")) {
+    const gameValue = toEnglishDigits(formData.get("game"));
+    const gameId = gameValue ? Number(gameValue) : null;
+    if (gameValue && (Number.isNaN(gameId) || gameId <= 0)) {
+      throw new Error("بازی انتخاب‌شده نامعتبر است.");
+    }
+    if (!gameId && !isPartial) {
+      throw new Error("بازی را انتخاب کنید.");
+    }
+    assignValue("game", gameId, true);
+  }
 
-  const entryFee = formData.get("entry_fee");
-  assign("entry_fee", entryFee ? Number(entryFee) : null);
-  assign("is_free", !entryFee || Number(entryFee) <= 0);
-  const prize = formData.get("prize_pool");
-  assign("prize_pool", prize ? Number(prize) : null);
-  const maxParticipants = formData.get("max_participants");
-  assign("max_participants", maxParticipants ? Number(maxParticipants) : null);
-  const verification = formData.get("required_verification_level");
-  assign("required_verification_level", verification ? Number(verification) : null);
-  assign("rules", formData.get("rules"));
-  assign("description", formData.get("description"));
+  if (formData.has("type")) {
+    assignValue("type", formData.get("type") || null, true);
+  }
+
+  if (formData.has("mode")) {
+    assignValue("mode", formData.get("mode") || null, true);
+  }
+
+  const startDateField = parseDateField(formData, "start_date");
+  if (startDateField.hasField) {
+    if (!startDateField.value && !isPartial) {
+      throw new Error("تاریخ شروع نامعتبر است.");
+    }
+    assignValue("start_date", startDateField.value, true);
+  }
+
+  const endDateField = parseDateField(formData, "end_date");
+  if (endDateField.hasField) {
+    if (!endDateField.value && !isPartial) {
+      throw new Error("تاریخ پایان نامعتبر است.");
+    }
+    assignValue("end_date", endDateField.value, true);
+  }
+
+  if (startDateField.value && endDateField.value) {
+    const start = new Date(startDateField.value);
+    const end = new Date(endDateField.value);
+    if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end < start) {
+      throw new Error("تاریخ پایان باید بعد از تاریخ شروع باشد.");
+    }
+  }
+
+  const hasEntryFee = formData.has("entry_fee");
+  const entryFee = hasEntryFee ? normalizeDecimal(formData.get("entry_fee")) : null;
+  if (hasEntryFee) {
+    assignValue("entry_fee", entryFee, true);
+    const isFree = !entryFee || Number(entryFee) <= 0;
+    assignValue("is_free", Boolean(isFree), true);
+  } else if (!isPartial) {
+    assignValue("is_free", true, true);
+  }
+
+  const hasPrize = formData.has("prize_pool");
+  const prize = hasPrize ? normalizeDecimal(formData.get("prize_pool")) : null;
+  if (hasPrize) {
+    assignValue("prize_pool", prize, true);
+  }
+
+  if (formData.has("max_participants")) {
+    const maxParticipants = normalizeInteger(formData.get("max_participants"));
+    assignValue("max_participants", maxParticipants, true);
+  }
+
+  if (formData.has("required_verification_level")) {
+    const verificationLevel = normalizeInteger(formData.get("required_verification_level"));
+    if (verificationLevel !== null && (verificationLevel < 1 || verificationLevel > 3)) {
+      throw new Error("سطح احراز نامعتبر است.");
+    }
+    assignValue("required_verification_level", verificationLevel, true);
+  }
+
+  if (formData.has("rules")) {
+    const rules = (formData.get("rules") || "").toString();
+    assignValue("rules", rules, true);
+  }
+
+  if (formData.has("description")) {
+    const description = (formData.get("description") || "").toString();
+    assignValue("description", description, true);
+  }
 
   return payload;
+}
+
+function parseDateField(formData, field) {
+  const hasField = formData.has(field);
+  if (!hasField) {
+    return { hasField: false, value: null };
+  }
+  const dateValue = formData.get(field);
+  const timeField = `${field}_time`;
+  const hasTimeField = formData.has(timeField);
+  const timeValue = hasTimeField ? formData.get(timeField) : null;
+  if (!dateValue) {
+    return { hasField: true, value: null };
+  }
+  const isoValue = toIsoDateTime(dateValue, timeValue, hasTimeField);
+  return { hasField: true, value: isoValue };
+}
+
+function toIsoDateTime(dateValue, timeValue, hasExplicitTime) {
+  const rawDate = toEnglishDigits((dateValue || "").toString().trim());
+  if (!rawDate) return null;
+  if (/\d{4}-\d{2}-\d{2}t\d{2}:\d{2}/i.test(rawDate)) {
+    return toIsoString(rawDate);
+  }
+  if (/\d{4}-\d{2}-\d{2}/.test(rawDate)) {
+    return toIsoString(rawDate);
+  }
+
+  const parts = rawDate.replace(/[\.\-]/g, "/").split(/\s+/).filter(Boolean);
+  if (!parts.length) return null;
+  const datePart = parts[0];
+  const inlineTime = parts[1];
+  const match = datePart.match(/^(\d{4})\/(\d{1,2})\/(\d{1,2})$/);
+  if (!match) {
+    return null;
+  }
+
+  const jy = Number(match[1]);
+  const jm = Number(match[2]);
+  const jd = Number(match[3]);
+  if (![jy, jm, jd].every(Number.isFinite)) {
+    return null;
+  }
+
+  const timeSource = hasExplicitTime ? timeValue : inlineTime;
+  const time = parseTimeValue(timeSource, { required: hasExplicitTime });
+  const gregorian = jalaliToGregorian(jy, jm, jd);
+  if (!gregorian) {
+    return null;
+  }
+  const { gy, gm, gd } = gregorian;
+  const date = new Date(Date.UTC(gy, gm - 1, gd, time.hour, time.minute, time.second));
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+  return date.toISOString();
+}
+
+function parseTimeValue(value, options = {}) {
+  const { required = false } = options;
+  if (!value) {
+    if (required) {
+      throw new Error("ساعت را به درستی وارد کنید.");
+    }
+    return { hour: 0, minute: 0, second: 0 };
+  }
+  const normalized = toEnglishDigits(value).trim();
+  const match = normalized.match(/^(\d{1,2})(?::(\d{1,2}))?(?::(\d{1,2}))?$/);
+  if (!match) {
+    throw new Error("ساعت وارد شده نامعتبر است.");
+  }
+  const hour = Number(match[1]);
+  const minute = Number(match[2] || 0);
+  const second = Number(match[3] || 0);
+  if ([hour, minute, second].some((n) => !Number.isFinite(n))) {
+    throw new Error("ساعت وارد شده نامعتبر است.");
+  }
+  if (hour > 23 || minute > 59 || second > 59) {
+    throw new Error("ساعت وارد شده نامعتبر است.");
+  }
+  return { hour, minute, second };
+}
+
+function normalizeDecimal(value) {
+  if (value === null || value === undefined) return null;
+  const normalized = toEnglishDigits(value).replace(/,/g, "").trim();
+  if (!normalized) return null;
+  if (!/^-?\d+(?:\.\d{0,2})?$/.test(normalized)) {
+    throw new Error("مقدار عددی نامعتبر است.");
+  }
+  if (Number(normalized) < 0) {
+    throw new Error("مقدار عددی باید مثبت باشد.");
+  }
+  return normalized;
+}
+
+function normalizeInteger(value) {
+  if (value === null || value === undefined) return null;
+  const normalized = toEnglishDigits(value).replace(/,/g, "").trim();
+  if (!normalized) return null;
+  if (!/^-?\d+$/.test(normalized)) {
+    throw new Error("مقدار عددی نامعتبر است.");
+  }
+  const intValue = Number.parseInt(normalized, 10);
+  if (!Number.isFinite(intValue)) {
+    throw new Error("مقدار عددی نامعتبر است.");
+  }
+  if (intValue < 0) {
+    throw new Error("مقدار عددی باید مثبت باشد.");
+  }
+  return intValue;
+}
+
+function toEnglishDigits(value) {
+  if (value === null || value === undefined) return "";
+  return value
+    .toString()
+    .replace(/[\u06F0-\u06F9]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
+    .replace(/[\u0660-\u0669]/g, (digit) => String(digit.charCodeAt(0) - 0x0660));
+}
+
+function jalaliToGregorian(jy, jm, jd) {
+  const cal = jalCal(jy);
+  if (!cal) return null;
+  const jdValue = jalaliToJd(jy, jm, jd, cal);
+  const gregorianDay = jdToGregorian(jdValue);
+  return { gy: gregorianDay[0], gm: gregorianDay[1], gd: gregorianDay[2] };
+}
+
+function jalaliToJd(jy, jm, jd, cal) {
+  const gregorianJd = gregorianToJd(cal.gy, 3, cal.march);
+  const dayIndex =
+    (jm <= 6 ? (jm - 1) * 31 : 6 * 31 + (jm - 7) * 30) + (jd - 1);
+  return gregorianJd + dayIndex;
+}
+
+function gregorianToJd(gy, gm, gd) {
+  const a = Math.floor((14 - gm) / 12);
+  const y = gy + 4800 - a;
+  const m = gm + 12 * a - 3;
+  return (
+    gd + Math.floor((153 * m + 2) / 5) + 365 * y + Math.floor(y / 4) -
+    Math.floor(y / 100) + Math.floor(y / 400) - 32045
+  );
+}
+
+function jdToGregorian(jd) {
+  let j = jd + 32044;
+  const g = Math.floor(j / 146097);
+  let dg = j % 146097;
+  let c = Math.floor((Math.floor(dg / 36524) + 1) * 3 / 4);
+  dg -= c * 36524;
+  const b = Math.floor(dg / 1461);
+  let db = dg % 1461;
+  const a = Math.floor((Math.floor(db / 365) + 1) * 3 / 4);
+  db -= a * 365;
+  const y = g * 400 + c * 100 + b * 4 + a;
+  const m = Math.floor((db * 5 + 308) / 153) - 2;
+  const d = db - Math.floor((m + 4) * 153 / 5) + 122;
+  const year = y - 4800 + Math.floor((m + 2) / 12);
+  const month = (m + 2) % 12 + 1;
+  const day = d + 1;
+  return [year, month, day];
+}
+
+function jalCal(jy) {
+  const breaks = [
+    -61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210, 1635,
+    2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178,
+  ];
+
+  if (jy < breaks[0] || jy >= breaks[breaks.length - 1]) {
+    return null;
+  }
+
+  let gy = jy + 621;
+  let leapJ = -14;
+  let jp = breaks[0];
+  let jm = breaks[1];
+  let jump = 0;
+
+  for (let i = 1; i < breaks.length; i += 1) {
+    jm = breaks[i];
+    jump = jm - jp;
+    if (jy < jm) {
+      break;
+    }
+    leapJ += Math.floor(jump / 33) * 8 + Math.floor((jump % 33) / 4);
+    jp = jm;
+  }
+
+  let n = jy - jp;
+  leapJ += Math.floor(n / 33) * 8 + Math.floor(((n % 33) + 3) / 4);
+  if (jump % 33 === 4 && jump - n === 4) {
+    leapJ += 1;
+  }
+
+  const leapG = Math.floor(gy / 4) - Math.floor((Math.floor(gy / 100) + 1) * 3 / 4) - 150;
+  const march = 20 + leapJ - leapG;
+
+  if (jump - n < 6) {
+    n = n - jump + Math.floor((jump + 4) / 33) * 33;
+  }
+
+  return { leap: ((n + 1) % 33 - 1 + 33) % 4, gy, march };
+}
+
+function initJalaliPickers() {
+  if (typeof window === "undefined") return;
+  if (typeof window.jalaliDatepicker !== "undefined") {
+    window.jalaliDatepicker.startWatch();
+  }
+
+  const form = elements.createForm;
+  if (!form) return;
+  const startInput = form.elements.start_date;
+  const endInput = form.elements.end_date;
+  if (startInput && endInput) {
+    startInput.addEventListener("change", () => {
+      if (!endInput.value) {
+        endInput.setAttribute("data-jdp-min-date", startInput.value || "");
+      }
+    });
+  }
 }
 
 function openModal(modal) {

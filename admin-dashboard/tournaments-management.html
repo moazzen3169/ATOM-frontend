@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="../css/admin-dashboard.css">
     <link rel="stylesheet" href="../css/admin-sidebar.css">
     <link rel="stylesheet" href="../css/admin-tournaments.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@majidh1/jalalidatepicker@0.6.3/dist/jalaliDatepicker.min.css">
     <link rel="stylesheet" href="../fonts/fonts.css">
 </head>
 <body>
@@ -174,11 +175,19 @@
                 </label>
                 <label class="modal__field">
                     <span>تاریخ شروع</span>
-                    <input type="datetime-local" name="start_date" required>
+                    <input type="text" name="start_date" required data-jdp data-role="jalali-date" inputmode="numeric" placeholder="مثال: 1403/01/15">
+                </label>
+                <label class="modal__field">
+                    <span>زمان شروع</span>
+                    <input type="time" name="start_date_time" required step="60" dir="ltr">
                 </label>
                 <label class="modal__field">
                     <span>تاریخ پایان</span>
-                    <input type="datetime-local" name="end_date" required>
+                    <input type="text" name="end_date" required data-jdp data-role="jalali-date" inputmode="numeric" placeholder="مثال: 1403/01/20">
+                </label>
+                <label class="modal__field">
+                    <span>زمان پایان</span>
+                    <input type="time" name="end_date_time" required step="60" dir="ltr">
                 </label>
                 <label class="modal__field">
                     <span>ورودی (ریال)</span>
@@ -308,6 +317,7 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@majidh1/jalalidatepicker@0.6.3/dist/jalaliDatepicker.min.js"></script>
 <script src="../js/app-errors.js"></script>
 <script type="module" src="/js/admin/admin-sidebar.js"></script>
 <script type="module" src="/js/admin/admin-dashboard.js"></script>
