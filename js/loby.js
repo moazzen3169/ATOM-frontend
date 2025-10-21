@@ -8,6 +8,194 @@ const STORAGE_KEYS = {
 const MAX_SAVED_INGAME_IDS = 10;
 
 const TEAM_SEARCH_DEBOUNCE_MS = 400;
+
+const domCache = new Map();
+
+function getDomElement(id) {
+  if (!id) return null;
+  if (domCache.has(id)) return domCache.get(id);
+  const element = document.getElementById(id);
+  domCache.set(id, element || null);
+  return element || null;
+}
+
+function updateText(id, value) {
+  const element = typeof id === "string" ? getDomElement(id) : id;
+  if (!element) return;
+  element.textContent = value ?? "";
+}
+
+function toggleHidden(id, hidden) {
+  const element = typeof id === "string" ? getDomElement(id) : id;
+  if (!element) return;
+  element.classList.toggle("is-hidden", Boolean(hidden));
+}
+
+function toggleDisplay(id, show, displayValue = "block") {
+  const element = typeof id === "string" ? getDomElement(id) : id;
+  if (!element) return;
+  element.style.display = show ? displayValue : "none";
+}
+
+function updateImage(id, { src, alt, fallbackSrc }) {
+  const element = typeof id === "string" ? getDomElement(id) : id;
+  if (!element) return;
+  if (src) {
+    element.src = src;
+  } else if (fallbackSrc) {
+    element.src = fallbackSrc;
+  }
+  if (alt) {
+    element.alt = alt;
+  }
+}
+
+function createModalController(modalId, { onOpen, onClose } = {}) {
+  const modalElement = () => getDomElement(modalId);
+
+  function open() {
+    const element = modalElement();
+    if (!element) return;
+    element.setAttribute("aria-hidden", "false");
+    toggleDisplay(element, true, "flex");
+    onOpen?.();
+  }
+
+  function close() {
+    const element = modalElement();
+    if (!element) return;
+    element.setAttribute("aria-hidden", "true");
+    toggleDisplay(element, false);
+    onClose?.();
+  }
+
+  function bindDismiss() {
+    const element = modalElement();
+    if (!element) return;
+    element.addEventListener("click", (event) => {
+      if (event.target === element) {
+        close();
+      }
+    });
+  }
+
+  return { modalId, open, close, bindDismiss };
+}
+
+const modalRegistry = new Map();
+
+function registerModal(id, options) {
+  if (!id || modalRegistry.has(id)) {
+    return modalRegistry.get(id);
+  }
+  const controller = createModalController(id, options);
+  modalRegistry.set(id, controller);
+  return controller;
+}
+
+function getModal(id) {
+  return modalRegistry.get(id) || registerModal(id);
+}
+
+function showModal(id) {
+  getModal(id)?.open();
+}
+
+function hideModal(id) {
+  getModal(id)?.close();
+}
+
+function ensureFeedbackModal() {
+  let modal = getDomElement("globalFeedbackModal");
+  if (modal) {
+    return modal;
+  }
+
+  if (!document.body) {
+    return null;
+  }
+
+  modal = document.createElement("div");
+  modal.id = "globalFeedbackModal";
+  modal.setAttribute("role", "dialog");
+  modal.setAttribute("aria-hidden", "true");
+  modal.style.cssText =
+    "display:none;position:fixed;inset:0;z-index:10000;background:rgba(15,23,42,0.8);" +
+    "align-items:center;justify-content:center;padding:24px;";
+
+  modal.innerHTML = `
+    <div class="atom-modal__dialog" style="max-width:420px;width:100%;background:#0f172a;color:#fff;border-radius:16px;padding:24px;box-shadow:0 24px 48px rgba(8,15,31,0.4);border:1px solid rgba(148,163,184,0.2);position:relative;">
+      <button type="button" id="globalFeedbackModalClose" aria-label="بستن" style="position:absolute;top:12px;left:12px;background:transparent;border:none;color:inherit;font-size:20px;cursor:pointer;">&times;</button>
+      <h3 id="globalFeedbackModalTitle" style="font-size:1.25rem;margin-bottom:12px;"></h3>
+      <p id="globalFeedbackModalMessage" style="line-height:1.8;margin-bottom:16px;"></p>
+      <div id="globalFeedbackModalAction" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:flex-end;"></div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+  domCache.set("globalFeedbackModal", modal);
+
+  const closeBtn = modal.querySelector("#globalFeedbackModalClose");
+  if (closeBtn) {
+    closeBtn.addEventListener("click", () => hideModal("globalFeedbackModal"));
+  }
+
+  registerModal("globalFeedbackModal", {
+    onClose: () => {
+      const action = modal.querySelector("#globalFeedbackModalAction");
+      if (action) {
+        action.innerHTML = "";
+      }
+    },
+  }).bindDismiss();
+
+  return modal;
+}
+
+function showFeedbackModal({
+  title,
+  message,
+  type = "info",
+  action,
+} = {}) {
+  const modal = ensureFeedbackModal();
+  if (!modal) {
+    if (message) {
+      window.alert?.(message);
+    }
+    return;
+  }
+
+  const accent =
+    type === "success" ? "#22c55e" : type === "error" ? "#ef4444" : "#38bdf8";
+  const dialog = modal.querySelector(".atom-modal__dialog");
+  if (dialog) {
+    dialog.style.borderColor = accent;
+  }
+
+  updateText("globalFeedbackModalTitle", title || "پیام سیستم");
+  updateText("globalFeedbackModalMessage", message || "");
+
+  domCache.set("globalFeedbackModalTitle", modal.querySelector("#globalFeedbackModalTitle"));
+  domCache.set("globalFeedbackModalMessage", modal.querySelector("#globalFeedbackModalMessage"));
+
+  const actionContainer = modal.querySelector("#globalFeedbackModalAction");
+  if (actionContainer) {
+    actionContainer.innerHTML = "";
+    if (action?.label && action?.href) {
+      const link = document.createElement("a");
+      link.href = action.href;
+      link.textContent = action.label;
+      link.target = action.external ? "_blank" : "_self";
+      link.rel = action.external ? "noopener" : "";
+      link.style.cssText =
+        `background:${accent};color:#0f172a;font-weight:600;padding:10px 18px;border-radius:999px;text-decoration:none;`;
+      actionContainer.appendChild(link);
+    }
+  }
+
+  showModal("globalFeedbackModal");
+}
 const TEAM_VALIDATION_NOTIFICATION_KEYS = {
   TEAM_NOT_FOUND: "teamNotFound",
   NOT_CAPTAIN: "teamJoinUnauthorized",
@@ -41,6 +229,7 @@ const state = {
   participantTotalCount: null,
   participantsInitialised: false,
   participantError: null,
+  loginPromptShown: false,
 };
 
 function cacheUserId(identifier) {
@@ -724,23 +913,32 @@ async function apiFetch(url, options = {}) {
 }
 
 function hidePreloader() {
-  const loader = document.getElementById("preloader");
-  if (loader) loader.style.display = "none";
+  toggleDisplay("preloader", false);
 }
 
 function showLoginRequired() {
-  const loginBox = document.getElementById("login_required");
-  const lobbyPage = document.getElementById("lobby_page");
-  if (loginBox) loginBox.style.display = "flex";
-  if (lobbyPage) lobbyPage.style.display = "none";
+  toggleDisplay("login_required", true, "flex");
+  toggleDisplay("lobby_page", false);
   hidePreloader();
+
+  if (!state.loginPromptShown) {
+    state.loginPromptShown = true;
+    showFeedbackModal({
+      title: "برای ادامه وارد شوید",
+      message:
+        "برای ثبت‌نام یا مشاهده جزئیات تورنومنت باید وارد حساب کاربری خود شوید.",
+      type: "info",
+      action: {
+        label: "ورود به حساب",
+        href: "/register/login.html",
+      },
+    });
+  }
 }
 
 function showLobbyPage() {
-  const loginBox = document.getElementById("login_required");
-  const lobbyPage = document.getElementById("lobby_page");
-  if (loginBox) loginBox.style.display = "none";
-  if (lobbyPage) lobbyPage.style.display = "grid";
+  toggleDisplay("login_required", false);
+  toggleDisplay("lobby_page", true, "grid");
 }
 
 function formatDateTime(value) {
@@ -757,93 +955,69 @@ function formatDateTime(value) {
 }
 
 function renderAdminInfo(tournament) {
-  const usernameEl = document.getElementById("adminUsername");
-  const fullnameEl = document.getElementById("adminFullName");
-  const avatarEl = document.getElementById("adminProfilePicture");
-
   const creator = tournament?.creator || {};
   const firstName = creator.first_name || "";
   const lastName = creator.last_name || "";
   const fullName = [firstName, lastName].filter(Boolean).join(" ");
 
-  if (usernameEl) {
-    usernameEl.textContent = `نام کاربری: ${creator.username || "---"}`;
-  }
-
-  if (fullnameEl) {
-    fullnameEl.textContent = `نام: ${fullName || "---"}`;
-  }
-
-  if (avatarEl) {
-    avatarEl.src = creator.profile_picture || "img/profile.jpg";
-    avatarEl.alt = creator.username || "ادمین";
-  }
+  updateText("adminUsername", `نام کاربری: ${creator.username || "---"}`);
+  updateText("adminFullName", `نام: ${fullName || "---"}`);
+  updateImage("adminProfilePicture", {
+    src: creator.profile_picture,
+    fallbackSrc: "img/profile.jpg",
+    alt: creator.username || "ادمین",
+  });
 }
 
 function renderTournamentSummary(tournament) {
-  const signupTime = document.getElementById("signup_time");
-  const startTime = document.getElementById("start_time");
-  const endTime = document.getElementById("end_time");
-  const tournamentMode = document.getElementById("tournament_mode");
-  const banner = document.getElementById("tournament_banner");
-  const prizePool = document.getElementById("prize_pool");
-  const title = document.getElementById("tournament_title");
-  const pageTitle = document.getElementById("tournaments-title");
-  const statusEl = document.getElementById("tournament_status");
+  const recruitmentStart =
+    tournament.countdown_start_time ||
+    tournament.registration_start ||
+    tournament.start_date;
 
-  if (signupTime) {
-    const recruitmentStart =
-      tournament.countdown_start_time ||
-      tournament.registration_start ||
-      tournament.start_date;
-    signupTime.textContent = formatDateTime(recruitmentStart);
-  }
-  if (startTime) startTime.textContent = formatDateTime(tournament.start_date);
-  if (endTime) endTime.textContent = formatDateTime(tournament.end_date);
-  if (tournamentMode) {
-    tournamentMode.textContent =
-      tournament.type === "team"
-        ? `تیمی (حداکثر ${tournament.team_size || 0} نفر)`
-        : "انفرادی";
-  }
-  if (banner) {
-    banner.src = tournament.image?.image || "/img/tournaments-defalt-banner.jpg";
-    banner.alt = tournament.image?.alt || tournament.name || "بنر";
-  }
-  if (prizePool) {
-    const prize = Number(tournament.prize_pool || 0);
-    prizePool.textContent = prize
-      ? `${prize.toLocaleString("fa-IR")} تومان`
-      : "---";
-  }
-  if (title) title.textContent = tournament.name || "";
-  if (pageTitle) pageTitle.textContent = tournament.name || "";
+  updateText("signup_time", formatDateTime(recruitmentStart));
+  updateText("start_time", formatDateTime(tournament.start_date));
+  updateText("end_time", formatDateTime(tournament.end_date));
+  updateText(
+    "tournament_mode",
+    tournament.type === "team"
+      ? `تیمی (حداکثر ${tournament.team_size || 0} نفر)`
+      : "انفرادی",
+  );
+  updateImage("tournament_banner", {
+    src: tournament.image?.image,
+    fallbackSrc: "/img/tournaments-defalt-banner.jpg",
+    alt: tournament.image?.alt || tournament.name || "بنر",
+  });
 
-  if (statusEl) {
-    const serverStatus = [
-      tournament.status_label,
-      tournament.status_display,
-      tournament.status,
-    ].find((value) => typeof value === "string" && value.trim());
+  const prize = Number(tournament.prize_pool || 0);
+  updateText("prize_pool", prize ? `${prize.toLocaleString("fa-IR")} تومان` : "---");
+  updateText("tournament_title", tournament.name || "");
+  updateText("tournaments-title", tournament.name || "");
 
-    if (serverStatus) {
-      statusEl.textContent = serverStatus.trim();
+  const serverStatus = [
+    tournament.status_label,
+    tournament.status_display,
+    tournament.status,
+  ].find((value) => typeof value === "string" && value.trim());
+
+  if (serverStatus) {
+    updateText("tournament_status", serverStatus.trim());
+  } else {
+    const now = new Date();
+    const start = tournament.start_date ? new Date(tournament.start_date) : null;
+    const end = tournament.end_date ? new Date(tournament.end_date) : null;
+    let status = "";
+
+    if (start && now < start) {
+      status = "فعال (شروع نشده)";
+    } else if (end && now <= end) {
+      status = "در حال برگزاری";
     } else {
-      const now = new Date();
-      const start = tournament.start_date ? new Date(tournament.start_date) : null;
-      const end = tournament.end_date ? new Date(tournament.end_date) : null;
-      let status = "";
-
-      if (start && now < start) {
-        status = "فعال (شروع نشده)";
-      } else if (end && now <= end) {
-        status = "در حال برگزاری";
-      } else {
-        status = "تمام شده";
-      }
-
-      statusEl.textContent = status;
+      status = "تمام شده";
     }
+
+    updateText("tournament_status", status);
   }
 }
 
@@ -1424,14 +1598,28 @@ function notify(key, fallbackMessage, type = "info", overrides = {}) {
   } else if (typeof window.showInfo === "function") {
     window.showInfo(fallbackText);
   }
+
+  if (fallbackText) {
+    showFeedbackModal({
+      title:
+        fallbackType === "success"
+          ? "موفقیت"
+          : fallbackType === "error"
+          ? "خطا"
+          : "اطلاع‌رسانی",
+      message: fallbackText,
+      type: fallbackType,
+      action: payload.action,
+    });
+  }
 }
 
 function showModalError(elementId, message) {
-  const element = document.getElementById(elementId);
+  const element = getDomElement(elementId);
   if (!element) return;
 
   const text = message?.toString().trim() || "";
-  element.textContent = text;
+  updateText(element, text);
   element.classList.toggle("is-hidden", !text);
 }
 
@@ -1440,26 +1628,15 @@ function clearModalError(elementId) {
 }
 
 function openJoinSuccessModal(message) {
-  const modal = document.getElementById("joinSuccessModal");
-  const description = document.getElementById("joinSuccessModalMessage");
-
-  if (description) {
-    description.textContent =
-      message || "جزئیات تورنومنت به ایمیل شما ارسال شد. لطفاً ایمیل خود را بررسی کنید.";
-  }
-
-  if (modal) {
-    modal.style.display = "flex";
-    modal.setAttribute("aria-hidden", "false");
-  }
+  updateText(
+    "joinSuccessModalMessage",
+    message || "جزئیات تورنومنت به ایمیل شما ارسال شد. لطفاً ایمیل خود را بررسی کنید.",
+  );
+  showModal("joinSuccessModal");
 }
 
 function closeJoinSuccessModal() {
-  const modal = document.getElementById("joinSuccessModal");
-  if (modal) {
-    modal.style.display = "none";
-    modal.setAttribute("aria-hidden", "true");
-  }
+  hideModal("joinSuccessModal");
 }
 
 function showJoinSuccessFeedback({ isTeam } = {}) {
@@ -1497,19 +1674,19 @@ function storeInGameIds(values) {
 }
 
 function populateInGameIdOptions(selectedValue = "") {
-  const select = document.getElementById("inGameIdSelect");
-  const wrapper = document.getElementById("inGameIdSavedWrapper");
+  const select = getDomElement("inGameIdSelect");
+  const wrapper = getDomElement("inGameIdSavedWrapper");
   if (!select || !wrapper) return;
 
   const saved = getStoredInGameIds();
   select.innerHTML = '<option value="">یکی از نام‌های قبلی را انتخاب کنید</option>';
 
   if (!saved.length) {
-    wrapper.classList.add("is-hidden");
+    toggleHidden(wrapper, true);
     return;
   }
 
-  wrapper.classList.remove("is-hidden");
+  toggleHidden(wrapper, false);
 
   saved.forEach((item) => {
     const option = document.createElement("option");
@@ -2152,7 +2329,12 @@ async function fetchTeamOptions(searchTerm = "") {
     const userId = await ensureUserId();
     if (!userId) {
       const message = "شناسه کاربر یافت نشد. لطفاً دوباره وارد شوید.";
-      notify("loginRequired", message, "error");
+      notify("loginRequired", message, "error", {
+        action: {
+          label: "ورود به حساب",
+          href: "/register/login.html",
+        },
+      });
       showModalError("teamJoinError", message);
       renderTeamOptions([], {});
       return;
@@ -2215,12 +2397,8 @@ async function openIndividualJoinModal() {
     return;
   }
 
-  const modal = document.getElementById("individualJoinModal");
-  if (!modal) return;
-
   resetIndividualJoinModal();
-  modal.style.display = "flex";
-  modal.setAttribute("aria-hidden", "false");
+  showModal("individualJoinModal");
 }
 
 async function openTeamJoinModal() {
@@ -2229,28 +2407,18 @@ async function openTeamJoinModal() {
     return;
   }
 
-  const modal = document.getElementById("teamJoinModal");
-  if (!modal) return;
-
-  modal.style.display = "flex";
-  modal.setAttribute("aria-hidden", "false");
   clearModalError("teamJoinError");
+  showModal("teamJoinModal");
   await fetchTeamOptions();
 }
 
 function closeIndividualJoinModal() {
-  const modal = document.getElementById("individualJoinModal");
-  if (!modal) return;
-  modal.style.display = "none";
-  modal.setAttribute("aria-hidden", "true");
+  hideModal("individualJoinModal");
   resetIndividualJoinModal();
 }
 
 function closeTeamJoinModal() {
-  const modal = document.getElementById("teamJoinModal");
-  if (!modal) return;
-  modal.style.display = "none";
-  modal.setAttribute("aria-hidden", "true");
+  hideModal("teamJoinModal");
   clearModalError("teamJoinError");
   resetTeamSelection();
 }
@@ -2510,32 +2678,14 @@ async function joinTeamTournament() {
 
 
 function setupModalDismiss() {
-  const individualModal = document.getElementById("individualJoinModal");
-  if (individualModal) {
-    individualModal.addEventListener("click", (event) => {
-      if (event.target === individualModal) {
-        closeIndividualJoinModal();
-      }
-    });
-  }
-
-  const teamModal = document.getElementById("teamJoinModal");
-  if (teamModal) {
-    teamModal.addEventListener("click", (event) => {
-      if (event.target === teamModal) {
-        closeTeamJoinModal();
-      }
-    });
-  }
-
-  const successModal = document.getElementById("joinSuccessModal");
-  if (successModal) {
-    successModal.addEventListener("click", (event) => {
-      if (event.target === successModal) {
-        closeJoinSuccessModal();
-      }
-    });
-  }
+  registerModal("individualJoinModal", { onClose: resetIndividualJoinModal }).bindDismiss();
+  registerModal("teamJoinModal", {
+    onClose: () => {
+      clearModalError("teamJoinError");
+      resetTeamSelection();
+    },
+  }).bindDismiss();
+  registerModal("joinSuccessModal").bindDismiss();
 }
 
 function setupTeamSearch() {
@@ -2578,7 +2728,12 @@ function initialise() {
   state.tournamentId = params.get("id");
 
   if (!state.tournamentId) {
-    notify("tournamentIdMissing", "شناسه تورنومنت در آدرس وجود ندارد.");
+    notify("tournamentIdMissing", "شناسه تورنومنت در آدرس وجود ندارد.", "error", {
+      action: {
+        label: "مشاهده لیست تورنومنت‌ها",
+        href: "/tournaments.html",
+      },
+    });
     hidePreloader();
     return;
   }
