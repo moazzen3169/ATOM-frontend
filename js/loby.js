@@ -1021,48 +1021,128 @@ function renderTournamentSummary(tournament) {
   }
 }
 
+function resolveGameId(player) {
+  if (!player || typeof player !== "object") {
+    return "";
+  }
+
+  const id =
+    player.game_id ||
+    player.gameId ||
+    player.in_game_id ||
+    player.inGameId ||
+    player.ingame_id ||
+    player.identifier ||
+    "";
+
+  return typeof id === "string" || typeof id === "number" ? String(id).trim() : "";
+}
+
+function resolveAvatar(entity) {
+  if (!entity || typeof entity !== "object") {
+    return "img/profile.jpg";
+  }
+
+  const direct =
+    entity.avatar ||
+    entity.profile_picture ||
+    entity.profilePicture ||
+    entity.picture ||
+    entity.image ||
+    entity.photo ||
+    null;
+
+  if (typeof direct === "string" && direct.trim()) {
+    return direct;
+  }
+
+  if (direct && typeof direct === "object") {
+    const nested = direct.url || direct.src || direct.image || direct.path;
+    if (typeof nested === "string" && nested.trim()) {
+      return nested;
+    }
+  }
+
+  const nestedImage =
+    entity?.profile?.picture ||
+    entity?.profile?.image ||
+    entity?.user?.avatar ||
+    entity?.user?.profile_picture ||
+    null;
+
+  if (typeof nestedImage === "string" && nestedImage.trim()) {
+    return nestedImage;
+  }
+
+  return "img/profile.jpg";
+}
+
 function createPlayerSlot(player) {
   const slot = document.createElement("div");
-  slot.className = "team_detail";
+  slot.className = "participant_card participant_card--player";
+
+  const username = player?.username || player?.name || "کاربر";
+  const gameId = resolveGameId(player);
+  const avatar = resolveAvatar(player);
+
   slot.innerHTML = `
-    <div class="team_name">${player.username || player.name || "کاربر"}</div>
-    <div class="team_players">
-      <div class="player">
-        <img src="${
-          player.avatar || player.profile_picture || "img/profile.jpg"
-        }" alt="player" loading="lazy">
-      </div>
+    <div class="participant_card__info">
+      <span class="participant_card__name">${username}</span>
+      ${gameId ? `<span class="participant_card__meta">${gameId}</span>` : ""}
+    </div>
+    <div class="participant_card__avatar">
+      <img src="${avatar}" alt="${username}" loading="lazy">
     </div>
   `;
+
   return slot;
 }
 
 function renderTeamSlot(team) {
   const slot = document.createElement("div");
-  slot.className = "team_detail";
-  const members = Array.isArray(team.members)
+  slot.className = "participant_card participant_card--team";
+
+  const members = Array.isArray(team?.members)
     ? team.members
-    : Array.isArray(team.players)
+    : Array.isArray(team?.players)
     ? team.players
-    : Array.isArray(team.users)
+    : Array.isArray(team?.users)
     ? team.users
     : [];
 
-  const membersMarkup = members
-    .map(
-      (member) => `
-        <div class="player">
-          <img src="${
-            member.avatar || member.profile_picture || "img/profile.jpg"
-          }" alt="member" loading="lazy">
+  const displayedMembers = members.slice(0, 5);
+  const extraCount = members.length - displayedMembers.length;
+
+  const membersMarkup = displayedMembers
+    .map((member) => {
+      const name = member?.username || member?.name || "";
+      const avatar = resolveAvatar(member);
+      return `
+        <div class="participant_team-avatar" title="${name}">
+          <img src="${avatar}" alt="${name}" loading="lazy">
         </div>
-      `,
-    )
+      `;
+    })
     .join("");
 
+  const extraMarkup =
+    extraCount > 0
+      ? `<div class="participant_team-avatar participant_team-extra">+${extraCount}</div>`
+      : "";
+
+  const teamTag = team?.tag || team?.code || team?.identifier || "";
+  const headerTag = teamTag
+    ? `<span class="participant_team-tag">${teamTag}</span>`
+    : "";
+
   slot.innerHTML = `
-    <div class="team_name">${team.name || "تیم"}</div>
-    <div class="team_players">${membersMarkup}</div>
+    <div class="participant_team-header">
+      <span class="participant_team-name">${team?.name || "تیم"}</span>
+      ${headerTag}
+    </div>
+    <div class="participant_team-avatars">
+      ${membersMarkup}${extraMarkup}
+    </div>
   `;
 
   return slot;
@@ -1071,10 +1151,10 @@ function renderTeamSlot(team) {
 function createEmptyButton(label, handler) {
   const button = document.createElement("button");
   button.type = "button";
-  button.className = "team_detail team_empty";
+  button.className = "participants_cta";
   button.innerHTML = `
-    ${label}
-    <i><img src="img/icons/plus.svg" alt="plus"></i>
+    <span>${label}</span>
+    <span class="participants_cta-icon"><img src="img/icons/plus.svg" alt="plus"></span>
   `;
   button.addEventListener("click", handler);
   return button;
@@ -1215,7 +1295,10 @@ function resetParticipantsSection(tournament) {
   }
 
   refs.list.innerHTML = "";
-  refs.list.className = tournament.type === "team" ? "teams_grid" : "players_grid";
+  refs.list.className =
+    tournament.type === "team"
+      ? "participants_grid teams_grid"
+      : "participants_grid players_grid";
 
   refs.loadMore.textContent = "";
   refs.loadMore.disabled = true;
@@ -1274,8 +1357,7 @@ function updateJoinCta(tournament) {
       : "همین الان اضافه شو!";
   const handler = tournament.type === "team" ? openTeamJoinModal : openIndividualJoinModal;
   const cta = createEmptyButton(ctaLabel, handler);
-  cta.classList.add("participants_cta");
-  refs.list.appendChild(cta);
+  refs.list.prepend(cta);
 }
 
 function updateParticipantsLoadMoreButton() {
