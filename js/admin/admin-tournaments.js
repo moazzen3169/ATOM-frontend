@@ -8,6 +8,8 @@ import {
   toQueryString,
 } from "./admin-api.js";
 
+const ADD_GAME_OPTION_VALUE = "__ADD_NEW_GAME__";
+
 const state = {
   tournaments: [],
   filtered: [],
@@ -20,12 +22,13 @@ const state = {
   },
   selectedId: null,
   games: [],
+  gamesLoading: null,
 };
 
 const elements = {
   tableBody: document.querySelector('[data-table="tournaments"] tbody'),
   tableInfo: document.querySelector("#table-info"),
-  detailsCard: document.querySelector("[data-role=\"tournament-details\"]"),
+  detailsCard: document.querySelector('[data-role="tournament-details"]'),
   createModal: document.getElementById("create-tournament"),
   editModal: document.getElementById("edit-tournament"),
   actionModal: document.getElementById("action-tournament"),
@@ -33,8 +36,11 @@ const elements = {
   editForm: document.querySelector('[data-form="edit-tournament"]'),
   actionForm: document.querySelector('[data-form="action-tournament"]'),
   gamesSelect: document.querySelector('[data-role="games-select"]'),
+  createGameModal: document.getElementById("create-game"),
+  createGameForm: document.querySelector('[data-form="create-game"]'),
+  createGameFeedback: document.querySelector('[data-role="create-game-feedback"]'),
   chips: document.querySelectorAll(".toolbar-chip"),
-  toolbarInputs: document.querySelectorAll("[data-filter]")
+  toolbarInputs: document.querySelectorAll("[data-filter]"),
 };
 
 init().catch((error) => console.error("Failed to initialise tournaments page", error));
@@ -82,6 +88,9 @@ function bindModalTriggers() {
     if (!modal) return;
     trigger.addEventListener("click", (event) => {
       event.preventDefault();
+      if (modal === elements.createModal) {
+        void loadGames({ force: true });
+      }
       openModal(modal);
     });
   });
@@ -103,25 +112,183 @@ function bindModalTriggers() {
   if (elements.actionForm) {
     elements.actionForm.addEventListener("submit", handleActionSubmit);
   }
-}
-
-async function loadGames() {
-  try {
-    const games = await fetchJsonList("/api/tournaments/games/" + toQueryString({ limit: 100 }));
-    state.games = games;
-    populateGamesSelect(games);
-  } catch (error) {
-    console.warn("Failed to load games", error);
+  if (elements.createGameForm) {
+    elements.createGameForm.addEventListener("submit", handleCreateGameSubmit);
+  }
+  if (elements.gamesSelect) {
+    elements.gamesSelect.addEventListener("change", handleGameSelectChange);
   }
 }
 
-function populateGamesSelect(games) {
-  if (!elements.gamesSelect) return;
-  elements.gamesSelect.innerHTML = games.length
-    ? games
-        .map((game) => `<option value="${escapeHtml(game.id)}">${escapeHtml(game.name || game.title || `بازی ${game.id}`)}</option>`)
-        .join("")
-    : '<option value="">بازی‌ای یافت نشد</option>';
+async function loadGames(options = {}) {
+  const { force = false, selectId } = options;
+
+  if (state.gamesLoading) {
+    if (!force) {
+      try {
+        const games = await state.gamesLoading;
+        populateGamesSelect(games, selectId);
+        return games;
+      } catch (error) {
+        console.warn("Failed to load games", error);
+        populateGamesSelect([], selectId);
+        return [];
+      }
+    }
+    try {
+      await state.gamesLoading;
+    } catch (error) {
+      console.warn("Failed to load games", error);
+    } finally {
+      state.gamesLoading = null;
+    }
+  }
+
+  if (!force && state.games.length) {
+    populateGamesSelect(state.games, selectId);
+    return state.games;
+  }
+
+  // GET games from API
+  const request = fetchJsonList("/api/tournaments/games/" + toQueryString({ limit: 100 })).then((games) => {
+    state.games = Array.isArray(games) ? games : [];
+    return state.games;
+  });
+
+  state.gamesLoading = request;
+
+  try {
+    const games = await request;
+    populateGamesSelect(games, selectId);
+    return games;
+  } catch (error) {
+    console.warn("Failed to load games", error);
+    populateGamesSelect([], selectId);
+    return [];
+  } finally {
+    if (state.gamesLoading === request) {
+      state.gamesLoading = null;
+    }
+  }
+}
+
+function populateGamesSelect(games = [], selectedId) {
+  const select = elements.gamesSelect;
+  if (!select) return;
+
+  const list = Array.isArray(games) ? games : [];
+  const hasGames = list.length > 0;
+  const placeholder = hasGames ? "یک بازی را انتخاب کنید" : "هیچ بازی‌ای یافت نشد، ابتدا بازی جدید بسازید";
+
+  const options = [
+    `<option value="">${escapeHtml(placeholder)}</option>`,
+    ...list.map((game) => {
+      const rawId = game?.id ?? game?.pk ?? "";
+      const value = escapeHtml(String(rawId));
+      const label = escapeHtml(game?.name || game?.title || `بازی ${rawId}`);
+      return `<option value="${value}">${label}</option>`;
+    }),
+    `<option value="${ADD_GAME_OPTION_VALUE}">+ ${escapeHtml("افزودن بازی جدید")}</option>`,
+  ];
+
+  select.innerHTML = options.join("");
+
+  const desiredValue =
+    selectedId !== undefined && selectedId !== null
+      ? String(selectedId)
+      : select.dataset.previousValue || "";
+
+  if (
+    desiredValue &&
+    desiredValue !== ADD_GAME_OPTION_VALUE &&
+    list.some((game) => String(game?.id ?? game?.pk ?? "") === desiredValue)
+  ) {
+    select.value = desiredValue;
+  } else {
+    select.value = "";
+  }
+
+  select.dataset.previousValue = select.value;
+}
+
+function handleGameSelectChange(event) {
+  const select = event.target;
+  if (!select) return;
+
+  if (select.value === ADD_GAME_OPTION_VALUE) {
+    const previous = select.dataset.previousValue || "";
+    select.value = previous;
+    openCreateGameModal();
+    return;
+  }
+
+  select.dataset.previousValue = select.value;
+}
+
+function openCreateGameModal() {
+  if (elements.createGameForm) {
+    elements.createGameForm.reset();
+  }
+  if (elements.createGameFeedback) {
+    setFeedback(elements.createGameFeedback, "");
+  }
+  openModal(elements.createGameModal);
+}
+
+async function handleCreateGameSubmit(event) {
+  event.preventDefault();
+  const form = event.target;
+  if (!form || form !== elements.createGameForm) return;
+
+  const submitButton = form.querySelector('[type="submit"]');
+  if (submitButton) submitButton.disabled = true;
+
+  if (elements.createGameFeedback) setFeedback(elements.createGameFeedback, "");
+
+  try {
+    // Build FormData for multipart (files + fields)
+    const fd = new FormData(form);
+    // Ensure fields exist and are trimmed
+    const name = (fd.get("name") || "").toString().trim();
+    const description = (fd.get("description") || "").toString().trim();
+    const status = (fd.get("status") || "active").toString().trim();
+
+    if (!name || !description) {
+      if (elements.createGameFeedback) setFeedback(elements.createGameFeedback, "نام و توضیحات بازی الزامی است.");
+      return;
+    }
+
+    // Overwrite trimmed textual values in FormData (to avoid leading/trailing spaces)
+    fd.set("name", name);
+    fd.set("description", description);
+    fd.set("status", status);
+
+    // If inputs for multiple images use name="game_images[]" the browser adds them automatically.
+    // If they are named "game_images" and multiple, FormData will also append each file.
+    // No need to change Content-Type; fetchWithAuth should accept FormData body.
+
+    const created = await fetchWithAuth("/api/tournaments/games/", {
+      method: "POST",
+      body: fd,
+    });
+
+    const newGameId = created?.id ?? created?.pk ?? null;
+
+    if (elements.createGameFeedback) setFeedback(elements.createGameFeedback, "بازی با موفقیت ایجاد شد.", true);
+
+    form.reset();
+    closeModal(elements.createGameModal);
+
+    // Reload games and auto-select created game
+    const selectedId = newGameId ? String(newGameId) : undefined;
+    await loadGames({ force: true, selectId: selectedId });
+  } catch (error) {
+    console.error("Failed to create game", error);
+    const message = (error && (error.message || error.detail)) || "ایجاد بازی با خطا مواجه شد.";
+    if (elements.createGameFeedback) setFeedback(elements.createGameFeedback, message);
+  } finally {
+    if (submitButton) submitButton.disabled = false;
+  }
 }
 
 async function loadTournaments() {
@@ -230,8 +397,8 @@ function renderTable() {
   const total = state.tournaments.length;
   const visible = state.filtered.length;
   if (elements.tableInfo) {
-    elements.tableInfo.querySelector("[data-field=\"visible-count\"]").textContent = formatNumber(visible);
-    elements.tableInfo.querySelector("[data-field=\"total-count\"]").textContent = formatNumber(total);
+    elements.tableInfo.querySelector('[data-field="visible-count"]').textContent = formatNumber(visible);
+    elements.tableInfo.querySelector('[data-field="total-count"]').textContent = formatNumber(total);
   }
 
   elements.tableBody.querySelectorAll("button[data-action]").forEach((button) => {
@@ -389,7 +556,10 @@ async function handleCreateSubmit(event) {
   try {
     await fetchWithAuth("/api/tournaments/tournaments/", {
       method: "POST",
-      body: payload,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
     setFeedback(feedback, "تورنومنت با موفقیت ایجاد شد.", true);
     elements.createForm.reset();
@@ -421,7 +591,10 @@ async function handleEditSubmit(event) {
   try {
     await fetchWithAuth(`/api/tournaments/tournaments/${id}/`, {
       method: "PATCH",
-      body: payload,
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(payload),
     });
     setFeedback(feedback, "تغییرات ذخیره شد.", true);
     closeModal(elements.editModal);
@@ -459,7 +632,10 @@ async function handleActionSubmit(event) {
       const currentParticipants = tournament?.participants?.length || tournament?.current_participants || 0;
       await fetchWithAuth(`/api/tournaments/tournaments/${id}/`, {
         method: "PATCH",
-        body: { max_participants: currentParticipants },
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ max_participants: currentParticipants }),
       });
     }
     setFeedback(feedback, "اقدام با موفقیت انجام شد.", true);
@@ -715,6 +891,7 @@ function toEnglishDigits(value) {
     .replace(/[\u0660-\u0669]/g, (digit) => String(digit.charCodeAt(0) - 0x0660));
 }
 
+/* jalali <-> gregorian helpers (same as before) */
 function jalaliToGregorian(jy, jm, jd) {
   const cal = jalCal(jy);
   if (!cal) return null;
@@ -722,14 +899,12 @@ function jalaliToGregorian(jy, jm, jd) {
   const gregorianDay = jdToGregorian(jdValue);
   return { gy: gregorianDay[0], gm: gregorianDay[1], gd: gregorianDay[2] };
 }
-
 function jalaliToJd(jy, jm, jd, cal) {
   const gregorianJd = gregorianToJd(cal.gy, 3, cal.march);
   const dayIndex =
     (jm <= 6 ? (jm - 1) * 31 : 6 * 31 + (jm - 7) * 30) + (jd - 1);
   return gregorianJd + dayIndex;
 }
-
 function gregorianToJd(gy, gm, gd) {
   const a = Math.floor((14 - gm) / 12);
   const y = gy + 4800 - a;
@@ -739,7 +914,6 @@ function gregorianToJd(gy, gm, gd) {
     Math.floor(y / 100) + Math.floor(y / 400) - 32045
   );
 }
-
 function jdToGregorian(jd) {
   let j = jd + 32044;
   const g = Math.floor(j / 146097);
@@ -758,23 +932,19 @@ function jdToGregorian(jd) {
   const day = d + 1;
   return [year, month, day];
 }
-
 function jalCal(jy) {
   const breaks = [
     -61, 9, 38, 199, 426, 686, 756, 818, 1111, 1181, 1210, 1635,
     2060, 2097, 2192, 2262, 2324, 2394, 2456, 3178,
   ];
-
   if (jy < breaks[0] || jy >= breaks[breaks.length - 1]) {
     return null;
   }
-
   let gy = jy + 621;
   let leapJ = -14;
   let jp = breaks[0];
   let jm = breaks[1];
   let jump = 0;
-
   for (let i = 1; i < breaks.length; i += 1) {
     jm = breaks[i];
     jump = jm - jp;
@@ -784,20 +954,16 @@ function jalCal(jy) {
     leapJ += Math.floor(jump / 33) * 8 + Math.floor((jump % 33) / 4);
     jp = jm;
   }
-
   let n = jy - jp;
   leapJ += Math.floor(n / 33) * 8 + Math.floor(((n % 33) + 3) / 4);
   if (jump % 33 === 4 && jump - n === 4) {
     leapJ += 1;
   }
-
   const leapG = Math.floor(gy / 4) - Math.floor((Math.floor(gy / 100) + 1) * 3 / 4) - 150;
   const march = 20 + leapJ - leapG;
-
   if (jump - n < 6) {
     n = n - jump + Math.floor((jump + 4) / 33) * 33;
   }
-
   return { leap: ((n + 1) % 33 - 1 + 33) % 4, gy, march };
 }
 

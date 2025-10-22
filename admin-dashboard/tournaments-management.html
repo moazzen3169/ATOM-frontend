@@ -225,6 +225,62 @@
     </div>
 </div>
 
+<!-- ==== UPDATED CREATE-GAME MODAL ==== -->
+<div class="modal" id="create-game" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal__dialog">
+        <header class="modal__header">
+            <div>
+                <h2>افزودن بازی جدید</h2>
+                <p>برای انتخاب بازی در ایجاد تورنومنت، اطلاعات بازی جدید را تکمیل کنید.</p>
+            </div>
+            <button type="button" class="modal__close" data-close>
+                <i class="ti ti-x"></i>
+            </button>
+        </header>
+        <form class="modal__body" data-form="create-game" enctype="multipart/form-data">
+            <div class="modal__grid">
+                <label class="modal__field modal__field--full">
+                    <span>نام بازی</span>
+                    <input type="text" name="name" required maxlength="100" placeholder="مثال: Valorant">
+                </label>
+
+                <label class="modal__field">
+                    <span>وضعیت بازی</span>
+                    <select name="status" required>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                        <option value="coming_soon">Coming Soon</option>
+                    </select>
+                </label>
+
+                <label class="modal__field modal__field--full">
+                    <span>بنر اصلی بازی (Hero Banner)</span>
+                    <input type="file" name="hero_banner" accept="image/*">
+                </label>
+
+                <label class="modal__field modal__field--full">
+                    <span>تصاویر گالری بازی (Game Images)</span>
+                    <input type="file" name="game_images" accept="image/*" multiple>
+                    <small>می‌توانید چند تصویر انتخاب کنید؛ هر تصویر جداگانه ارسال خواهد شد.</small>
+                </label>
+
+                <label class="modal__field modal__field--full">
+                    <span>توضیحات بازی</span>
+                    <textarea name="description" rows="4" required></textarea>
+                </label>
+            </div>
+            <footer class="modal__footer">
+                <span class="modal__feedback" data-role="create-game-feedback"></span>
+                <div class="modal__actions">
+                    <button type="button" class="modal__btn modal__btn--ghost" data-close>انصراف</button>
+                    <button type="submit" class="modal__btn modal__btn--primary">ذخیره بازی</button>
+                </div>
+            </footer>
+        </form>
+    </div>
+</div>
+<!-- ==== END CREATE-GAME MODAL ==== -->
+
 <div class="modal" id="edit-tournament" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal__dialog">
         <header class="modal__header">
