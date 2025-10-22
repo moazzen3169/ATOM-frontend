@@ -52,7 +52,7 @@ async function loadLeaderboard() {
       const players = await response.json();
       console.log(players); // برای بررسی داده‌ها
 
-      const topPlayers = players.sort((a,b) => b.score - a.score).slice(0,3);
+      const topPlayers = players.sort((a,b) => b.score - a.score).slice(0,6);
 
       if (topPlayers.length > 0) {
           topPlayers.forEach((player,index) => {
@@ -66,7 +66,8 @@ async function loadLeaderboard() {
                   <div class="user_name"><span>${player.username}</span></div>
                   <div class="user_rank"><span>${index + 1}</span></div>
                 </div>
-                <div class="leader_info1 leader_info">
+                <div class="leaeder_profile_information">
+                  <div class="leader_info1 leader_info">
                   <span>تعداد برد :</span> <span>${player.wins}</span>
                 </div>
                 <div class="leader_info2 leader_info">
@@ -74,6 +75,7 @@ async function loadLeaderboard() {
                 </div>
                 <div class="leader_info3 leader_info">
                   <span>مجموع جوایز :</span> <span>${player.total_winnings} تومان</span>
+                </div>
                 </div>
               `;
               container.appendChild(div);
