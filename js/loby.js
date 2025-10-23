@@ -318,6 +318,222 @@ function stableStringify(value) {
   return `{${entries.join(",")}}`;
 }
 
+function cloneValue(value) {
+  if (Array.isArray(value)) {
+    return value.map((item) => cloneValue(item));
+  }
+
+  if (value && typeof value === "object") {
+    return Object.entries(value).reduce((acc, [key, item]) => {
+      acc[key] = cloneValue(item);
+      return acc;
+    }, {});
+  }
+
+  return value;
+}
+
+function mergePayloadTemplatesList(templates = []) {
+  return templates.reduce((acc, template) => {
+    if (!template || typeof template !== "object") {
+      return acc;
+    }
+
+    const cloned = cloneValue(template);
+    Object.entries(cloned).forEach(([key, value]) => {
+      acc[key] = value;
+    });
+
+    return acc;
+  }, {});
+}
+
+function isMeaningfulValue(value) {
+  if (value === null || value === undefined) {
+    return false;
+  }
+
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+
+  return true;
+}
+
+function ensureField(target, value, ...keys) {
+  if (!target || typeof target !== "object" || !keys.length) {
+    return;
+  }
+
+  if (!isMeaningfulValue(value)) {
+    return;
+  }
+
+  for (const key of keys) {
+    if (key in target) {
+      if (!isMeaningfulValue(target[key])) {
+        target[key] = value;
+      }
+      return;
+    }
+  }
+
+  target[keys[0]] = value;
+}
+
+function sanitizePayload(value) {
+  if (Array.isArray(value)) {
+    const sanitized = value
+      .map((item) => sanitizePayload(item))
+      .filter((item) => {
+        if (item === undefined || item === null) {
+          return false;
+        }
+        if (Array.isArray(item)) {
+          return item.length > 0;
+        }
+        if (typeof item === "object") {
+          return Object.keys(item).length > 0;
+        }
+        return true;
+      });
+
+    return sanitized;
+  }
+
+  if (value && typeof value === "object") {
+    const result = {};
+    Object.entries(value).forEach(([key, item]) => {
+      const sanitizedItem = sanitizePayload(item);
+      if (sanitizedItem === undefined || sanitizedItem === null) {
+        return;
+      }
+      if (Array.isArray(sanitizedItem) && !sanitizedItem.length) {
+        return;
+      }
+      if (
+        typeof sanitizedItem === "object" &&
+        !Array.isArray(sanitizedItem) &&
+        !Object.keys(sanitizedItem).length
+      ) {
+        return;
+      }
+      result[key] = sanitizedItem;
+    });
+    return result;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length ? trimmed : undefined;
+  }
+
+  return value;
+}
+
+function getTournamentIdentifier() {
+  const directCandidates = [state.tournamentId, state.tournament?.id, state.tournament?.pk];
+
+  for (const candidate of directCandidates) {
+    const normalised = normaliseId(candidate);
+    if (!normalised) {
+      continue;
+    }
+
+    if (/^\d+$/.test(normalised)) {
+      const numeric = Number.parseInt(normalised, 10);
+      if (!Number.isNaN(numeric)) {
+        return numeric;
+      }
+    }
+
+    return normalised;
+  }
+
+  return null;
+}
+
+function getTournamentGameId(tournament = state.tournament) {
+  if (!tournament) {
+    return null;
+  }
+
+  const candidates = [
+    tournament.game_id,
+    tournament.gameId,
+    tournament.game,
+    tournament?.game?.id,
+    tournament?.game?.pk,
+  ];
+
+  for (const candidate of candidates) {
+    const normalised = normaliseId(candidate);
+    if (!normalised) {
+      continue;
+    }
+
+    if (/^\d+$/.test(normalised)) {
+      const numeric = Number.parseInt(normalised, 10);
+      if (!Number.isNaN(numeric)) {
+        return numeric;
+      }
+    }
+
+    return normalised;
+  }
+
+  return null;
+}
+
+function createIndividualJoinPayload(inGameId) {
+  const baseTemplates = mergePayloadTemplatesList([
+    state.tournament?.join_payload_template,
+    state.tournament?.join_payload,
+    state.tournament?.registration_payload_template,
+    state.tournament?.registration_payload,
+  ]);
+
+  const payload = cloneValue(baseTemplates);
+  const gameId = getTournamentGameId();
+  const tournamentId = getTournamentIdentifier();
+
+  ensureField(payload, inGameId, "in_game_id", "inGameId", "player_id", "playerId");
+  ensureField(payload, tournamentId, "tournament", "tournament_id", "tournamentId");
+  ensureField(payload, gameId, "game", "game_id", "gameId");
+
+  let entries = Array.isArray(payload.in_game_ids)
+    ? payload.in_game_ids.map((entry) => (entry && typeof entry === "object" ? cloneValue(entry) : {}))
+    : [];
+
+  if (!entries.length) {
+    entries.push({});
+  }
+
+  entries = entries
+    .map((entry, index) => {
+      const item = entry && typeof entry === "object" ? entry : {};
+      if (index === 0) {
+        ensureField(item, inGameId, "player_id", "playerId", "in_game_id", "inGameId");
+      }
+      ensureField(item, gameId, "game", "game_id", "gameId");
+      ensureField(item, tournamentId, "tournament", "tournament_id", "tournamentId");
+      return sanitizePayload(item);
+    })
+    .filter((entry) => entry && Object.keys(entry).length);
+
+  if (!entries.length) {
+    const fallback = {};
+    ensureField(fallback, inGameId, "player_id", "playerId", "in_game_id", "inGameId");
+    ensureField(fallback, gameId, "game", "game_id", "gameId");
+    ensureField(fallback, tournamentId, "tournament", "tournament_id", "tournamentId");
+    entries = [sanitizePayload(fallback)];
+  }
+
+  payload.in_game_ids = entries;
+
+  return sanitizePayload(payload);
+}
+
 function decodeJwtPayload(token) {
   if (!token || typeof token !== "string") {
     return null;
@@ -1021,48 +1237,128 @@ function renderTournamentSummary(tournament) {
   }
 }
 
+function resolveGameId(player) {
+  if (!player || typeof player !== "object") {
+    return "";
+  }
+
+  const id =
+    player.game_id ||
+    player.gameId ||
+    player.in_game_id ||
+    player.inGameId ||
+    player.ingame_id ||
+    player.identifier ||
+    "";
+
+  return typeof id === "string" || typeof id === "number" ? String(id).trim() : "";
+}
+
+function resolveAvatar(entity) {
+  if (!entity || typeof entity !== "object") {
+    return "img/profile.jpg";
+  }
+
+  const direct =
+    entity.avatar ||
+    entity.profile_picture ||
+    entity.profilePicture ||
+    entity.picture ||
+    entity.image ||
+    entity.photo ||
+    null;
+
+  if (typeof direct === "string" && direct.trim()) {
+    return direct;
+  }
+
+  if (direct && typeof direct === "object") {
+    const nested = direct.url || direct.src || direct.image || direct.path;
+    if (typeof nested === "string" && nested.trim()) {
+      return nested;
+    }
+  }
+
+  const nestedImage =
+    entity?.profile?.picture ||
+    entity?.profile?.image ||
+    entity?.user?.avatar ||
+    entity?.user?.profile_picture ||
+    null;
+
+  if (typeof nestedImage === "string" && nestedImage.trim()) {
+    return nestedImage;
+  }
+
+  return "img/profile.jpg";
+}
+
 function createPlayerSlot(player) {
   const slot = document.createElement("div");
-  slot.className = "team_detail";
+  slot.className = "participant_card participant_card--player";
+
+  const username = player?.username || player?.name || "کاربر";
+  const gameId = resolveGameId(player);
+  const avatar = resolveAvatar(player);
+
   slot.innerHTML = `
-    <div class="team_name">${player.username || player.name || "کاربر"}</div>
-    <div class="team_players">
-      <div class="player">
-        <img src="${
-          player.avatar || player.profile_picture || "img/profile.jpg"
-        }" alt="player" loading="lazy">
-      </div>
+    <div class="participant_card__info">
+      <span class="participant_card__name">${username}</span>
+      ${gameId ? `<span class="participant_card__meta">${gameId}</span>` : ""}
+    </div>
+    <div class="participant_card__avatar">
+      <img src="${avatar}" alt="${username}" loading="lazy">
     </div>
   `;
+
   return slot;
 }
 
 function renderTeamSlot(team) {
   const slot = document.createElement("div");
-  slot.className = "team_detail";
-  const members = Array.isArray(team.members)
+  slot.className = "participant_card participant_card--team";
+
+  const members = Array.isArray(team?.members)
     ? team.members
-    : Array.isArray(team.players)
+    : Array.isArray(team?.players)
     ? team.players
-    : Array.isArray(team.users)
+    : Array.isArray(team?.users)
     ? team.users
     : [];
 
-  const membersMarkup = members
-    .map(
-      (member) => `
-        <div class="player">
-          <img src="${
-            member.avatar || member.profile_picture || "img/profile.jpg"
-          }" alt="member" loading="lazy">
+  const displayedMembers = members.slice(0, 5);
+  const extraCount = members.length - displayedMembers.length;
+
+  const membersMarkup = displayedMembers
+    .map((member) => {
+      const name = member?.username || member?.name || "";
+      const avatar = resolveAvatar(member);
+      return `
+        <div class="participant_team-avatar" title="${name}">
+          <img src="${avatar}" alt="${name}" loading="lazy">
         </div>
-      `,
-    )
+      `;
+    })
     .join("");
 
+  const extraMarkup =
+    extraCount > 0
+      ? `<div class="participant_team-avatar participant_team-extra">+${extraCount}</div>`
+      : "";
+
+  const teamTag = team?.tag || team?.code || team?.identifier || "";
+  const headerTag = teamTag
+    ? `<span class="participant_team-tag">${teamTag}</span>`
+    : "";
+
   slot.innerHTML = `
-    <div class="team_name">${team.name || "تیم"}</div>
-    <div class="team_players">${membersMarkup}</div>
+    <div class="participant_team-header">
+      <span class="participant_team-name">${team?.name || "تیم"}</span>
+      ${headerTag}
+    </div>
+    <div class="participant_team-avatars">
+      ${membersMarkup}${extraMarkup}
+    </div>
   `;
 
   return slot;
@@ -1071,10 +1367,10 @@ function renderTeamSlot(team) {
 function createEmptyButton(label, handler) {
   const button = document.createElement("button");
   button.type = "button";
-  button.className = "team_detail team_empty";
+  button.className = "participants_cta";
   button.innerHTML = `
-    ${label}
-    <i><img src="img/icons/plus.svg" alt="plus"></i>
+    <span>${label}</span>
+    <span class="participants_cta-icon"><img src="img/icons/plus.svg" alt="plus"></span>
   `;
   button.addEventListener("click", handler);
   return button;
@@ -1215,7 +1511,10 @@ function resetParticipantsSection(tournament) {
   }
 
   refs.list.innerHTML = "";
-  refs.list.className = tournament.type === "team" ? "teams_grid" : "players_grid";
+  refs.list.className =
+    tournament.type === "team"
+      ? "participants_grid teams_grid"
+      : "participants_grid players_grid";
 
   refs.loadMore.textContent = "";
   refs.loadMore.disabled = true;
@@ -1274,8 +1573,7 @@ function updateJoinCta(tournament) {
       : "همین الان اضافه شو!";
   const handler = tournament.type === "team" ? openTeamJoinModal : openIndividualJoinModal;
   const cta = createEmptyButton(ctaLabel, handler);
-  cta.classList.add("participants_cta");
-  refs.list.appendChild(cta);
+  refs.list.prepend(cta);
 }
 
 function updateParticipantsLoadMoreButton() {
@@ -1978,17 +2276,31 @@ function getPreferredTeamJoinField() {
 function createTeamJoinPayloadCandidates(team, identifier) {
   const candidates = [];
   const seen = new Set();
+  const tournamentId = getTournamentIdentifier();
+  const gameId = getTournamentGameId();
 
-  const addCandidate = (payload) => {
+  const addCandidate = (payload, teamValue = identifier) => {
     if (!payload || typeof payload !== "object") {
       return;
     }
-    const serialized = JSON.stringify(payload);
+
+    const candidate = cloneValue(payload);
+    ensureField(candidate, teamValue, "team", "team_id", "teamId", "team_slug", "teamSlug");
+    ensureField(candidate, tournamentId, "tournament", "tournament_id", "tournamentId");
+    ensureField(candidate, gameId, "game", "game_id", "gameId");
+
+    const sanitized = sanitizePayload(candidate);
+    if (!sanitized || typeof sanitized !== "object" || !Object.keys(sanitized).length) {
+      return;
+    }
+
+    const serialized = stableStringify(sanitized);
     if (seen.has(serialized)) {
       return;
     }
+
     seen.add(serialized);
-    candidates.push(payload);
+    candidates.push(sanitized);
   };
 
   const preferredField = getPreferredTeamJoinField();
@@ -2019,7 +2331,7 @@ function createTeamJoinPayloadCandidates(team, identifier) {
   }
 
   knownIdentifiers.forEach((value) => {
-    addCandidate({ team: value });
+    addCandidate({ team: value }, value);
 
     const numericId =
       typeof value === "number"
@@ -2029,11 +2341,11 @@ function createTeamJoinPayloadCandidates(team, identifier) {
         : null;
 
     if (numericId !== null && !Number.isNaN(numericId)) {
-      addCandidate({ team_id: numericId });
-      addCandidate({ teamId: numericId });
+      addCandidate({ team_id: numericId }, numericId);
+      addCandidate({ teamId: numericId }, numericId);
     } else if (typeof value === "string" && value.trim().length) {
-      addCandidate({ team_slug: value });
-      addCandidate({ teamSlug: value });
+      addCandidate({ team_slug: value }, value);
+      addCandidate({ teamSlug: value }, value);
     }
   });
 
@@ -2048,7 +2360,7 @@ function createTeamJoinPayloadCandidates(team, identifier) {
     if (!template || typeof template !== "object") {
       return;
     }
-    const cloned = { ...template };
+    const cloned = mergePayloadTemplatesList([template]);
     const hasTeamKey = Object.keys(cloned).some((key) =>
       typeof key === "string" && key.toLowerCase().startsWith("team"),
     );
@@ -2456,7 +2768,7 @@ async function joinIndividualTournament(event) {
   if (submitBtn) submitBtn.disabled = true;
 
   try {
-    const payload = { in_game_id: inGameId };
+    const payload = createIndividualJoinPayload(inGameId);
 
     const joinUrl = buildApiUrl(
       API_ENDPOINTS.tournaments.join(state.tournamentId),
